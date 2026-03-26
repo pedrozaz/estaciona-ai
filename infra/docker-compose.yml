@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: estaciona_db
+    env_file:
+      - ../.env.local
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - estaciona_net
+
+  server:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.server
+    container_name: estaciona_server
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - ../.env
+    networks:
+      - estaciona_net
+
+  vision:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.vision
+    container_name: estaciona_vision
+    depends_on:
+      - server
+    volumes:
+      - ../datasets:/app/datasets
+    networks:
+      - estaciona_net
+
+volumes:
+  postgres_data:
+
+networks:
+  estaciona_net:
+    driver: bridge
+    
