@@ -42,7 +42,7 @@
             "type": "string",
             "reservation_id": "string",
             "spot_id": "string",
-            "expires_at": "string" 
+            "expires_at": "string"
         },
         "RESERVATION_EXPIRED": {
             "type": "string",
