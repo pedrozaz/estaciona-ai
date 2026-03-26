@@ -1,0 +1,57 @@
+{
+    "edge_to_server": {
+        "SPOT_UPDATE": {
+            "type": "string",
+            "spot_id": "string",
+            "status": "string",
+            "camera_id": "string",
+            "confidence": "number",
+            "timestamp": "string"
+        },
+        "CAR_DETECTED": {
+            "type": "string",
+            "plate": "string",
+            "camera_id": "string",
+            "timestamp": "string"
+        }
+    },
+    "app_to_server": {
+        "RESERVE_SPOT": {
+            "type": "string",
+            "spot_id": "string",
+            "user_id": "string",
+            "plate": "string"
+        },
+        "CANCEL_RESERVATION": {
+            "type": "string",
+            "reservation_id": "string"
+        }
+    },
+    "server_to_app": {
+        "SPOT_UPDATE": {
+            "type": "string",
+            "spot_id": "string",
+            "status": "string"
+        },
+        "NAVIGATION_START": {
+            "type": "string",
+            "spot_id": "string",
+            "route": "array"
+        },
+        "RESERVATION_CONFIRMED": {
+            "type": "string",
+            "reservation_id": "string",
+            "spot_id": "string",
+            "expires_at": "string" 
+        },
+        "RESERVATION_EXPIRED": {
+            "type": "string",
+            "spot_id": "string"
+        },
+        "RESERVATION_REJECTED": {
+            "type": "string",
+            "spot_id": "string",
+            "reason": "string"
+        }
+    }
+}
