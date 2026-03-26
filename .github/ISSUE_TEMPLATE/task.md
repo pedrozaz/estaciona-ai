@@ -1,6 +1,6 @@
 ---
 name: Tarefa
-description: Template padrão para novas tarefas
+about: Template padrão para novas tarefas
 labels: []
 ---
 
