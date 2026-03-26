@@ -1,0 +1,6 @@
+[project]
+name = "estaciona-ai-vision"
+version = "0.1.0"
+description = "Vision service for Estaciona-AI"
+requires-python = ">=3.11"
+dependencies = []
