@@ -1,0 +1,3 @@
+FROM python:3.11-slim
+WORKDIR /app
+# TODO: Passos de build + dependências
