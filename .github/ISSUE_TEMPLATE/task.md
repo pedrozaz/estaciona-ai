@@ -1,3 +1,9 @@
+---
+name: Tarefa
+description: Template padrão para novas tarefas
+labels: []
+---
+
 ## Descrição
 <!-- O que precisa ser feito e por quê. Seja direto. -->
  
