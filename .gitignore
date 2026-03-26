@@ -1,0 +1,22 @@
+# Python
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+**/*.so
+__pycache__/
+.venv/
+*.pyc   
+
+# Rust
+target/
+
+# General
+.env
+.env.local
+.DS_Store
+Thumbs.db
+
+# Datasets
+datasets/
+**/db/
+**/data/
