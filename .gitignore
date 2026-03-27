@@ -15,6 +15,9 @@ target/
 .env.local
 .DS_Store
 Thumbs.db
+**/.idea/
+**/.vscode/
+**/.venv/
 
 # Datasets
 datasets/
