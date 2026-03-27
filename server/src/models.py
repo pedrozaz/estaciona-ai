@@ -50,7 +50,7 @@ class SpotUpdateServer(BaseModel):
 class NavigationStartServer(BaseModel):
     type: Literal["NAVIGATION_START"] = "NAVIGATION_START"
     spot_id: str
-    route = List[str]
+    route: List[str]
 
 class ReservationConfirmedServer(BaseModel):
     type: Literal["RESERVATION_CONFIRMED"] = "RESERVATION_CONFIRMED"
