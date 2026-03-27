@@ -26,5 +26,18 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+@router.WebSocket('ws/app')
+async def websocket_app_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # The app doesn't send messages, it just listens for updates
+            # We maintain the loop open to keep the connection alive
+            data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+            
+    
+
 
         
