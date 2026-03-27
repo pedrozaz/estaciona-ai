@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict
+from typing import Dict, Optional
 from .models import SpotUpdateEdge
 
 class ParkingState:
@@ -16,13 +16,13 @@ class ParkingState:
             self._locks[spot_id] = asyncio.Lock()
         return self._locks[spot_id]
 
-    async def process_spot_update(self, update: SpotUpdateEdge) -> bool:
+    async def process_spot_update(self, update: SpotUpdateEdge) -> Optional[str]:
         """
         Process a spot update from an edge device.
-        @return: True if the state changed, False otherwise
+        @return: The new status if the state changed, None otherwise.
         """
         if update.confidence < 0.7:
-            return False
+            return None
         
         async with self._get_lock(update.spot_id):
             current_status = self._spots.get(update.spot_id, "free")
@@ -30,11 +30,11 @@ class ParkingState:
             # Protection: camera sees free spot, but system knows it is reserved
             if current_status == 'reserved' and update.status == 'free':
                 self._frame_buffer.pop(update.spot_id, None)
-                return False
+                return None
 
             if current_status == update.status:
                 self._frame_buffer.pop(update.spot_id, None)
-                return False
+                return None
 
             buffer = self._frame_buffer.get(update.spot_id, {"status": update.status, "count": 0})
 
@@ -48,9 +48,9 @@ class ParkingState:
             if buffer['count'] >= 3:
                 self._spots[update.spot_id] = update.status
                 self._frame_buffer.pop(update.spot_id, None)
-                return True
+                return update.status
 
-            return False
+            return None
         
         
         

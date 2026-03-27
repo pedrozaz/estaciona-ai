@@ -1,6 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List
-import json
 from .models import SpotUpdateServer
 
 router = APIRouter()
@@ -18,15 +17,18 @@ class ConnectionManager:
 
     async def broadcast_spot_update(self, update: SpotUpdateServer):
         payload = update.model_dump_json()
+        dead_connections: List[WebSocket] = []
         for connection in self.active_connections:
             try:
                 await connection.send_text(payload)
             except Exception:
-                pass
+                dead_connections.append(connection)
+        if dead_connections:
+            self.active_connections = [c for c in self.active_connections if c not in dead_connections]
 
 manager = ConnectionManager()
 
-@router.websocket('ws/app')
+@router.websocket('/ws/app')
 async def websocket_app_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:

@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from .ws_app import router as app_router
+from .ws_edge import router as edge_router
 
 app = FastAPI(
     title="Estaciona AI Server",

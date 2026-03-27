@@ -1,14 +1,14 @@
-from fastapi import WebSocketDisconnect
+import json
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
-from models import SpotUpdateServer
-from models import SpotUpdateEdge
-from state import ParkingState
-from fastapi import APIRouter
+from .models import SpotUpdateServer, SpotUpdateEdge
+from .state import ParkingState
+from .ws_app import manager
 
 router = APIRouter()
 parking_state = ParkingState()
 
-@router.websocket('ws/edge')
+@router.websocket('/ws/edge')
 async def websocket_edge_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
@@ -19,14 +19,12 @@ async def websocket_edge_endpoint(websocket: WebSocket):
 
                 if payload.get('type') == 'SPOT_UPDATE':
                     update_edge = SpotUpdateEdge(**payload)
-                    changed = await parking_state.process_spot_update(update_edge)
+                    new_status = await parking_state.process_spot_update(update_edge)
 
-                    if changed:
-                        # Get the final status from the state (can be "free", "occupied", "reserved")
-                        final_status = parking_state._spots.get(update_edge.spot_id)
+                    if new_status is not None:
                         update_server = SpotUpdateServer(
                             spot_id=update_edge.spot_id,
-                            status=final_status
+                            status=new_status
                         )
                         await manager.broadcast_spot_update(update_server)
 
@@ -35,5 +33,3 @@ async def websocket_edge_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         print("Edge module disconnected")
-                     
-
