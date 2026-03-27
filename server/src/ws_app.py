@@ -26,7 +26,7 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@router.WebSocket('ws/app')
+@router.websocket('ws/app')
 async def websocket_app_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
