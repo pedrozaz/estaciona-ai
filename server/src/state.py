@@ -21,7 +21,7 @@ class ParkingState:
         Process a spot update from an edge device.
         @return: True if the state changed, False otherwise
         """
-        if upate.confidence < 0.7:
+        if update.confidence < 0.7:
             return False
         
         async with self._get_lock(update.spot_id):
@@ -33,7 +33,7 @@ class ParkingState:
                 return False
 
             if current_status == update.status:
-                self._frame_buffer(update.spot_id, None)
+                self._frame_buffer.pop(update.spot_id, None)
                 return False
 
             buffer = self._frame_buffer.get(update.spot_id, {"status": update.status, "count": 0})
