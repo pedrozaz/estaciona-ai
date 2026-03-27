@@ -8,6 +8,9 @@ on:
         branches: [ "main", "develop" ]
         paths: [ 'server/**' ]
 
+permissions:
+    contents: read
+
 jobs:
     test-server:
         name: Test Python Server
