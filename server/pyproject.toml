@@ -1,5 +1,5 @@
 [project]
-name = "python-server"
+name = "estaciona-ai-python-server"
 version = "0.1.0"
 description = "Mock server for Estaciona AI"
 requires-python = ">=3.11"
