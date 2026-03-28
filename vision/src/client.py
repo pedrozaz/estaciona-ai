@@ -5,7 +5,7 @@ from websockets.exceptions import ConnectionClosedError
 from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getlogger("vision_client")
+logger = logging.getLogger("vision_client")
 
 SERVER_WS_URL = "ws://localhost:8000/ws/edge"
 
@@ -26,12 +26,12 @@ async def send_updates():
                     await asyncio.sleep(5)
                     update = SpotUpdate(spot_id="A-01", status="occupied")
                     await websocket.send(update.model_dump_json())
-                    logger.info(f"Sent update: {update.model.model_dump_json}")
+                    logger.info(f"Sent update: {update.model_dump_json}")
 
                     await asyncio.sleep(5)
                     update = SpotUpdate(spot_id="A-01", status="free")
                     await websocket.send(update.model_dump_json())
-                    logger.info(f"Sent update: {update.model.model_dump_json}")
+                    logger.info(f"Sent update: {update.model_dump_json}")
 
         except (ConnectionClosedError, OSError) as e:
             logger.error(f"Connection lost or failed: {e}. Retrying in 3 seconds...")
