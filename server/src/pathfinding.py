@@ -21,13 +21,13 @@ class ParkingGraph:
         if from_id not in self.nodes or to_id not in self.nodes:
             raise ValueError("Nodes must be added before edges.")
 
-            x1, y1 = self.nodes[from_id]
-            x2, y2 = self.nodes[to_id]
-            distance = math.sqrt((x2 - x1)** 2 + (y2 - y1)**2)
+        x1, y1 = self.nodes[from_id]
+        x2, y2 = self.nodes[to_id]
+        distance = math.sqrt((x2 - x1)** 2 + (y2 - y1)**2)
 
-            self.edges[from_id][to_id] = distance
-            if bidirectional:
-                self.edges[to_id][from_id] = distance
+        self.edges[from_id][to_id] = distance
+        if bidirectional:
+            self.edges[to_id][from_id] = distance
 
     def _heuristic(self, node_a: str, node_b: str) -> float:
         """Calculates the heuristic (for A*) between two nodes."""
