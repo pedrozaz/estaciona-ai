@@ -2,7 +2,6 @@ import pytest
 from fastapi.testclient import TestClient
 from src.main import app
 from src.ws_edge import parking_state
-import json
 
 client = TestClient(app)
 
@@ -64,5 +63,3 @@ def test_spot_update_ignores_low_confidence():
 
         # O estado deve continuar vazio
         assert parking_state._spots.get("A-02") is None
-
-
