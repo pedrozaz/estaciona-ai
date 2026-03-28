@@ -25,7 +25,5 @@ app.include_router(routes_router)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
-
-
+    return {"status": "ok", "db_connected": db.pool is not None}
 
