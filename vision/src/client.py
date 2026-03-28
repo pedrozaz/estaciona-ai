@@ -117,14 +117,6 @@ async def process_video(websocket):
         for det_box in detected_boxes:
             cv2.rectangle(frame, (det_box[0], det_box[1]), (det_box[2], det_box[3]), (255, 0, 0), 2)
 
-        for det_box in detected_boxes:
-            cx = int((det_box[0] + det_box[2]) / 2)
-            cy = int((det_box[1] + det_box[3]) / 2)
-            cv2.circle(frame, (cx, cy), 5, (0, 255, 255), -1)  # ponto amarelo = centro do carro
-            cv2.rectangle(frame, (det_box[0], det_box[1]), (det_box[2], det_box[3]), (255, 0, 0), 2)
-
-        print(f"boxes: {len(detected_boxes)}")
-
         cv2.imshow("Estaciona AI - Vision", frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
