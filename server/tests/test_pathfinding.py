@@ -32,5 +32,31 @@ def parking_graph():
         g.add_edge(n1, n2)
 
     return g
+
+def test_direct_neighbor_path(parking_graph):
+    path = parking_graph.find_shortest_path("A", "B")
+    assert path == ["A", "B"]
+
+
+def test_shortest_path_avoids_obstacle(parking_graph):
+    path = parking_graph.find_shortest_path("A", "I")
+
+    # O algoritmo vai contornar o centro
+    # Caminhos válidos com mesmo peso: ["A", "B", "C", "F", "I"] e ["A", "D", "G", "H", "I"]
+    valid_paths = [
+        ["A", "B", "C", "F", "I"],
+        ["A", "D", "G", "H", "I"]
+    ]
+    assert path in valid_paths
+
+def test_unreachable_node(parking_graph):
+    parking_graph.add_node("ISOLATED", 10, 10)
+    path = parking_graph.find_shortest_path("A", "ISOLATED")
+    assert path is None
+
+def test_invalid_nodes_return_none(parking_graph):
+    path = parking_graph.find_shortest_path("UNKNOWN_1", "UNKNOWN_2")
+    assert path is None
+
     
     
