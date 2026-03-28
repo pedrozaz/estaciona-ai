@@ -24,3 +24,7 @@ Thumbs.db
 datasets/
 **/db/
 **/data/
+**/models/
+**/yolo**
+**/yolo26n.*
+**/yolo26n.pt
