@@ -1,4 +1,5 @@
 import pytest
+import time
 from fastapi.testclient import TestClient
 from src.main import app
 from src.ws_edge import parking_state
@@ -60,6 +61,7 @@ def test_spot_update_ignores_low_confidence():
 
         for _ in range(3):
             ws_edge.send_json(payload)
+            time.sleep(0.05)
 
         # O estado deve continuar vazio
         assert parking_state._spots.get("A-02") is None
