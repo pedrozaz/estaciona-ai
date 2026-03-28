@@ -1,15 +1,23 @@
 import pytest
 import asyncio
 import uuid
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from src.state import ParkingState
 from src.reservations import ReservationManager
 
-
 @pytest.fixture
-def manager():
+def mock_db():
+    db = MagicMock()
+    db.ensure_user_exists = AsyncMock()
+    db.save_reservation = AsyncMock()
+    db.update_reservation_status = AsyncMock()
+    return db
+
+    
+@pytest.fixture
+def manager(mock_db):
     state = ParkingState()
-    return ReservationManager(state)
+    return ReservationManager(state, mock_db)
 
 
 @pytest.fixture
