@@ -31,7 +31,12 @@ async def test_create_reservation_endpoint():
         "plate": "ABC-1234",
     }
 
-    with patch("src.reservations.ReservationManager._schedule_expiration", new_callable=AsyncMock):
+    with (
+        patch("src.reservations.ReservationManager._schedule_expiration", new_callable=AsyncMock),
+        patch("src.db.db.ensure_user_exists", new_callable=AsyncMock),
+        patch("src.db.db.save_reservation", new_callable=AsyncMock),
+        patch("src.db.db.update_reservation_status", new_callable=AsyncMock),
+    ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post("/reservations", json=payload)
             assert response.status_code == 201
@@ -51,7 +56,12 @@ async def test_cancel_reservation_endpoint():
     spot_id = "A-02"
     user_id = str(uuid.uuid4())
 
-    with patch("src.reservations.ReservationManager._schedule_expiration", new_callable=AsyncMock):
+    with (
+        patch("src.reservations.ReservationManager._schedule_expiration", new_callable=AsyncMock),
+        patch("src.db.db.ensure_user_exists", new_callable=AsyncMock),
+        patch("src.db.db.save_reservation", new_callable=AsyncMock),
+        patch("src.db.db.update_reservation_status", new_callable=AsyncMock),
+    ):
         manager = get_reservation_manager()
         res = await manager.create_reservation(spot_id, uuid.UUID(user_id), "DEL1234")
         res_id = str(res["reservation_id"])
