@@ -1,6 +1,9 @@
+from multiprocessing import freeze_support
+import collections
+import cv2
 import asyncio
 import logging
-import cv2
+import numpy as np
 from ultralytics import YOLO
 from websockets import connect
 from websockets.exceptions import ConnectionClosedError
@@ -12,9 +15,8 @@ logger = logging.getLogger("vision_client")
 
 
 SERVER_WS_URL = "ws://localhost:8000/ws/edge"
-MODEL_PATH = "yolo26n.pt"
-
-
+MODEL_PATH = "yolo26x.pt"
+VIDEO_PATH = "data/test.mp4"
 
 class SpotUpdate(BaseModel):
     type: str = "SPOT_UPDATE"
@@ -24,31 +26,17 @@ class SpotUpdate(BaseModel):
 
 # Configuração das coordenadas das vagas (ID -> [x1, y1, x2, y2])
 PARKING_SPOTS: Dict[str, Tuple[int, int, int, int]] = {
-    "A-01": [(375, 513), (380, 530), (403, 530), (402, 514)],
-    "A-02": [(271, 519), (273, 535), (293, 531), (290, 519)],
-    "A-03": [(160, 519), (158, 533), (183, 534), (188, 519)],
-    "A-04": [(51, 527), (51, 542), (83, 542), (88, 523)],
-    "A-05": [(138, 691), (140, 713), (192, 715), (187, 691)],
-    "A-06": [(296, 690), (303, 714), (350, 710), (334, 685)],
-    "A-07": [(469, 690), (478, 714), (526, 712), (511, 689)],
-    "A-08": [(609, 677), (630, 702), (663, 700), (644, 678)],
-    "A-09": [(763, 658), (797, 687), (842, 683), (802, 659)],
-    "A-10": [(914, 652), (954, 671), (964, 657), (928, 646)],
-    "A-11": [(1039, 630), (1063, 648), (1090, 635), (1056, 626)],
-    "A-12": [(1173, 615), (1191, 628), (1219, 626), (1199, 610)],
-    "A-13": [(1025, 469), (1047, 481), (1048, 465), (1034, 465)],
-    "A-14": [(956, 484), (975, 493), (983, 485), (968, 482)],
-    "A-15": [(857, 481), (867, 489), (885, 496), (892, 488)],
-    "A-16": [(773, 490), (792, 505), (815, 501), (806, 490)],
-    "A-17": [(674, 496), (689, 510), (709, 505), (706, 494)],
-    "A-18": [(580, 507), (594, 520), (610, 512), (606, 506)],
-    "A-19": [(472, 508), (482, 522), (507, 521), (505, 508)],
+    "A-01": [(250, 512), (251, 549), (316, 542), (309, 514)],
+    "A-02": [(353, 508), (362, 546), (408, 537), (404, 507)],
+    "A-03": [(454, 505), (494, 544), (536, 533), (510, 498)],
+    "A-04": [(574, 503), (587, 533), (640, 528), (616, 500)],
+    "A-05": [(665, 494), (693, 521), (737, 513), (699, 488)],
+    "A-06": [(762, 486), (800, 511), (828, 505), (789, 483)],
+    "A-07": [(854, 478), (886, 501), (913, 495), (877, 479)],
+    "A-08": [(941, 478), (980, 497), (971, 479), (999, 493)],
+    "A-09": [(151, 512), (148, 540), (201, 543), (203, 520)],
+    "A-10": [(39, 525), (35, 544), (80, 553), (94, 526)],
 }
-
-def poly_to_bbox(poly):
-    xs = [p[0] for p in poly]
-    ys = [p[1] for p in poly]
-    return min(xs), min(ys), max(xs), max(ys)
 
 def check_overlap(box1: Tuple[int, int, int, int], box2: Tuple[int, int, int, int]) -> bool:
     # Verify overlap between two boxes
@@ -62,21 +50,24 @@ def check_overlap(box1: Tuple[int, int, int, int], box2: Tuple[int, int, int, in
 
 async def process_video(websocket):
     model = YOLO(MODEL_PATH)
-    video_path = "data/test.mp4"
 
     # 0 for local camera. Substitute with video or RTSP URL if needed
-    cap = cv2.VideoCapture(video_path)
+    cap = cv2.VideoCapture(VIDEO_PATH)
 
     current_state = {spot_id: "free" for spot_id in PARKING_SPOTS}
+    free_counters = {spot_id: 0 for spot_id in PARKING_SPOTS}
+
+    spot_history = {spot_id: collections.deque(["free"] * 20, maxlen=20) for spot_id in PARKING_SPOTS}
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
-            logger.warning("Failed reading frame or video ended.")
-            break
+            logger.warning("Video ended. Restarting...")
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            continue
 
         # COCO classes: (2: car, 3: motorcycle)
-        results = model.predict(frame, classes=[2, 3], verbose=False)
+        results = model.predict(frame, classes=[2, 3], conf=0.25, verbose=False)
         detected_boxes = []
 
         for result in results:
@@ -84,30 +75,60 @@ async def process_video(websocket):
                 detected_boxes.append([int(coord) for coord in box])
 
         for spot_id, spot_coords in PARKING_SPOTS.items():
-            bbox = poly_to_bbox(spot_coords)
-            is_occupied = any(check_overlap(bbox, det_box) for det_box in detected_boxes)
-            new_status = "occupied" if is_occupied else "free"
+            spot_polygon = np.array(spot_coords, dtype=np.int32)
 
-            if current_state[spot_id] != new_status:
-                current_state[spot_id] = new_status
-                update = SpotUpdate(spot_id=spot_id, status=new_status)
+            is_currently_occupied = False
+            for det_box in detected_boxes:
+                det_polygon = np.array([
+                    [det_box[0], det_box[1]],
+                    [det_box[2], det_box[1]],
+                    [det_box[2], det_box[3]],
+                    [det_box[0], det_box[3]]
+                ], dtype=np.int32)
+
+                intersection, _ = cv2.intersectConvexConvex(
+                    spot_polygon.astype(np.float32),
+                    det_polygon.astype(np.float32)
+                )
+                if intersection > 0:
+                    is_currently_occupied = True
+                    break
+
+            if is_currently_occupied:
+                free_counters[spot_id] = 0
+                smoothed_status = "occupied"
+            else:
+                free_counters[spot_id] += 1
+                if free_counters[spot_id] > 10:
+                    smoothed_status = "free"
+                else:
+                    smoothed_status = current_state[spot_id]
+
+            if current_state[spot_id] != smoothed_status:
+                current_state[spot_id] = smoothed_status
+                update = SpotUpdate(spot_id=spot_id, status=smoothed_status)
                 await websocket.send(update.model_dump_json())
-                logger.info(f"State changed: {update.model_dump_json()}")
+                logger.info(f"State stabilized and changed: {update.model_dump_json()}")
 
             color = (0, 0, 255) if current_state[spot_id] == "occupied" else (0, 255, 0)
-            pts = [list(p) for p in spot_coords]
-            cv2.polylines(frame, [__import__('numpy').array(pts, dtype='int32')], True, color, 2)
+            cv2.polylines(frame, [spot_polygon], isClosed=True, color=color, thickness=2)
             cv2.putText(frame, spot_id, spot_coords[0], cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
         for det_box in detected_boxes:
             cv2.rectangle(frame, (det_box[0], det_box[1]), (det_box[2], det_box[3]), (255, 0, 0), 2)
 
+        for det_box in detected_boxes:
+            cx = int((det_box[0] + det_box[2]) / 2)
+            cy = int((det_box[1] + det_box[3]) / 2)
+            cv2.circle(frame, (cx, cy), 5, (0, 255, 255), -1)  # ponto amarelo = centro do carro
+            cv2.rectangle(frame, (det_box[0], det_box[1]), (det_box[2], det_box[3]), (255, 0, 0), 2)
+
+        print(f"boxes: {len(detected_boxes)}")
+
         cv2.imshow("Estaciona AI - Vision", frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
-
-        await asyncio.sleep(0.1)
 
     cap.release()
     cv2.destroyAllWindows()
