@@ -22,10 +22,10 @@ def parking_graph():
         g.add_node(node_id, x, y)
     
     edges = [
-        ("A, B"), ("B, C"),
-        ("A, D"), ("C, F"),
-        ("D, G"), ("F, I"),
-        ("G, H"), ("H, I")
+        ("A", "B"), ("B", "C"),
+        ("A", "D"), ("C", "F"),
+        ("D", "G"), ("F", "I"),
+        ("G", "H"), ("H", "I")
     ]
 
     for n1, n2 in edges:
