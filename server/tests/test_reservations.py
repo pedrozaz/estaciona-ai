@@ -28,4 +28,23 @@ async def test_create_reservation_and_prevent_double_booking(manager, sample_use
     res2 = await manager.create_reservation(spot_id, user2, "1234ABC")
     assert res2 is None
     
+@pytest.mark.asyncio
+async def test_cancel_reservation(manager, sample_user):
+    spot_id = "B-05"
+    res = await manager.create_reservation(spot_id, sample_user, "ABC1234")
+
+    # Cancelamento válido
+    success = await manager.cancel_reservation(res["reservation_id"])
+    assert success is True
+    assert manager.state._spots[spot_id] == "free"
+    assert res["reservation_id"] not in manager.active_reservations
+
+    # Cancelamento de ID inexistente
+    fake_id = uuid.uuid4()
+    fail = await manager.cancel_reservation(fake_id)
+    assert fail is False
+
+
+
+    
     

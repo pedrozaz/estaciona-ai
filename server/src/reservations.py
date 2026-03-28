@@ -39,7 +39,7 @@ class ReservationManager:
 
     async def cancel_reservation(self, reservation_id: UUID4) -> bool:
         reservation = self.active_reservations.get(reservation_id)
-        if not reservation_id:
+        if not reservation:
             return False
 
         spot_id = reservation["spot_id"]
