@@ -2,11 +2,10 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from .models import SpotUpdateServer, SpotUpdateEdge
-from .state import ParkingState
+from .dependencies import parking_state
 from .ws_app import manager
 
 router = APIRouter()
-parking_state = ParkingState()
 
 @router.websocket('/ws/edge')
 async def websocket_edge_endpoint(websocket: WebSocket):
