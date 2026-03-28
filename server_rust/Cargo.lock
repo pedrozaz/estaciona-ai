@@ -310,6 +310,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "estaciona-ai-rust-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "etcetera"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1280,19 +1293,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "axum",
- "chrono",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "uuid",
 ]
 
 [[package]]
