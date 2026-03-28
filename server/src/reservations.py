@@ -10,7 +10,7 @@ class ReservationManager:
         self.state = parking_state
         self.active_reservations: Dict[UUID4, dict] = {}
         
-    async def create_reservation(self, spot_id: str, user_id: UUID4, plate: str) -> Optional[dict]:
+    async def create_reservation(self, spot_id: str, user_id: str, plate: str) -> Optional[dict]:
         async with self.state._get_lock(spot_id):
             current_status = self.state._spots.get(spot_id, "free")
 
@@ -45,7 +45,7 @@ class ReservationManager:
         spot_id = reservation["spot_id"]
         async with self.state._get_lock(spot_id):
             # Grants that only if the state is still "reserved"
-            if self.state._spots.get(spot_id) != "reserved":
+            if self.state._spots.get(spot_id) == "reserved":
                 self.state._spots[spot_id] = "free"
             
             self.active_reservations.pop(reservation_id, None)
