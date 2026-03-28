@@ -1,6 +1,5 @@
 import pytest
 import uuid
-import asyncio
 from src.state import ParkingState
 from src.reservations import ReservationManager
 
