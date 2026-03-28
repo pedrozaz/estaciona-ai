@@ -1,3 +1,4 @@
+import uuid
 import pytest
 import uuid 
 import asyncio
@@ -48,5 +49,39 @@ async def test_create_reservation_endpoint():
             payload["user_id"] = str(uuid.uuid4())
             response_conflict = await client.post("/reservations", json=payload)
             assert response_conflict.status_code == 409
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_endpoint():
+    spot_id = "A-02"
+    user_id = str(uuid.uuid4())
+
+    with patch("src.reservations.ReservationManager._schedule_expiration", new_callable=AsyncMock):
+        # Cria a reserva direto pelo manager para testar a rota DELETE
+        manager = get_reservation_manager()
+        res = await manager.create_reservation(spot_id, uuid.UUID(user_id), "DEL1234")
+        res_id = str(res["reservation_id"])
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # Sucesso
+            response = await client.delete(f"/reservations/{res_id}")
+            assert response.status_code == 204
+
+            # Falha
+            response_fail = await client.delete(f"/reservations/{uuid.uuid4()}")
+            assert response.status_code == 404
+
+@pytest.mark.asyncio 
+async def test_get_spots_endpoint():
+    state = get_parking_state()
+    state._spots["A-03"] = "occupied"
+    state._spots["A-04"] = "free"
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/spots")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["A-03"] == "occupied"
+        assert data["A-04"] == "free"  
+    
             
     
