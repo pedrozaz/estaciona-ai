@@ -16,7 +16,7 @@ logger = logging.getLogger("vision_client")
 
 SERVER_WS_URL = "ws://localhost:8000/ws/edge"
 MODEL_PATH = "yolo26x.pt"
-VIDEO_PATH = "data/test.mp4"
+VIDEO_PATH = "data/test2.mp4"
 
 class SpotUpdate(BaseModel):
     type: str = "SPOT_UPDATE"
@@ -67,7 +67,7 @@ async def process_video(websocket):
             continue
 
         # COCO classes: (2: car, 3: motorcycle)
-        results = model.predict(frame, classes=[2, 3], conf=0.25, verbose=False)
+        results = model.predict(frame, classes=[2, 3], verbose=False)
         detected_boxes = []
 
         for result in results:
