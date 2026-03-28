@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS reservations (
     id UUID PRIMARY KEY,
-    user_id UUID REFERENCES user(id),
+    user_id UUID REFERENCES users(id),
     spot_id VARCHAR(10) NOT NULL,
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
