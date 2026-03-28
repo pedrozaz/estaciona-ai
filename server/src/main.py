@@ -3,6 +3,7 @@ from .ws_app import router as app_router
 from .ws_edge import router as edge_router
 from .routes import router as routes_router
 from .db import db
+from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
