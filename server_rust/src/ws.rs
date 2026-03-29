@@ -27,35 +27,33 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
     tracing::info!("Edge Client (VISION) connected.");
 
     while let Some(msg) = socket.recv().await {
-        if let Ok(Message::Text(text)) = msg {
-            if let Ok(update) = serde_json::from_str::<SpotUpdate>(&text) {
-                if update.r#type == "SPOT_UPDATE" {
-                    let new_status = match update.status.as_str() {
-                        "occupied" => SpotStatus::Occupied,
-                        _ => SpotStatus::Free,
-                    };
+        if let Ok(Message::Text(text)) = msg
+            && let Ok(update) = serde_json::from_str::<SpotUpdate>(&text)
+            && update.r#type == "SPOT_UPDATE"
+        {
+            let new_status = match update.status.as_str() {
+                "occupied" => SpotStatus::Occupied,
+                _ => SpotStatus::Free,
+            };
 
-                    {
-                        let mut map = state.spots.write().await;
-                        map.insert(update.spot_id.clone(), new_status);
-                    }
-
-                    let broadcast = serde_json::json!({
-                        "type": "SPOT_UPDATE",
-                        "spot_id": update.spot_id,
-                        "status": update.status,
-                    });
-
-                    if let Ok(json) = serde_json::to_string(&broadcast) {
-                        let _ = state.tx.send(json);
-                    }
-
-                    tracing::info!("State updated: {} -> {}", update.spot_id, update.status);
-                }
+            {
+                let mut map = state.spots.write().await;
+                map.insert(update.spot_id.clone(), new_status);
             }
+
+            let broadcast = serde_json::json!({
+            "type": "SPOT_UPDATE",
+            "spot_id": update.spot_id,
+            "status": update.status,
+            });
+
+            if let Ok(json) = serde_json::to_string(&broadcast) {
+                let _ = state.tx.send(json);
+            }
+
+            tracing::info!("State updated: {} -> {}", update.spot_id, update.status);
         }
     }
-
     tracing::info!("Edge Client (VISION) disconnected.");
 }
 
