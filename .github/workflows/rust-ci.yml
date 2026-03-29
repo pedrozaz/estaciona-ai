@@ -34,6 +34,9 @@ jobs:
     - name: Check formatting
       working-directory: ./server_rust
       run: cargo fmt -- --check
+
+    - name: Linting (Clippy)
+      run: cargo clippy -- -D warnings
     
     - name: Test
       working-directory: ./server_rust
