@@ -1,6 +1,10 @@
 mod state;
+mod ws;
 
-use axum::{Router, routing::get};
+use axum::{
+    Router, 
+    routing::get,
+};
 use state::{SharedState, init_state};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
@@ -13,6 +17,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health_check))
+        .route("/ws/edge", get(ws::ws_edge_handler))
         .with_state(parking_state)
         .layer(TraceLayer::new_for_http());
 
