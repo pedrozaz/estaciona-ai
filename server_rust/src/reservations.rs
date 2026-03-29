@@ -1,5 +1,5 @@
 use crate::state::SharedState;
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse, extract::Path};
+use axum::{Json, extract::Path, extract::State, http::StatusCode, response::IntoResponse};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -62,7 +62,6 @@ pub async fn create_reservation(
 pub async fn get_reservations(
     State(state): State<SharedState>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    
     let records = sqlx::query_as!(
         ReservationResponse,
         r#"
@@ -88,7 +87,6 @@ pub async fn cancel_reservation(
     State(state): State<SharedState>,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-
     let result = sqlx::query!(
         r#"
         UPDATE reservations
@@ -101,11 +99,17 @@ pub async fn cancel_reservation(
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Failed to cancel reservation".to_string())
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to cancel reservation".to_string(),
+        )
     })?;
 
     if result.rows_affected() == 0 {
-        return Err((StatusCode::NOT_FOUND, "Active reservation not found.".to_string()));
+        return Err((
+            StatusCode::NOT_FOUND,
+            "Active reservation not found.".to_string(),
+        ));
     }
 
     Ok((StatusCode::OK, "Reservation cancelled.".to_string()))
