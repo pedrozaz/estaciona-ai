@@ -2,10 +2,10 @@ mod state;
 mod ws;
 
 use axum::{Router, routing::get};
+use sqlx::postgres::PgPoolOptions;
 use state::{SharedState, init_state};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
-use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() {
