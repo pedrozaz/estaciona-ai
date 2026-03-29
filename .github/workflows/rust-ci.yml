@@ -1,0 +1,39 @@
+name: Rust CI
+
+on: 
+  push:
+    branches: [ "feats/**", "feat/**" ]
+  pull_request:
+    branches: [ "develop" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server_rust
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Cache dependencies
+      uses: Swatinem/rust-cache@v2
+      with:
+        work-dir: ./server_rust
+
+    - name: Check formatting
+      run: cargo fmt -- --check
+
+    - name: Linting (Clippy)
+      run: cargo clippy -- -D warnings
+
+    - name: Run tests
+      run: cargo test --verbose
