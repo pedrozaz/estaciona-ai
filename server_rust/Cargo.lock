@@ -326,6 +326,7 @@ name = "estaciona-ai-rust-server"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "dotenvy",
  "serde",
  "serde_json",
  "sqlx",

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast};
+use sqlx::PgPool;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -13,11 +14,12 @@ pub enum SpotStatus {
 pub struct AppState {
     pub spots: RwLock<HashMap<String, SpotStatus>>,
     pub tx: broadcast::Sender<String>,
+    pub db_pool: PgPool,
 }
 
 pub type SharedState = Arc<AppState>;
 
-pub fn init_state() -> SharedState {
+pub fn init_state(db_pool: PgPool) -> SharedState {
     let mut map = HashMap::new();
     map.insert("A-01".to_string(), SpotStatus::Free);
     map.insert("A-02".to_string(), SpotStatus::Free);
@@ -27,6 +29,7 @@ pub fn init_state() -> SharedState {
     Arc::new(AppState {
         spots: RwLock::new(map),
         tx,
+        db_pool,
     })
 }
 
