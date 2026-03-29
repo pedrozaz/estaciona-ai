@@ -15,6 +15,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/ws/edge", get(ws::ws_edge_handler))
+        .route("/ws/app", get(ws::ws_app_handler))
         .with_state(parking_state)
         .layer(TraceLayer::new_for_http());
 
