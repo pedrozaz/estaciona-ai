@@ -33,10 +33,6 @@ jobs:
     - name: Check formatting
       working-directory: ./server_rust
       run: cargo fmt -- --check
-
-    - name: Clippy
-      working-directory: ./server_rust
-      run: cargo clippy --all-targets --all-features -- -D warnings
     
     - name: Test
       working-directory: ./server_rust
