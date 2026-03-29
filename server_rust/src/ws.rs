@@ -1,12 +1,12 @@
+use crate::state::{SharedState, SpotStatus};
 use axum::{
-    extract:: {
-        ws::{Message, WebSocket, WebSocketUpgrade},
+    extract::{
         State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
     },
     response::IntoResponse,
 };
 use serde::Deserialize;
-use crate::state::{SharedState, SpotStatus};
 
 #[derive(Deserialize)]
 pub struct SpotUpdate {
@@ -38,7 +38,7 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
 
                     tracing::info!("State updated: {} -> {}", update.spot_id, update.status);
                 }
-            }    
+            }
         }
     }
 

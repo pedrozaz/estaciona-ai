@@ -1,10 +1,7 @@
 mod state;
 mod ws;
 
-use axum::{
-    Router, 
-    routing::get,
-};
+use axum::{Router, routing::get};
 use state::{SharedState, init_state};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
