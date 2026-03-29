@@ -38,7 +38,7 @@ async fn main() {
         .route("/health", get(health_check))
         .route("/ws/edge", get(ws::ws_edge_handler))
         .route("/ws/app", get(ws::ws_app_handler))
-        .route("/reservations", post(reservations::create_reservation))
+        .route("/reservations", post(reservations::create_reservation).get(reservations::get_reservations))
         .route(
             "/reservations/:id/cancel",
             put(reservations::cancel_reservation),
