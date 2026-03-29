@@ -1,5 +1,5 @@
 use crate::state::SharedState;
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse, extract::Path};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -14,7 +14,7 @@ pub struct CreateReservation {
 #[derive(Serialize)]
 pub struct ReservationResponse {
     pub id: Uuid,
-    pub user_id: Uuid,
+    pub user_id: Option<uuid::Uuid>,
     pub spot_id: String,
     pub status: String,
     pub created_at: Option<DateTime<Utc>>,
@@ -48,7 +48,7 @@ pub async fn create_reservation(
 
     let response = ReservationResponse {
         id: record.id,
-        user_id: record.user_id.expect("user_id cannot be null"),
+        user_id: record.user_id,
         spot_id: record.spot_id,
         status: record.status,
         created_at: record.created_at,
@@ -57,4 +57,56 @@ pub async fn create_reservation(
     };
 
     Ok((StatusCode::CREATED, Json(response)))
+}
+
+pub async fn get_reservations(
+    State(state): State<SharedState>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    
+    let records = sqlx::query_as!(
+        ReservationResponse,
+        r#"
+        SELECT id, user_id, spot_id, status, created_at, expires_at, completed_at
+        FROM reservations
+        WHERE status = 'active'
+        "#
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to fetch reservations".to_string(),
+        )
+    })?;
+
+    Ok((StatusCode::OK, Json(records)))
+}
+
+pub async fn cancel_reservation(
+    State(state): State<SharedState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+
+    let result = sqlx::query!(
+        r#"
+        UPDATE reservations
+        SET status = 'cancelled'
+        WHERE id = $1 AND status = 'active'
+        "#,
+        id
+    )
+    .execute(&state.pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, "Failed to cancel reservation".to_string())
+    })?;
+
+    if result.rows_affected() == 0 {
+        return Err((StatusCode::NOT_FOUND, "Active reservation not found.".to_string()));
+    }
+
+    Ok((StatusCode::OK, "Reservation cancelled.".to_string()))
 }
