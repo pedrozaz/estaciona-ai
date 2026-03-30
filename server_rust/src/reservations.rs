@@ -26,10 +26,9 @@ pub async fn create_reservation(
     State(state): State<SharedState>,
     Json(payload): Json<CreateReservation>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-
     let new_id = Uuid::new_v4();
 
-let record = sqlx::query!(
+    let record = sqlx::query!(
         r#"
         INSERT INTO reservations (id, user_id, spot_id, status, expires_at)
         VALUES ($1, $2, $3, 'active', $4)
@@ -44,9 +43,12 @@ let record = sqlx::query!(
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create reservation".to_string())
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to create reservation".to_string(),
+        )
     })?;
-    
+
     let response = ReservationResponse {
         id: record.id,
         user_id: record.user_id,
