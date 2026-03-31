@@ -35,9 +35,6 @@ jobs:
       working-directory: ./server_rust
       run: cargo fmt -- --check
 
-    - name: Run sqlx prepare
-      run: cargo sqlx prepare
-
     - name: Linting (Clippy)
       run: cargo clippy -- -D warnings
     
