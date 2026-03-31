@@ -8,6 +8,8 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
+pub mod messages;
+
 #[derive(Deserialize, Serialize)]
 pub struct SpotUpdate {
     pub r#type: String,
