@@ -1,99 +1,94 @@
-use crate::state::{SharedState, SpotStatus};
+pub mod messages;
+pub mod ws_edge;
+
+pub use ws_edge::ws_edge_handler;
+
 use axum::{
     extract::{
-        State,
-        ws::{Message, WebSocket, WebSocketUpgrade},
+        Query, State, WebSocketUpgrade,
+        ws::{Message, WebSocket},
     },
     response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
+use futures_util::{SinkExt, StreamExt};
+use serde::Deserialize;
+use tokio::sync::mpsc;
+use uuid::Uuid;
 
-pub mod messages;
+use crate::state::{SharedState, SpotStatus};
+use crate::ws::messages::{AppToServerMsg, ServerToAppMsg};
 
-#[derive(Deserialize, Serialize)]
-pub struct SpotUpdate {
-    pub r#type: String,
-    pub spot_id: String,
-    pub status: String,
+#[derive(Deserialize)]
+pub struct WsAppQuery {
+    pub user_id: Uuid,
 }
 
-// WebSocket handler for edge clients (e.g., vision devices)
-pub async fn ws_edge_handler(
-    ws: WebSocketUpgrade,
-    State(state): State<SharedState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(|socket| handle_edge_socket(socket, state))
-}
-
-async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
-    tracing::info!("Edge Client (VISION) connected.");
-
-    while let Some(msg) = socket.recv().await {
-        if let Ok(Message::Text(text)) = msg
-            && let Ok(update) = serde_json::from_str::<SpotUpdate>(&text)
-            && update.r#type == "SPOT_UPDATE"
-        {
-            let new_status = match update.status.as_str() {
-                "occupied" => SpotStatus::Occupied,
-                _ => SpotStatus::Free,
-            };
-
-            {
-                let mut map = state.spots.write().await;
-                map.insert(update.spot_id.clone(), new_status);
-            }
-
-            let broadcast = serde_json::json!({
-            "type": "SPOT_UPDATE",
-            "spot_id": update.spot_id,
-            "status": update.status,
-            });
-
-            if let Ok(json) = serde_json::to_string(&broadcast) {
-                let _ = state.tx.send(json);
-            }
-
-            tracing::info!("State updated: {} -> {}", update.spot_id, update.status);
-        }
-    }
-    tracing::info!("Edge Client (VISION) disconnected.");
-}
-
-// WebSocket handler for frontend/application
 pub async fn ws_app_handler(
     ws: WebSocketUpgrade,
+    Query(query): Query<WsAppQuery>,
     State(state): State<SharedState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(|socket| handle_app_socket(socket, state))
+    ws.on_upgrade(move |socket| handle_app_socket(socket, state, query.user_id))
 }
 
-async fn handle_app_socket(mut socket: WebSocket, state: SharedState) {
-    tracing::info!("App Client (FRONTEND) connected.");
-    let mut rx = state.tx.subscribe();
+async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid) {
+    let (mut sender, mut receiver) = socket.split();
 
-    // Send full state snapshot on connect
-    {
-        let map = state.spots.read().await;
-        for (spot_id, status) in map.iter() {
-            let status_str = match status {
-                SpotStatus::Occupied => "occupied",
-                SpotStatus::Free => "free",
-            };
-            let update = SpotUpdate {
-                r#type: "SPOT_UPDATE".to_string(),
-                spot_id: spot_id.clone(),
-                status: status_str.to_string(),
-            };
-            if let Ok(json) = serde_json::to_string(&update) {
-                let _ = socket.send(Message::Text(json.into())).await;
+    let (private_tx, mut private_rx) = mpsc::unbounded_channel::<String>();
+    state.user_sessions.insert(user_id, private_tx);
+
+    let mut broadcast_rx = state.tx.subscribe();
+
+    for entry in state.spots.iter() {
+        let msg = ServerToAppMsg::SpotUpdate {
+            spot_id: entry.key().clone(),
+            status: match entry.value() {
+                SpotStatus::Free => "free".to_string(),
+                SpotStatus::Occupied => "occupied".to_string(),
+                SpotStatus::Reserved => "reserved".to_string(),
+            },
+        };
+        if let Ok(json_str) = serde_json::to_string(&msg) {
+            let _ = sender.send(Message::Text(json_str.into())).await;
+        }
+    }
+
+    let mut send_task = tokio::spawn(async move {
+        loop {
+            tokio::select! {
+                Ok(broadcast_msg) = broadcast_rx.recv() => {
+                    if sender.send(Message::Text(broadcast_msg.into())).await.is_err() {
+                        break;
+                    }
+                }
+                Some(private_msg) = private_rx.recv() => {
+                    if sender.send(Message::Text(private_msg.into())).await.is_err() {
+                        break;
+                    }
+                }
             }
         }
-    }
+    });
 
-    while let Ok(msg) = rx.recv().await {
-        if socket.send(Message::Text(msg.into())).await.is_err() {
-            break;
+    let mut recv_task = tokio::spawn(async move {
+        while let Some(Ok(Message::Text(text))) = receiver.next().await {
+            if let Ok(msg) = serde_json::from_str::<AppToServerMsg>(&text) {
+                match msg {
+                    AppToServerMsg::ReserveSpot { .. } => {
+                        // TODO: lógica de reserva
+                    }
+                    AppToServerMsg::CancelReservation { .. } => {
+                        // TODO: lógica de cancelamento
+                    }
+                }
+            }
         }
-    }
-    tracing::info!("App Client (FRONTEND) disconnected.")
+    });
+
+    tokio::select! {
+        _ = (&mut send_task) => recv_task.abort(),
+        _ = (&mut recv_task) => send_task.abort(),
+    };
+
+    state.user_sessions.remove(&user_id);
 }
