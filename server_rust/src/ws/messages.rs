@@ -48,7 +48,7 @@ pub enum ServerToAppMsg {
     #[serde(rename = "RESERVATION_EXPIRED")]
     ReservationExpired { spot_id: String },
     #[serde(rename = "RESERVATION_REJECTED")]
-    ReservationRejected { spot_id: String },
+    ReservationRejected { spot_id: String, reason: String },
     #[serde(rename = "SPOT_UPDATE")]
     SpotUpdate { spot_id: String, status: String },
     #[serde(rename = "ROUTE_UPDATE")]

@@ -10,6 +10,7 @@ use axum::{
     },
     response::IntoResponse,
 };
+use chrono::{Duration, Utc};
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 use tokio::sync::mpsc;
@@ -35,7 +36,7 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
     let (mut sender, mut receiver) = socket.split();
 
     let (private_tx, mut private_rx) = mpsc::unbounded_channel::<String>();
-    state.user_sessions.insert(user_id, private_tx);
+    state.user_sessions.insert(user_id, private_tx.clone());
 
     let mut broadcast_rx = state.tx.subscribe();
 
@@ -70,15 +71,93 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
         }
     });
 
+    let value = state.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(Message::Text(text))) = receiver.next().await {
             if let Ok(msg) = serde_json::from_str::<AppToServerMsg>(&text) {
                 match msg {
-                    AppToServerMsg::ReserveSpot { .. } => {
-                        // TODO: lógica de reserva
+                    AppToServerMsg::ReserveSpot {
+                        spot_id, user_id, ..
+                    } => {
+                        let state_clone = value.clone();
+
+                        let is_free = state_clone
+                            .spots
+                            .get(&spot_id)
+                            .map(|s| *s == SpotStatus::Free)
+                            .unwrap_or(false);
+
+                        if is_free {
+                            let res_id = Uuid::new_v4();
+                            let expires = Utc::now() + Duration::minutes(15);
+
+                            let db_result = sqlx::query!(
+                                "INSERT INTO reservations (id, user_id, spot_id, status, expires_at)
+                                VALUES ($1, $2, $3, 'active', $4)",
+                                res_id, user_id, spot_id, expires
+                            )
+                            .execute(&state_clone.pool)
+                            .await;
+
+                            if db_result.is_ok() {
+                                state_clone
+                                    .spots
+                                    .insert(spot_id.clone(), SpotStatus::Reserved);
+
+                                let confirm = ServerToAppMsg::ReservationConfirmed {
+                                    reservation_id: res_id,
+                                    spot_id: spot_id.clone(),
+                                    expires_at: expires,
+                                };
+
+                                let update = ServerToAppMsg::SpotUpdate {
+                                    spot_id: spot_id.clone(),
+                                    status: "reserved".to_string(),
+                                };
+
+                                if let Ok(json) = serde_json::to_string(&confirm) {
+                                    let _ = private_tx.send(json);
+                                }
+                                if let Ok(json) = serde_json::to_string(&update) {
+                                    let _ = state_clone.tx.send(json);
+                                }
+                            }
+                        } else {
+                            let reject = ServerToAppMsg::ReservationRejected {
+                                spot_id,
+                                reason: "already_taken".to_string(),
+                            };
+                            if let Ok(json) = serde_json::to_string(&reject) {
+                                let _ = private_tx.send(json);
+                            }
+                        }
                     }
-                    AppToServerMsg::CancelReservation { .. } => {
-                        // TODO: lógica de cancelamento
+                    AppToServerMsg::CancelReservation { reservation_id } => {
+                        let state_clone = value.clone();
+
+                        let res = sqlx::query!(
+                            "UPDATE reservations SET status = 'cancelled'
+                            WHERE id = $1 AND status = 'active'
+                            RETURNING spot_id",
+                            reservation_id
+                        )
+                        .fetch_optional(&state_clone.pool)
+                        .await;
+
+                        if let Ok(Some(row)) = res {
+                            state_clone
+                                .spots
+                                .insert(row.spot_id.clone(), SpotStatus::Free);
+
+                            let update = ServerToAppMsg::SpotUpdate {
+                                spot_id: row.spot_id,
+                                status: "free".to_string(),
+                            };
+
+                            if let Ok(json) = serde_json::to_string(&update) {
+                                let _ = state_clone.tx.send(json);
+                            }
+                        }
                     }
                 }
             }
