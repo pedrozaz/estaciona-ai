@@ -128,3 +128,62 @@ impl ParkingGraph {
         Some(route_ids)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_graph() -> ParkingGraph {
+        let mut locations = HashMap::new();
+
+        locations.insert("entrada".to_string(), Point { x: 0, y: 0 });
+        locations.insert("meio".to_string(), Point { x: 1, y: 0 });
+        locations.insert("vaga-1".to_string(), Point { x: 2, y: 0 });
+        locations.insert("vaga-2".to_string(), Point { x: 2, y: 2 });
+
+        ParkingGraph {
+            locations,
+            obstacles: vec![],
+        }
+    }
+
+    #[test]
+    fn test_valid_route() {
+        let graph = create_test_graph();
+        let route = graph.calculate_route("entrada", "vaga-1");
+
+        assert!(route.is_some());
+        let path = route.unwrap();
+        assert_eq!(path.first().unwrap(), "entrada");
+        assert_eq!(path.last().unwrap(), "vaga-1");
+        assert!(path.contains(&"meio".to_string()));
+    }
+
+    #[test]
+    fn test_obstacle_avoidance() {
+        let mut graph = create_test_graph();
+
+        graph.obstacles.push(Point { x: 1, y: 0 });
+
+        let route = graph.calculate_route("entrada", "vaga-1");
+
+        assert!(route.is_some());
+        let path = route.unwrap();
+
+        assert!(!path.contains(&"meio".to_string()));
+    }
+
+    #[test]
+    fn test_unreachable_node() {
+        let mut graph = create_test_graph();
+
+        graph.obstacles.push(Point { x: 1, y: 2 });
+        graph.obstacles.push(Point { x: 3, y: 2 });
+        graph.obstacles.push(Point { x: 2, y: 1 });
+        graph.obstacles.push(Point { x: 2, y: 3 });
+
+        let route = graph.calculate_route("entrada", "vaga-isolada");
+
+        assert!(route.is_none());
+    }
+}
