@@ -55,13 +55,48 @@ impl ParkingGraph {
     }
 
     fn get_neighbors(&self, p: &Point) -> Vec<Point> {
+        // Define a bounding box based on all known locations to keep the search space finite.
+        // This prevents A* from exploring an infinite grid if the goal is unreachable.
+        let mut min_x = i32::MAX;
+        let mut max_x = i32::MIN;
+        let mut min_y = i32::MAX;
+        let mut max_y = i32::MIN;
+
+        for point in self.locations.values() {
+            if point.x < min_x {
+                min_x = point.x;
+            }
+            if point.x > max_x {
+                max_x = point.x;
+            }
+            if point.y < min_y {
+                min_y = point.y;
+            }
+            if point.y > max_y {
+                max_y = point.y;
+            }
+        }
+
+        // Add a small padding so paths can route slightly around obstacles
+        let padding: i32 = 10;
+        min_x -= padding;
+        max_x += padding;
+        min_y -= padding;
+        max_y += padding;
+
         let dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)];
         dirs.iter()
             .map(|(dx, dy)| Point {
                 x: p.x + dx,
                 y: p.y + dy,
             })
-            .filter(|np| !self.obstacles.contains(np))
+            .filter(|np| {
+                np.x >= min_x
+                    && np.x <= max_x
+                    && np.y >= min_y
+                    && np.y <= max_y
+                    && !self.obstacles.contains(np)
+            })
             .collect()
     }
 
