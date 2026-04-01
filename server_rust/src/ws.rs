@@ -137,9 +137,10 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
 
                         let res = sqlx::query!(
                             "UPDATE reservations SET status = 'cancelled'
-                            WHERE id = $1 AND status = 'active'
+                            WHERE id = $1 AND user_id = $2 AND status = 'active'
                             RETURNING spot_id",
-                            reservation_id
+                            reservation_id,
+                            user_id
                         )
                         .fetch_optional(&state_clone.pool)
                         .await;
