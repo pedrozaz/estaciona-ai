@@ -1,6 +1,7 @@
 mod pathfinding;
 mod reservations;
 mod state;
+mod users;
 mod ws;
 
 use axum::{
@@ -50,6 +51,8 @@ async fn main() {
             "/reservations/{id}/cancel",
             put(reservations::cancel_reservation),
         )
+        .route("/users", post(users::create_user))
+        .route("/users/{id}", get(users::get_user))
         .with_state(parking_state.clone())
         .layer(cors)
         .layer(TraceLayer::new_for_http());
