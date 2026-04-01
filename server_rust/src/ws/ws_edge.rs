@@ -31,10 +31,13 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                 EdgeToServerMsg::SpotUpdate {
                     spot_id, status, ..
                 } => {
-                    let new_status = if status == "occupied" {
-                        SpotStatus::Occupied
-                    } else {
-                        SpotStatus::Free
+                    let new_status = match status.as_str() {
+                        "occupied" => SpotStatus::Occupied,
+                        "free" => SpotStatus::Free,
+                        other => {
+                            eprintln!("Ignoring SpotUpdate with invalid status: {}", other);
+                            continue;
+                        }
                     };
 
                     state.spots.insert(spot_id.clone(), new_status);
