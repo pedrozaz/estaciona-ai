@@ -1,3 +1,4 @@
+mod pathfinding;
 mod reservations;
 mod state;
 mod ws;
