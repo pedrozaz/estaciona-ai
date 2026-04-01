@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, user_id, spot_id, status, created_at, expires_at, completed_at\n        FROM reservations\n        WHERE status = 'active'\n        ",
+  "query": "\n        INSERT INTO reservations (id, user_id, spot_id, status, expires_at)\n        VALUES ($1, $2, $3, 'active', $4)\n        RETURNING \n            id, \n            user_id as \"user_id!\", \n            spot_id, \n            status, \n            created_at as \"created_at?\", \n            expires_at as \"expires_at?\", \n            completed_at as \"completed_at?\"\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "user_id",
+        "name": "user_id!",
         "type_info": "Uuid"
       },
       {
@@ -25,22 +25,27 @@
       },
       {
         "ordinal": 4,
-        "name": "created_at",
+        "name": "created_at?",
         "type_info": "Timestamptz"
       },
       {
         "ordinal": 5,
-        "name": "expires_at",
+        "name": "expires_at?",
         "type_info": "Timestamptz"
       },
       {
         "ordinal": 6,
-        "name": "completed_at",
+        "name": "completed_at?",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Timestamptz"
+      ]
     },
     "nullable": [
       false,
@@ -52,5 +57,5 @@
       true
     ]
   },
-  "hash": "647ff663802a18f3e2cf132310edc8b420cc7ed472384c457ead2229609daea8"
+  "hash": "38c032169e9f39f3eaf06df342a27c4efd332592673961bba672a54ffd127776"
 }
