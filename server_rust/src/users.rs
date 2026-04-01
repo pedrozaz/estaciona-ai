@@ -79,7 +79,7 @@ pub async fn get_user(
         tracing::error!("Database error: {}", e);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to feth user".to_string(),
+            "Failed to fetch user".to_string(),
         )
     })?;
 
