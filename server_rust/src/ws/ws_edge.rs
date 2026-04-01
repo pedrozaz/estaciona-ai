@@ -94,7 +94,10 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
         }
     };
 
-    let route = vec![camera_id, "corredor-A".to_string(), spot_id.clone()];
+    let route = state
+        .graph
+        .calculate_route(&camera_id, &spot_id)
+        .unwrap_or_else(|| vec![camera_id.clone(), spot_id.clone()]);
 
     if let Some(session_tx) = state.user_sessions.get(&user_id) {
         let nav_msg = ServerToAppMsg::NavigationStart { spot_id, route };

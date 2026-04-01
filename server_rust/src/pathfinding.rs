@@ -1,5 +1,5 @@
-use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Point {
@@ -15,7 +15,9 @@ struct State {
 
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.cmp(&self.cost)
+        other
+            .cost
+            .cmp(&self.cost)
             .then_with(|| self.node.x.cmp(&other.node.x))
             .then_with(|| self.node.y.cmp(&other.node.y))
     }
@@ -55,8 +57,11 @@ impl ParkingGraph {
     fn get_neighbors(&self, p: &Point) -> Vec<Point> {
         let dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)];
         dirs.iter()
-            .map(|(dx, dy)| Point { x: p.x + dx, y: p.y + dy })
-            .filter(|np| !self.obstacles.contains(np)) 
+            .map(|(dx, dy)| Point {
+                x: p.x + dx,
+                y: p.y + dy,
+            })
+            .filter(|np| !self.obstacles.contains(np))
             .collect()
     }
 
@@ -66,7 +71,10 @@ impl ParkingGraph {
         let goal = self.locations.get(end_id)?;
 
         let mut frontier = BinaryHeap::new();
-        frontier.push(State { cost: 0, node: *start });
+        frontier.push(State {
+            cost: 0,
+            node: *start,
+        });
 
         let mut came_from: HashMap<Point, Option<Point>> = HashMap::new();
         let mut cost_so_far: HashMap<Point, i32> = HashMap::new();
@@ -85,7 +93,10 @@ impl ParkingGraph {
                 if !cost_so_far.contains_key(&next) || new_cost < *cost_so_far.get(&next).unwrap() {
                     cost_so_far.insert(next, new_cost);
                     let priority = new_cost + Self::heuristic(&next, goal);
-                    frontier.push(State { cost: priority, node: next });
+                    frontier.push(State {
+                        cost: priority,
+                        node: next,
+                    });
                     came_from.insert(next, Some(current));
                 }
             }
@@ -93,7 +104,7 @@ impl ParkingGraph {
 
         let mut current = *goal;
         let mut path_points = vec![current];
-        
+
         while let Some(Some(prev)) = came_from.get(&current) {
             current = *prev;
             path_points.push(current);

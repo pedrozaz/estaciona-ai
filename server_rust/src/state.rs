@@ -1,3 +1,4 @@
+use crate::pathfinding::ParkingGraph;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -18,6 +19,7 @@ pub struct AppState {
     pub tx: broadcast::Sender<String>,
     pub pool: PgPool,
     pub user_sessions: DashMap<Uuid, mpsc::UnboundedSender<String>>,
+    pub graph: ParkingGraph,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -34,5 +36,6 @@ pub fn init_state(pool: PgPool) -> SharedState {
         tx,
         pool,
         user_sessions: DashMap::new(),
+        graph: ParkingGraph::new(),
     })
 }
