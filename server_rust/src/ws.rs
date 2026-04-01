@@ -77,7 +77,7 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
             if let Ok(msg) = serde_json::from_str::<AppToServerMsg>(&text) {
                 match msg {
                     AppToServerMsg::ReserveSpot {
-                        spot_id, user_id, ..
+                        spot_id, ..
                     } => {
                         let state_clone = value.clone();
 
