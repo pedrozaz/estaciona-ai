@@ -83,15 +83,24 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
             let new_res_id = Uuid::new_v4();
             let expires_at = Utc::now() + Duration::minutes(15);
 
-            let _ = sqlx::query!(
+            let insert_result = sqlx::query!(
                 "INSERT INTO reservations (id, user_id, spot_id, status, expires_at) VALUES ($1, $2, $3, 'active', $4)",
                 new_res_id, user_id, spot, expires_at
             )
             .execute(&state.pool)
             .await;
 
-            state.spots.insert(spot.clone(), SpotStatus::Reserved);
-            spot
+            match insert_result {
+                Ok(res) if res.rows_affected() > 0 => {
+                    state.spots.insert(spot.clone(), SpotStatus::Reserved);
+                    spot
+                }
+                _ => {
+                    // If the reservation could not be created in the database,
+                    // do not update in-memory state or start navigation.
+                    return;
+                }
+            }
         } else {
             return;
         }
