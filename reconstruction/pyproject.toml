@@ -1,0 +1,10 @@
+[project]
+name = "reconstruction"
+version = "0.1.0"
+description = "COLMAP 3D Reconstruction Pipeline for Estaciona AI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+reconstruction = "main:main" 

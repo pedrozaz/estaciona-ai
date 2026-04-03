@@ -24,3 +24,8 @@ Thumbs.db
 datasets/
 **/db/
 **/data/
+
+# COLMAP
+reconstruction/photos/
+reconstruction/colmap/
+**/sparse/
