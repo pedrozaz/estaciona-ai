@@ -24,3 +24,10 @@ Thumbs.db
 datasets/
 **/db/
 **/data/
+
+# Reconstruction outputs
+**/reconstructions/*
+**/reconstruction/*
+**/images/*
+**/colmap_outputs/*
+**/colmap_output/*
