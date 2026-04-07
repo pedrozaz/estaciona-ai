@@ -110,3 +110,4 @@ async fn main() {
 async fn health_check() -> &'static str {
     r#"{"status": "ok"}"#
 }
+
