@@ -2,24 +2,31 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Point {
-    pub x: i32,
-    pub y: i32,
+pub struct NodeId(pub usize);
+
+#[derive(Debug, Clone)]
+pub struct Node {
+    pub name: String,
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(Debug, Clone)]
+pub struct Edge {
+    pub target: NodeId,
+    pub cost: u32,
+    pub active: bool,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 struct State {
-    cost: i32,
-    node: Point,
+    cost: u32,
+    node: NodeId,
 }
 
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .cost
-            .cmp(&self.cost)
-            .then_with(|| self.node.x.cmp(&other.node.x))
-            .then_with(|| self.node.y.cmp(&other.node.y))
+        other.cost.cmp(&self.cost)
     }
 }
 
@@ -30,137 +37,155 @@ impl PartialOrd for State {
 }
 
 pub struct ParkingGraph {
-    pub locations: HashMap<String, Point>,
-    pub obstacles: Vec<Point>,
+    nodes: HashMap<NodeId, Node>,
+    edges: HashMap<NodeId, Vec<Edge>>,
+    name_to_id: HashMap<String, NodeId>,
+    next_id: usize,
 }
 
 impl ParkingGraph {
     pub fn new() -> Self {
-        let mut locations = HashMap::new();
-
-        // Stub: coordenadas de exemplo
-        locations.insert("cam-entrada".to_string(), Point { x: 0, y: 0 });
-        locations.insert("corredor-A".to_string(), Point { x: 5, y: 0 });
-        locations.insert("A-01".to_string(), Point { x: 5, y: 5 });
-        locations.insert("A-02".to_string(), Point { x: 5, y: 6 });
-
         Self {
-            locations,
-            obstacles: vec![],
+            nodes: HashMap::new(),
+            edges: HashMap::new(),
+            name_to_id: HashMap::new(),
+            next_id: 0,
         }
     }
 
-    fn heuristic(a: &Point, b: &Point) -> i32 {
-        (a.x - b.x).abs() + (a.y - b.y).abs()
+    pub fn add_node(&mut self, name: &str, x: f32, y: f32) -> NodeId {
+        let id = NodeId(self.next_id);
+        self.next_id += 1;
+
+        self.nodes.insert(
+            id,
+            Node {
+                name: name.to_string(),
+                x,
+                y,
+            },
+        );
+        self.name_to_id.insert(name.to_string(), id);
+        self.edges.insert(id, Vec::new());
+
+        id
     }
 
-    fn get_neighbors(&self, p: &Point) -> Vec<Point> {
-        // Define a bounding box based on all known locations to keep the search space finite.
-        // This prevents A* from exploring an infinite grid if the goal is unreachable.
-        let mut min_x = i32::MAX;
-        let mut max_x = i32::MIN;
-        let mut min_y = i32::MAX;
-        let mut max_y = i32::MIN;
+    pub fn add_edge(&mut self, from: NodeId, to: NodeId, cost: u32, bidirectional: bool) {
+        if let Some(neighbors) = self.edges.get_mut(&from) {
+            neighbors.push(Edge {
+                target: to,
+                cost,
+                active: true,
+            });
+        }
+        if bidirectional && let Some(neighbors) = self.edges.get_mut(&to) {
+            neighbors.push(Edge {
+                target: from,
+                cost,
+                active: true,
+            });
+        }
+    }
 
-        for point in self.locations.values() {
-            if point.x < min_x {
-                min_x = point.x;
+    pub fn set_edge_status(&mut self, from: &str, to: &str, active: bool) {
+        let from_id = self.name_to_id.get(from).copied();
+        let to_id = self.name_to_id.get(to).copied();
+
+        if let (Some(f_id), Some(t_id)) = (from_id, to_id) {
+            if let Some(neighbors) = self.edges.get_mut(&f_id) {
+                for edge in neighbors.iter_mut() {
+                    if edge.target == t_id {
+                        edge.active = active;
+                    }
+                }
             }
-            if point.x > max_x {
-                max_x = point.x;
-            }
-            if point.y < min_y {
-                min_y = point.y;
-            }
-            if point.y > max_y {
-                max_y = point.y;
+            if let Some(neighbors) = self.edges.get_mut(&t_id) {
+                for edge in neighbors.iter_mut() {
+                    if edge.target == f_id {
+                        edge.active = active;
+                    }
+                }
             }
         }
-
-        // Add a small padding so paths can route slightly around obstacles
-        let padding: i32 = 10;
-        min_x -= padding;
-        max_x += padding;
-        min_y -= padding;
-        max_y += padding;
-
-        let dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)];
-        dirs.iter()
-            .map(|(dx, dy)| Point {
-                x: p.x + dx,
-                y: p.y + dy,
-            })
-            .filter(|np| {
-                np.x >= min_x
-                    && np.x <= max_x
-                    && np.y >= min_y
-                    && np.y <= max_y
-                    && !self.obstacles.contains(np)
-            })
-            .collect()
     }
 
-    // Algoritmo A* principal
-    pub fn calculate_route(&self, start_id: &str, end_id: &str) -> Option<Vec<String>> {
-        let start = self.locations.get(start_id)?;
-        let goal = self.locations.get(end_id)?;
+    fn heuristic(&self, a: NodeId, b: NodeId) -> u32 {
+        let node_a = self.nodes.get(&a).unwrap();
+        let node_b = self.nodes.get(&b).unwrap();
+
+        let dx = node_a.x - node_b.x;
+        let dy = node_a.y - node_b.y;
+        ((dx * dx + dy * dy).sqrt() * 10.0) as u32
+    }
+
+    pub fn calculate_route(&self, start_name: &str, end_name: &str) -> Option<Vec<String>> {
+        let start = *self.name_to_id.get(start_name)?;
+        let goal = *self.name_to_id.get(end_name)?;
 
         let mut frontier = BinaryHeap::new();
         frontier.push(State {
             cost: 0,
-            node: *start,
+            node: start,
         });
 
-        let mut came_from: HashMap<Point, Option<Point>> = HashMap::new();
-        let mut cost_so_far: HashMap<Point, i32> = HashMap::new();
+        let mut came_from: HashMap<NodeId, Option<NodeId>> = HashMap::new();
+        let mut cost_so_far: HashMap<NodeId, u32> = HashMap::new();
 
-        came_from.insert(*start, None);
-        cost_so_far.insert(*start, 0);
+        came_from.insert(start, None);
+        cost_so_far.insert(start, 0);
 
         while let Some(State { node: current, .. }) = frontier.pop() {
-            if current == *goal {
+            if current == goal {
                 break;
             }
 
-            for next in self.get_neighbors(&current) {
-                let new_cost = cost_so_far.get(&current).unwrap_or(&0) + 1;
+            if let Some(neighbors) = self.edges.get(&current) {
+                for edge in neighbors {
+                    // Impede o algoritmo de atravessar arestas bloqueadas
+                    if !edge.active {
+                        continue;
+                    }
 
-                if !cost_so_far.contains_key(&next) || new_cost < *cost_so_far.get(&next).unwrap() {
-                    cost_so_far.insert(next, new_cost);
-                    let priority = new_cost + Self::heuristic(&next, goal);
-                    frontier.push(State {
-                        cost: priority,
-                        node: next,
-                    });
-                    came_from.insert(next, Some(current));
+                    let next = edge.target;
+                    let new_cost = cost_so_far.get(&current).unwrap_or(&0) + edge.cost;
+
+                    if !cost_so_far.contains_key(&next)
+                        || new_cost < *cost_so_far.get(&next).unwrap()
+                    {
+                        cost_so_far.insert(next, new_cost);
+                        let priority = new_cost + self.heuristic(next, goal);
+
+                        frontier.push(State {
+                            cost: priority,
+                            node: next,
+                        });
+                        came_from.insert(next, Some(current));
+                    }
                 }
             }
         }
 
-        let mut current = *goal;
-        let mut path_points = vec![current];
+        let mut current = goal;
+        let mut path_ids = vec![current];
 
         while let Some(Some(prev)) = came_from.get(&current) {
             current = *prev;
-            path_points.push(current);
+            path_ids.push(current);
         }
 
-        if current != *start {
+        if current != start {
             return None;
         }
 
-        path_points.reverse();
+        path_ids.reverse();
 
-        // Converte as coordenadas de volta para os IDs textuais ("corredor-A", etc)
-        // Nota: Esta é uma simplificação. Na prática, precisaremos de um mapeamento reverso.
-        let mut route_ids = vec![];
-        for pt in path_points {
-            if let Some((id, _)) = self.locations.iter().find(|&(_, &p)| p == pt) {
-                route_ids.push(id.clone());
-            }
-        }
-
-        Some(route_ids)
+        Some(
+            path_ids
+                .into_iter()
+                .map(|id| self.nodes.get(&id).unwrap().name.clone())
+                .collect(),
+        )
     }
 }
 
@@ -168,57 +193,43 @@ impl ParkingGraph {
 mod tests {
     use super::*;
 
-    fn create_test_graph() -> ParkingGraph {
-        let mut locations = HashMap::new();
+    fn build_test_graph() -> ParkingGraph {
+        let mut graph = ParkingGraph::new();
 
-        locations.insert("entrada".to_string(), Point { x: 0, y: 0 });
-        locations.insert("meio".to_string(), Point { x: 1, y: 0 });
-        locations.insert("vaga-1".to_string(), Point { x: 2, y: 0 });
-        locations.insert("vaga-2".to_string(), Point { x: 2, y: 2 });
+        let in_node = graph.add_node("entrada", 0.0, 0.0);
+        let mid1_node = graph.add_node("meio-1", 1.0, 0.0);
+        let mid2_node = graph.add_node("meio-2", 1.0, 1.0);
+        let park_node = graph.add_node("vaga-1", 2.0, 0.0);
 
-        ParkingGraph {
-            locations,
-            obstacles: vec![],
-        }
+        graph.add_edge(in_node, mid1_node, 10, true);
+        graph.add_edge(in_node, mid2_node, 15, true);
+        graph.add_edge(mid1_node, park_node, 10, true);
+        graph.add_edge(mid2_node, park_node, 15, true);
+
+        graph
     }
 
     #[test]
-    fn test_valid_route() {
-        let graph = create_test_graph();
+    fn route_avoids_blocked_edge() {
+        let mut graph = build_test_graph();
+
+        let route1 = graph.calculate_route("entrada", "vaga-1").unwrap();
+        assert_eq!(route1, vec!["entrada", "meio-1", "vaga-1"]);
+
+        graph.set_edge_status("entrada", "meio-1", false);
+
+        let route2 = graph.calculate_route("entrada", "vaga-1").unwrap();
+        assert_eq!(route2, vec!["entrada", "meio-2", "vaga-1"]);
+    }
+
+    #[test]
+    fn no_route_if_all_blocked() {
+        let mut graph = build_test_graph();
+
+        graph.set_edge_status("entrada", "meio-1", false);
+        graph.set_edge_status("entrada", "meio-2", false);
+
         let route = graph.calculate_route("entrada", "vaga-1");
-
-        assert!(route.is_some());
-        let path = route.unwrap();
-        assert_eq!(path.first().unwrap(), "entrada");
-        assert_eq!(path.last().unwrap(), "vaga-1");
-        assert!(path.contains(&"meio".to_string()));
-    }
-
-    #[test]
-    fn test_obstacle_avoidance() {
-        let mut graph = create_test_graph();
-
-        graph.obstacles.push(Point { x: 1, y: 0 });
-
-        let route = graph.calculate_route("entrada", "vaga-1");
-
-        assert!(route.is_some());
-        let path = route.unwrap();
-
-        assert!(!path.contains(&"meio".to_string()));
-    }
-
-    #[test]
-    fn test_unreachable_node() {
-        let mut graph = create_test_graph();
-
-        graph.obstacles.push(Point { x: 1, y: 2 });
-        graph.obstacles.push(Point { x: 3, y: 2 });
-        graph.obstacles.push(Point { x: 2, y: 1 });
-        graph.obstacles.push(Point { x: 2, y: 3 });
-
-        let route = graph.calculate_route("entrada", "vaga-isolada");
-
         assert!(route.is_none());
     }
 }
