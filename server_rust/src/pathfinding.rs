@@ -16,6 +16,7 @@ pub struct Node {
 pub struct Edge {
     pub target: NodeId,
     pub cost: u32,
+    pub active: bool,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -74,10 +75,40 @@ impl ParkingGraph {
 
     pub fn add_edge(&mut self, from: NodeId, to: NodeId, cost: u32, bidirectional: bool) {
         if let Some(neighbors) = self.edges.get_mut(&from) {
-            neighbors.push(Edge { target: to, cost });
+            neighbors.push(Edge {
+                target: to,
+                cost,
+                active: true,
+            });
         }
         if bidirectional && let Some(neighbors) = self.edges.get_mut(&to) {
-            neighbors.push(Edge { target: from, cost });
+            neighbors.push(Edge {
+                target: from,
+                cost,
+                active: true,
+            });
+        }
+    }
+
+    pub fn set_edge_status(&mut self, from: &str, to: &str, active: bool) {
+        let from_id = self.name_to_id.get(from).copied();
+        let to_id = self.name_to_id.get(to).copied();
+
+        if let (Some(f_id), Some(t_id)) = (from_id, to_id) {
+            if let Some(neighbors) = self.edges.get_mut(&f_id) {
+                for edge in neighbors.iter_mut() {
+                    if edge.target == t_id {
+                        edge.active = active;
+                    }
+                }
+            }
+            if let Some(neighbors) = self.edges.get_mut(&t_id) {
+                for edge in neighbors.iter_mut() {
+                    if edge.target == f_id {
+                        edge.active = active;
+                    }
+                }
+            }
         }
     }
 
@@ -115,6 +146,12 @@ impl ParkingGraph {
 
             if let Some(neighbors) = self.edges.get(&current) {
                 for edge in neighbors {
+                    for edge in neighbors {
+                        if !edge.active {
+                            continue;
+                        }
+                    }
+
                     let next = edge.target;
                     let new_cost = cost_so_far.get(&current).unwrap_or(&0) + edge.cost;
 
