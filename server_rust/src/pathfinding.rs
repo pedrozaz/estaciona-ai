@@ -6,7 +6,6 @@ pub struct NodeId(pub usize);
 
 #[derive(Debug, Clone)]
 pub struct Node {
-    pub id: NodeId,
     pub name: String,
     pub x: f32,
     pub y: f32,
@@ -61,7 +60,6 @@ impl ParkingGraph {
         self.nodes.insert(
             id,
             Node {
-                id,
                 name: name.to_string(),
                 x,
                 y,
@@ -116,8 +114,6 @@ impl ParkingGraph {
         let node_a = self.nodes.get(&a).unwrap();
         let node_b = self.nodes.get(&b).unwrap();
 
-        // Distância Euclidiana ou Manhatan, dependendo do layout.
-        // Multiplicado para escalar com os custos.
         let dx = node_a.x - node_b.x;
         let dy = node_a.y - node_b.y;
         ((dx * dx + dy * dy).sqrt() * 10.0) as u32
@@ -146,10 +142,9 @@ impl ParkingGraph {
 
             if let Some(neighbors) = self.edges.get(&current) {
                 for edge in neighbors {
-                    for edge in neighbors {
-                        if !edge.active {
-                            continue;
-                        }
+                    // Impede o algoritmo de atravessar arestas bloqueadas
+                    if !edge.active {
+                        continue;
                     }
 
                     let next = edge.target;
@@ -191,5 +186,50 @@ impl ParkingGraph {
                 .map(|id| self.nodes.get(&id).unwrap().name.clone())
                 .collect(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn build_test_graph() -> ParkingGraph {
+        let mut graph = ParkingGraph::new();
+
+        let in_node = graph.add_node("entrada", 0.0, 0.0);
+        let mid1_node = graph.add_node("meio-1", 1.0, 0.0);
+        let mid2_node = graph.add_node("meio-2", 1.0, 1.0);
+        let park_node = graph.add_node("vaga-1", 2.0, 0.0);
+
+        graph.add_edge(in_node, mid1_node, 10, true);
+        graph.add_edge(in_node, mid2_node, 15, true);
+        graph.add_edge(mid1_node, park_node, 10, true);
+        graph.add_edge(mid2_node, park_node, 15, true);
+
+        graph
+    }
+
+    #[test]
+    fn route_avoids_blocked_edge() {
+        let mut graph = build_test_graph();
+
+        let route1 = graph.calculate_route("entrada", "vaga-1").unwrap();
+        assert_eq!(route1, vec!["entrada", "meio-1", "vaga-1"]);
+
+        graph.set_edge_status("entrada", "meio-1", false);
+
+        let route2 = graph.calculate_route("entrada", "vaga-1").unwrap();
+        assert_eq!(route2, vec!["entrada", "meio-2", "vaga-1"]);
+    }
+
+    #[test]
+    fn no_route_if_all_blocked() {
+        let mut graph = build_test_graph();
+
+        graph.set_edge_status("entrada", "meio-1", false);
+        graph.set_edge_status("entrada", "meio-2", false);
+
+        let route = graph.calculate_route("entrada", "vaga-1");
+        assert!(route.is_none());
     }
 }
