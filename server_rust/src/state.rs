@@ -23,7 +23,7 @@ pub struct AppState {
 
 pub type SharedState = Arc<AppState>;
 
-pub fn init_state(pool: PgPool) -> SharedState {
+pub async fn init_state(pool: PgPool) -> SharedState {
     let (tx, _) = broadcast::channel(100);
 
     let mut graph = ParkingGraph::new();
@@ -41,6 +41,17 @@ pub fn init_state(pool: PgPool) -> SharedState {
 
     spots.insert("A-01".to_string(), SpotStatus::Free);
     spots.insert("A-02".to_string(), SpotStatus::Free);
+
+    let active_reservations = sqlx::query!(
+        "SELECT spot_id FROM reservations WHERE status = 'active' AND expires_at > NOW()"
+    )
+    .fetch_optional(&pool)
+    .await
+    .unwrap_or_default();
+
+    if let Some(record) = active_reservations {
+        spots.insert(record.spot_id.clone(), SpotStatus::Reserved);
+    }
 
     Arc::new(AppState {
         pool,
