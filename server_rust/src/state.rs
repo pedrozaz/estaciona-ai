@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{RwLock, broadcast, mpsc};
 use uuid::Uuid;
 
 use crate::pathfinding::ParkingGraph;
@@ -18,7 +18,7 @@ pub struct AppState {
     pub spots: DashMap<String, SpotStatus>,
     pub tx: broadcast::Sender<String>,
     pub user_sessions: DashMap<Uuid, mpsc::UnboundedSender<String>>,
-    pub graph: ParkingGraph,
+    pub graph: RwLock<ParkingGraph>,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -58,6 +58,6 @@ pub async fn init_state(pool: PgPool) -> SharedState {
         spots,
         tx,
         user_sessions: DashMap::new(),
-        graph,
+        graph: RwLock::new(graph),
     })
 }

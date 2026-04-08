@@ -32,6 +32,12 @@ pub enum EdgeToServerMsg {
         camera_id: String,
         timestamp: DateTime<Utc>,
     },
+    #[serde(rename = "PATH_UPDATE")]
+    PathUpdate {
+        from_node: String,
+        to_node: String,
+        is_active: bool,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

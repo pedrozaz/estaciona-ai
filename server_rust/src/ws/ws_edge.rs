@@ -48,6 +48,20 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                         let _ = state.tx.send(json_str);
                     }
                 }
+                EdgeToServerMsg::PathUpdate {
+                    from_node,
+                    to_node,
+                    is_active,
+                } => {
+                    let mut graph_write = state.graph.write().await;
+                    graph_write.set_edge_status(&from_node, &to_node, is_active);
+                    tracing::info!(
+                        "Path update: {} -> {} active: {}",
+                        from_node,
+                        to_node,
+                        is_active
+                    );
+                }
             }
         }
     }
@@ -77,6 +91,8 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
         // Fluxo com reserva prévia
         let route = state
             .graph
+            .read()
+            .await
             .calculate_route(&camera_id, &res.spot_id)
             .unwrap_or_else(|| vec![camera_id.clone(), res.spot_id.clone()]);
 
@@ -87,9 +103,11 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
         let mut best_route: Option<Vec<String>> = None;
         let mut min_route_length = usize::MAX;
 
+        let graph = state.graph.read().await;
+
         for entry in state.spots.iter() {
             if *entry.value() == SpotStatus::Free
-                && let Some(route) = state.graph.calculate_route(&camera_id, entry.key())
+                && let Some(route) = graph.calculate_route(&camera_id, entry.key())
                 && route.len() < min_route_length
             {
                 min_route_length = route.len();
