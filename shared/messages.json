@@ -25,6 +25,16 @@
             },
             "required": ["type", "plate", "camera_id", "timestamp"]
         },
+        "EdgeToServer_PATH_UPDATE": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "PATH_UPDATE" },
+                "from_node": { "type": "string" },
+                "to_node": { "type": "string" },
+                "is_active": { "type": "boolean" }
+            },
+            "required": ["type", "from_node", "to_node", "is_active"]
+        },
         "AppToServer_RESERVE_SPOT": {
             "type": "object",
             "properties": {
@@ -91,19 +101,6 @@
                 "status": { "type": "string", "enum": ["free", "occupied", "reserved"] }
             },
             "required": ["type", "spot_id", "status"]
-        },
-        "ServerToApp_ROUTE_UPDATE": {
-            "type": "object",
-            "properties": {
-                "type": { "const": "ROUTE_UPDATE" },
-                "spot_id": { "type": "string" },
-                "route": {
-                    "type": "array",
-                    "items": { "type": "string" },
-                    "description": "Nova sequência de IDs dos nós após recálculo" 
-                }
-            },
-            "required": ["type", "spot_id", "route"]
         }
     }
 }
