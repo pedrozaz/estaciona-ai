@@ -57,6 +57,4 @@ pub enum ServerToAppMsg {
     ReservationRejected { spot_id: String, reason: String },
     #[serde(rename = "SPOT_UPDATE")]
     SpotUpdate { spot_id: String, status: String },
-    #[serde(rename = "ROUTE_UPDATE")]
-    RouteUpdate { spot_id: String, route: Vec<String> },
 }

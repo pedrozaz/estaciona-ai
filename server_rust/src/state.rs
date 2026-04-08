@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast, mpsc};
@@ -29,28 +30,55 @@ pub async fn init_state(pool: PgPool) -> SharedState {
     let mut graph = ParkingGraph::new();
     let spots = DashMap::new();
 
-    // Nós físicos mockados
-    let cam_entrada = graph.add_node("cam_entrada_1", 0.0, 0.0);
-    let cruzamento_a = graph.add_node("cruzamento_a", 5.0, 0.0);
-    let vaga_a01 = graph.add_node("A-01", 5.0, 5.0);
-    let vaga_a02 = graph.add_node("A-02", 5.0, 10.0);
+    #[derive(Deserialize)]
+    struct NodeDef {
+        id: String,
+        x: f32,
+        y: f32,
+    }
+    #[derive(Deserialize)]
+    struct EdgeDef {
+        from: String,
+        to: String,
+        weight: u32,
+        is_active: bool,
+    }
+    #[derive(Deserialize)]
+    struct ConfigDef {
+        nodes: Vec<NodeDef>,
+        edges: Vec<EdgeDef>,
+    }
 
-    graph.add_edge(cam_entrada, cruzamento_a, 5, true);
-    graph.add_edge(cruzamento_a, vaga_a01, 5, true);
-    graph.add_edge(cruzamento_a, vaga_a02, 10, true);
+    let file_content =
+        std::fs::read_to_string("parking_graph.json").expect("Falha ao ler parking_graph.json");
+    let config: ConfigDef =
+        serde_json::from_str(&file_content).expect("Falha no parse do parking_graph.json");
 
-    spots.insert("A-01".to_string(), SpotStatus::Free);
-    spots.insert("A-02".to_string(), SpotStatus::Free);
+    let mut node_map = std::collections::HashMap::new();
+
+    for n in config.nodes {
+        if n.id.starts_with("A-") {
+            spots.insert(n.id.clone(), SpotStatus::Free);
+        }
+        let graph_node = graph.add_node(&n.id, n.x, n.y);
+        node_map.insert(n.id, graph_node);
+    }
+
+    for e in config.edges {
+        if let (Some(&from_node), Some(&to_node)) = (node_map.get(&e.from), node_map.get(&e.to)) {
+            graph.add_edge(from_node, to_node, e.weight, e.is_active);
+        }
+    }
 
     let active_reservations = sqlx::query!(
         "SELECT spot_id FROM reservations WHERE status = 'active' AND expires_at > NOW()"
     )
-    .fetch_optional(&pool)
+    .fetch_all(&pool)
     .await
     .unwrap_or_default();
 
-    if let Some(record) = active_reservations {
-        spots.insert(record.spot_id.clone(), SpotStatus::Reserved);
+    for record in active_reservations {
+        spots.insert(record.spot_id, SpotStatus::Reserved);
     }
 
     Arc::new(AppState {

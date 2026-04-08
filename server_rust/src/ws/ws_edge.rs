@@ -29,8 +29,20 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                     handle_car_detected(&state, plate, camera_id).await;
                 }
                 EdgeToServerMsg::SpotUpdate {
-                    spot_id, status, ..
+                    spot_id,
+                    status,
+                    confidence,
+                    ..
                 } => {
+                    if confidence < 0.70 {
+                        tracing::debug!(
+                            "Ignorando SpotUpdate para {} devido a baixa confiança ({})",
+                            spot_id,
+                            confidence
+                        );
+                        continue;
+                    }
+
                     let new_status = match status.as_str() {
                         "occupied" => SpotStatus::Occupied,
                         "free" => SpotStatus::Free,
@@ -75,7 +87,13 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
 
     let user_id = match user_record {
         Ok(Some(record)) => record.id,
-        _ => return, // Ignora veículos não cadastrados
+        _ => {
+            tracing::warn!(
+                "Veículo não cadastrado detectado ignorado. Placa: {}",
+                plate
+            );
+            return;
+        }
     };
 
     // 2. Verifica reserva ativa
