@@ -54,15 +54,17 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
 }
 
 async fn handle_car_detected(state: &SharedState, plate: String, camera_id: String) {
+    // 1. Validação do usuário
     let user_record = sqlx::query!("SELECT id FROM users WHERE plate = $1", plate)
         .fetch_optional(&state.pool)
         .await;
 
     let user_id = match user_record {
         Ok(Some(record)) => record.id,
-        _ => return,
+        _ => return, // Ignora veículos não cadastrados
     };
 
+    // 2. Verifica reserva ativa
     let reservation = sqlx::query!(
         "SELECT id, spot_id FROM reservations WHERE user_id = $1 AND status = 'active' LIMIT 1",
         user_id
@@ -70,16 +72,33 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
     .fetch_optional(&state.pool)
     .await;
 
-    let spot_id = if let Ok(Some(res)) = reservation {
-        res.spot_id
-    } else {
-        let best_spot = state
-            .spots
-            .iter()
-            .find(|entry| *entry.value() == SpotStatus::Free)
-            .map(|entry| entry.key().clone());
+    // 3. Define a vaga e a rota final
+    let (spot_id, final_route) = if let Ok(Some(res)) = reservation {
+        // Fluxo com reserva prévia
+        let route = state
+            .graph
+            .calculate_route(&camera_id, &res.spot_id)
+            .unwrap_or_else(|| vec![camera_id.clone(), res.spot_id.clone()]);
 
-        if let Some(spot) = best_spot {
+        (res.spot_id, route)
+    } else {
+        // Fluxo sem reserva: Usa o Grafo para varrer todas as vagas livres e achar a rota mais curta
+        let mut best_spot: Option<String> = None;
+        let mut best_route: Option<Vec<String>> = None;
+        let mut min_route_length = usize::MAX;
+
+        for entry in state.spots.iter() {
+            if *entry.value() == SpotStatus::Free
+                && let Some(route) = state.graph.calculate_route(&camera_id, entry.key())
+                && route.len() < min_route_length
+            {
+                min_route_length = route.len();
+                best_spot = Some(entry.key().clone());
+                best_route = Some(route);
+            }
+        }
+
+        if let (Some(spot), Some(route)) = (best_spot, best_route) {
             let new_res_id = Uuid::new_v4();
             let expires_at = Utc::now() + Duration::minutes(15);
 
@@ -93,26 +112,32 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
             match insert_result {
                 Ok(res) if res.rows_affected() > 0 => {
                     state.spots.insert(spot.clone(), SpotStatus::Reserved);
-                    spot
+
+                    // Dispara broadcast de SPOT_UPDATE para os outros clientes saberem que a vaga foi ocupada
+                    let update_msg = ServerToAppMsg::SpotUpdate {
+                        spot_id: spot.clone(),
+                        status: "reserved".to_string(),
+                    };
+                    if let Ok(json_str) = serde_json::to_string(&update_msg) {
+                        let _ = state.tx.send(json_str);
+                    }
+
+                    (spot, route)
                 }
-                _ => {
-                    // If the reservation could not be created in the database,
-                    // do not update in-memory state or start navigation.
-                    return;
-                }
+                _ => return, // Falha de persistência
             }
         } else {
+            // Nenhuma vaga livre alcançável encontrada
             return;
         }
     };
 
-    let route = state
-        .graph
-        .calculate_route(&camera_id, &spot_id)
-        .unwrap_or_else(|| vec![camera_id.clone(), spot_id.clone()]);
-
+    // 4. Envia o comando de navegação para a sessão do usuário
     if let Some(session_tx) = state.user_sessions.get(&user_id) {
-        let nav_msg = ServerToAppMsg::NavigationStart { spot_id, route };
+        let nav_msg = ServerToAppMsg::NavigationStart {
+            spot_id,
+            route: final_route,
+        };
 
         if let Ok(json_str) = serde_json::to_string(&nav_msg) {
             let _ = session_tx.send(json_str);
