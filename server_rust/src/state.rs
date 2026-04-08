@@ -1,13 +1,12 @@
-use crate::pathfinding::ParkingGraph;
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
+use crate::pathfinding::ParkingGraph;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpotStatus {
     Free,
     Occupied,
@@ -15,9 +14,9 @@ pub enum SpotStatus {
 }
 
 pub struct AppState {
+    pub pool: PgPool,
     pub spots: DashMap<String, SpotStatus>,
     pub tx: broadcast::Sender<String>,
-    pub pool: PgPool,
     pub user_sessions: DashMap<Uuid, mpsc::UnboundedSender<String>>,
     pub graph: ParkingGraph,
 }
@@ -25,17 +24,29 @@ pub struct AppState {
 pub type SharedState = Arc<AppState>;
 
 pub fn init_state(pool: PgPool) -> SharedState {
+    let (tx, _) = broadcast::channel(100);
+
+    let mut graph = ParkingGraph::new();
     let spots = DashMap::new();
+
+    // Nós físicos mockados
+    let cam_entrada = graph.add_node("cam_entrada_1", 0.0, 0.0);
+    let cruzamento_a = graph.add_node("cruzamento_a", 5.0, 0.0);
+    let vaga_a01 = graph.add_node("A-01", 5.0, 5.0);
+    let vaga_a02 = graph.add_node("A-02", 5.0, 10.0);
+
+    graph.add_edge(cam_entrada, cruzamento_a, 5, true);
+    graph.add_edge(cruzamento_a, vaga_a01, 5, true);
+    graph.add_edge(cruzamento_a, vaga_a02, 10, true);
+
     spots.insert("A-01".to_string(), SpotStatus::Free);
     spots.insert("A-02".to_string(), SpotStatus::Free);
 
-    let (tx, _) = broadcast::channel(100);
-
     Arc::new(AppState {
+        pool,
         spots,
         tx,
-        pool,
         user_sessions: DashMap::new(),
-        graph: ParkingGraph::new(),
+        graph,
     })
 }
