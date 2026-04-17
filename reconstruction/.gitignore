@@ -1,3 +1,7 @@
 colmap_output/
 blender/
 export/
+colmap_output*
+colmap_output_*
+colmap_output_CPU
+photos_*
