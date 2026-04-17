@@ -18,6 +18,8 @@ services:
     container_name: estaciona_server
     ports:
       - "8000:8000"
+    environment:
+      - RUST_LOG=info
     depends_on:
       - db
     env_file:
@@ -36,6 +38,9 @@ services:
       - ../datasets:/app/datasets
     networks:
       - estaciona_net
+    env_file:
+      - ../.env
+    restart: always
 
 volumes:
   postgres_data:
@@ -43,4 +48,4 @@ volumes:
 networks:
   estaciona_net:
     driver: bridge
-    
+

@@ -1,24 +1,19 @@
-FROM python:3.11-slim
+FROM rust:latest AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-&& curl -LsSf https://astral.sh/uv/install.sh | sh \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf var/lin/apt/lists/*
+WORKDIR /build 
 
-ENV PATH="/root/.local/bin:${PATH}"
+COPY server/ .
+ENV SQLX_OFFLINE=true
 
+RUN cargo build --release 
+FROM debian:bookworm-slim 
+
+RUN apt-get update && apt-get install -y ca-certificates libssl3 libpq5 && rm -rf var/lin/apt/lists/*
 WORKDIR /app
 
-COPY server/pyproject.toml server/uv.lock ./server/
-
-WORKDIR /app/server
-
-RUN uv sync --no-dev
-
-COPY server/src ./src
-COPY server/schema.sql ./
-
+COPY --from=builder /build/target/release/server ./server 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./server"]
 
