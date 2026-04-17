@@ -34,13 +34,15 @@ class ColmapRunner:
             "docker",
             "run",
             "--rm",
+            "--device",
+            "nvidia.com/gpu=all",
             "-e",
             "QT_QPA_PLATFORM=offscreen",
             "-v",
             f"{self.base_dir}:/workspace",
             "-w",
             "/workspace",
-            "colmap-cpu",
+            "colmap-gpu",
             "bash",
             "-c",
             shell_script,
@@ -72,10 +74,8 @@ class ColmapRunner:
                 self.rel_photos,
                 "--ImageReader.single_camera",
                 "1",
-                "--SiftExtraction.use_gpu",
-                "0",
-                "--SiftExtraction.num_threads",
-                "4",
+                "--FeatureExtraction.use_gpu",
+                "1",
             ]
         )
 
@@ -85,10 +85,8 @@ class ColmapRunner:
                 "exhaustive_matcher",
                 "--database_path",
                 self.rel_db,
-                "--SiftMatching.use_gpu",
-                "0",
-                "--SiftMatching.num_threads",
-                "4",
+                "--FeatureMatching.use_gpu",
+                "1",
             ]
         )
 
