@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./server_rust
+        working-directory: ./server
 
     steps:
     - uses: actions/checkout@v4
@@ -32,12 +32,12 @@ jobs:
           server_rust -> target
 
     - name: Check formatting
-      working-directory: ./server_rust
+      working-directory: ./server
       run: cargo fmt -- --check
 
     - name: Linting (Clippy)
       run: cargo clippy -- -D warnings
     
     - name: Test
-      working-directory: ./server_rust
+      working-directory: ./server
       run: cargo test --all-features
