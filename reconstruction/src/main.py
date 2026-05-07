@@ -1,36 +1,37 @@
 import argparse
 from pathlib import Path
-from pipeline.colmap import ColmapRunner
+from pipeline.reconstruction import ReconstructionRunner
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="3D Reconstruction Pipeline for  Estaciona AI"
+        description="3D Reconstruction Pipeline for Estaciona AI"
     )
     parser.add_argument(
-        "--step",
-        type=str,
-        choices=["all", "colmap", "blender"],
-        default="all",
-        help="Pipeline step to execute",
+        "--data",
+        choices=["celular", "canon", "drone"],
+        required=True,
+        help="Type of data to process",
     )
+    parser.add_argument(
+        "--colmap-dir",
+        type=str,
+        help="Custom path to COLMAP output directory",
+    )
+
     args = parser.parse_args()
+    base_dir = Path(__file__).parent.parent.resolve()
 
-    base_dir = Path(__file__).resolve().parent.parent
+    print(f"--- Starting Reconstruction for {args.data.upper()} ---")
+    runner = ReconstructionRunner(base_dir, args.data)
+    
+    if args.colmap_dir:
+        runner.colmap_dir = Path(args.colmap_dir)
 
-    if args.step in ["all", "colmap"]:
-        print("--- Starting COLMAP Pipeline ---")
-        runner = ColmapRunner(base_dir)
-        runner.setup_directories()
-        runner.extract_features()
-        runner.match_features()
-        runner.build_sparse_model()
-        runner.undistort_images()
-        print("--- COLMAP Pipeline Completed ---\n")
-
-    if args.step in ["all", "blender"]:
-        print("--- Starting Blender Pipeline ---")
-        print("Blender pipeline is not implemented yet.")
+    print(f"[INFO] Output directory: {runner.output_dir}")
+    
+    # Executa apenas a parte esparsa necessária para o 3DGS
+    runner.run_sparse_reconstruction()
 
 
 if __name__ == "__main__":

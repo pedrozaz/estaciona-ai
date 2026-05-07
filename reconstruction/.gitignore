@@ -1,7 +1,29 @@
+# --- Data & Reconstruction Outputs ---
+output/
 colmap_output/
-blender/
-export/
 colmap_output*
-colmap_output_*
-colmap_output_CPU
-photos_*
+export/
+blender/
+photos_*/
+
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- IDEs & System ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- Logs ---
+*.log
+pipeline.log
+autonomous.log
