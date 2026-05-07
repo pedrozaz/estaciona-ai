@@ -48,18 +48,32 @@ This document serves as a detailed record of the research and development proces
 ---
 
 ## Pivot Decision: Transition to 3D Gaussian Splatting (3DGS)
-**Status:** Active Research Phase  
-**Rationale:** The transition from rigid geometry (meshes) to learned radiance fields.
+**Status:** Active Execution Phase  
+**Rationale:** Transition from rigid geometry to learned radiance fields to achieve photorealistic quality and solve surface continuity issues in asphalt and vegetation.
 
 ### Why 3DGS?
-1. **Visual Fidelity:** 3DGS handles complex lighting, reflections, and thin structures (leaves, power lines) far better than traditional meshing.
-2. **Surface Continuity:** Solves the "hole" problem in asphalt and flat surfaces by learning the radiance field instead of interpolating a shell.
-3. **Performance:** Offers real-time navigation in the reconstructed scene with fotorrealistic quality.
+1. **Visual Fidelity:** Superior handling of complex lighting, reflections, and thin structures compared to traditional meshing.
+2. **Surface Continuity:** Solves the "hole" problem by learning the scene's radiance field.
+3. **Real-time Navigation:** High-quality rendering at interactive frame rates.
 
-### Strategy Change:
-- **Pipeline Simplification:** Deprecating the dense MVS and meshing scripts.
-- **SfM Optimization:** Focusing the COLMAP stage exclusively on producing high-precision camera poses and an initial sparse point cloud.
-- **Host Execution:** Moving training to the bare-metal host environment to maximize GPU utilization (NVIDIA CUDA) and avoid Docker overhead during intensive SGD (Stochastic Gradient Descent) training.
+---
+
+## Experiment 3: System Optimization for Blackwell (RTX 50-series)
+**Date:** Current  
+**Infrastructure:** Arch Linux, RTX 5060 Ti (16GB VRAM), Ryzen 5 4500.
+
+### Technical Setup:
+- **Memory Management:** Implemented a tiered swap strategy:
+    - **Tier 1 (High Priority):** 16GB ZRAM for fast, compressed memory access.
+    - **Tier 2 (Low Priority):** 24GB disk-based swap on EXT4 partition to prevent OOM crashes during high-res image processing.
+- **Kernel Tuning:** Adjusted `vm.swappiness` to 10 to prioritize physical RAM while maintaining a massive safety net.
+- **Driver Alignment:** Verified compatibility with NVIDIA 595+ drivers and Compute Capability 12.0 (sm_120).
+
+### Pipeline Restructuring:
+- **Input:** 24MP Canon images (Darktable processed).
+- **COLMAP Optimization:** Using a "lean" SfM approach to produce high-precision camera poses and sparse point clouds, specifically structured for 3DGS initialization.
+- **Native Execution:** Strategy to run the training phase "on metal" (outside Docker) to leverage full CUDA performance of the Blackwell architecture.
+
 
 ---
 
