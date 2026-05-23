@@ -32,7 +32,7 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
-    let parking_state: SharedState = init_state(pool);
+    let parking_state: SharedState = init_state(pool).await;
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

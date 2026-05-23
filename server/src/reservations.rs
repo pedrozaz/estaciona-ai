@@ -33,9 +33,18 @@ pub async fn create_reservation(
     State(state): State<SharedState>,
     Json(payload): Json<CreateReservation>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    if let Some(status) = state.spots.get(&payload.spot_id)
-        && *status != SpotStatus::Free
-    {
+    let reserved = if let Some(mut status) = state.spots.get_mut(&payload.spot_id) {
+        if *status == SpotStatus::Free {
+            *status = SpotStatus::Reserved;
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    if !reserved {
         return Err((StatusCode::CONFLICT, "Spot is not free".to_string()));
     }
 
@@ -62,16 +71,15 @@ pub async fn create_reservation(
     .fetch_one(&state.pool)
     .await
     .map_err(|e| {
+        state
+            .spots
+            .insert(payload.spot_id.clone(), SpotStatus::Free);
         tracing::error!("Database error: {}", e);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed to create reservation".to_string(),
         )
     })?;
-
-    state
-        .spots
-        .insert(payload.spot_id.clone(), SpotStatus::Reserved);
 
     let update_msg = ServerToAppMsg::SpotUpdate {
         spot_id: payload.spot_id.clone(),

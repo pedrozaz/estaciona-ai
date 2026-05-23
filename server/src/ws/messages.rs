@@ -32,6 +32,12 @@ pub enum EdgeToServerMsg {
         camera_id: String,
         timestamp: DateTime<Utc>,
     },
+    #[serde(rename = "PATH_UPDATE")]
+    PathUpdate {
+        from_node: String,
+        to_node: String,
+        is_active: bool,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -51,6 +57,4 @@ pub enum ServerToAppMsg {
     ReservationRejected { spot_id: String, reason: String },
     #[serde(rename = "SPOT_UPDATE")]
     SpotUpdate { spot_id: String, status: String },
-    #[serde(rename = "ROUTE_UPDATE")]
-    RouteUpdate { spot_id: String, route: Vec<String> },
 }

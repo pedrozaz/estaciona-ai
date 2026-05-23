@@ -79,13 +79,19 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                     AppToServerMsg::ReserveSpot { spot_id, .. } => {
                         let state_clone = value.clone();
 
-                        let is_free = state_clone
-                            .spots
-                            .get(&spot_id)
-                            .map(|s| *s == SpotStatus::Free)
-                            .unwrap_or(false);
+                        let reserved = if let Some(mut status) = state_clone.spots.get_mut(&spot_id)
+                        {
+                            if *status == SpotStatus::Free {
+                                *status = SpotStatus::Reserved;
+                                true
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        };
 
-                        if is_free {
+                        if reserved {
                             let res_id = Uuid::new_v4();
                             let expires = Utc::now() + Duration::minutes(15);
 
@@ -98,10 +104,6 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                             .await;
 
                             if db_result.is_ok() {
-                                state_clone
-                                    .spots
-                                    .insert(spot_id.clone(), SpotStatus::Reserved);
-
                                 let confirm = ServerToAppMsg::ReservationConfirmed {
                                     reservation_id: res_id,
                                     spot_id: spot_id.clone(),
@@ -119,6 +121,8 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                                 if let Ok(json) = serde_json::to_string(&update) {
                                     let _ = state_clone.tx.send(json);
                                 }
+                            } else {
+                                state_clone.spots.insert(spot_id.clone(), SpotStatus::Free);
                             }
                         } else {
                             let reject = ServerToAppMsg::ReservationRejected {
