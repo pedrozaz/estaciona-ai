@@ -25,9 +25,7 @@ datasets/
 **/db/
 **/data/
 
-# Reconstruction outputs
-**/reconstructions/*
-**/reconstruction/*
-**/images/*
-**/colmap_outputs/*
-**/colmap_output/*
+# COLMAP
+reconstruction/photos/
+reconstruction/colmap/
+**/sparse/
