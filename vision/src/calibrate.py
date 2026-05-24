@@ -80,8 +80,9 @@ class Calibrator:
                     (0, 255, 0),
                     2,
                 )
-            cv2.imshow(WINDOW_NAME, self.canvas)
-            print("Undo last point.")
+
+        cv2.imshow(WINDOW_NAME, self.canvas)
+        print("Undo last point.")
 
     def _redraw_saved_spots(self):
         for spot_id, points in self.spots.items():
