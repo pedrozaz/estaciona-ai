@@ -13,6 +13,11 @@ photos_*/
 *.ckpt
 *.pt
 nerfstudio_models/
+*.obj
+*.blend 
+*.blend*
+*.obj.*
+*.mtl
 
 # --- Python ---
 .venv/
@@ -34,3 +39,5 @@ Thumbs.db
 
 # --- Logs ---
 *.log
+
+
