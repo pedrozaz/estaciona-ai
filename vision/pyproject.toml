@@ -1,11 +1,8 @@
 [project]
 name = "estaciona-ai-vision"
 version = "0.1.0"
-description = "Vision service for Estaciona-AI"
-requires-python = ">=3.11"
+description = "Computer vision module for Estaciona AI"
+requires-python = ">=3.14"
 dependencies = [
     "opencv-python>=4.13.0.92",
-    "pydantic>=2.12.5",
-    "ultralytics>=8.4.30",
-    "websockets>=16.0",
 ]
