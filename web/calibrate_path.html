@@ -704,8 +704,14 @@
         }
         return out;
       });
-      document.getElementById('jsonOutput').value = JSON.stringify(data, null, 2);
-      document.getElementById('jsonModal').classList.add('active');
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'config.json';
+      a.click();
+      URL.revokeObjectURL(url);
     };
 
     window.importJSON = function () {
@@ -737,6 +743,32 @@
         alert('JSON inválido: ' + e.message);
       }
     };
+
+    function loadConfig() {
+      fetch('config.json')
+        .then(res => {
+          if (!res.ok) throw new Error('config.json not found');
+          return res.json();
+        })
+        .then(data => {
+          data.forEach(item => {
+            const pin = {
+              id: Date.now() + Math.random(),
+              name: item.name || '',
+              position: item.position || null,
+              camera: item.camera || null,
+              path: item.path || (item.position ? [item.position] : []),
+              lineMesh: null,
+              markerMeshes: []
+            };
+            pins.push(pin);
+            updatePathMeshes(pin);
+          });
+          renderPinList();
+        })
+        .catch(err => console.log('Nenhum config.json encontrado ou erro ao carregar:', err));
+    }
+    loadConfig();
 
     window.clearAllPins = function () {
       if (pins.length === 0) return;
