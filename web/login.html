@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Estaciona AI</title>
+  <meta name="description" content="Acesse o painel do Estaciona AI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background-color: var(--bg-color);
+      /* Subtle radial gradient background pattern matching brand theme */
+      background-image: radial-gradient(circle at 10% 20%, rgba(28, 167, 69, 0.05) 0%, transparent 20%), 
+                        radial-gradient(circle at 90% 80%, rgba(28, 167, 69, 0.08) 0%, transparent 20%);
+    }
+
+    .login-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+
+    /* Glassmorphism Card */
+    .login-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: var(--border-radius);
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05);
+      transform: translateY(0);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .login-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(28, 167, 69, 0.05);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .login-header h2 {
+      font-size: 2rem;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+
+    .login-header p {
+      color: var(--text-light);
+      font-size: 1rem;
+      margin-bottom: 0;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      font-family: var(--font-main);
+      font-size: 1rem;
+      color: var(--text-dark);
+      background-color: rgba(255, 255, 255, 0.9);
+      border: 2px solid transparent;
+      border-radius: 12px;
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .form-control:focus {
+      border-color: var(--primary-green);
+      background-color: #fff;
+      box-shadow: 0 0 0 4px rgba(28, 167, 69, 0.1);
+    }
+
+    .form-label {
+      position: absolute;
+      left: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: 1rem;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Floating label effects */
+    .form-control:focus ~ .form-label,
+    .form-control:not(:placeholder-shown) ~ .form-label {
+      top: 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,1) 100%);
+      padding: 0 0.5rem;
+      transform: translateY(-50%) translateX(-0.5rem);
+    }
+
+    .btn-login {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 1rem;
+      font-size: 1.125rem;
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px; /* modern slight round rather than fully pill shaped */
+    }
+
+    .btn-login .spinner {
+      display: none;
+      width: 22px;
+      height: 22px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    @keyframes spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .btn-login.loading {
+      color: transparent;
+      pointer-events: none;
+    }
+
+    .btn-login.loading .spinner {
+      display: block;
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.95rem;
+      color: var(--text-light);
+    }
+
+    .login-footer a {
+      color: var(--primary-green);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
+    .login-footer a:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
+    }
+    
+    .utilities-row {
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 1.5rem; 
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar" style="position: absolute;">
+    <div class="container nav-container">
+      <a href="index.html" class="logo">
+        <span class="logo-text">Estaciona</span>
+        <div class="logo-pin"><span>AI</span></div>
+      </a>
+    </div>
+  </nav>
+
+  <main class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <h2>Bem-vindo de volta</h2>
+        <p>Acesse o painel do seu estacionamento</p>
+      </div>
+      
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <!-- The 'placeholder=" "' is required for the floating label css trick to work -->
+          <input type="email" id="email" class="form-control" placeholder=" " required autocomplete="email">
+          <label for="email" class="form-label">E-mail</label>
+        </div>
+        
+        <div class="form-group">
+          <input type="password" id="password" class="form-control" placeholder=" " required autocomplete="current-password">
+          <label for="password" class="form-label">Senha</label>
+        </div>
+
+        <div class="utilities-row">
+          <label style="display: flex; align-items: center; cursor: pointer; color: var(--text-light);">
+            <input type="checkbox" style="margin-right: 0.5rem; accent-color: var(--primary-green);">
+            Lembrar de mim
+          </label>
+          <a href="#" style="color: var(--primary-green); text-decoration: none; font-weight: 500; transition: color 0.2s;">Esqueceu a senha?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
+          <span>Entrar</span>
+          <div class="spinner"></div>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        Não tem uma conta? <a href="mailto:contato@pedroza.studio">Fale conosco</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Mock credentials
+    const MOCK_EMAIL = 'admin@estaciona.ai';
+    const MOCK_PASSWORD = 'admin';
+
+    function handleLogin(event) {
+      event.preventDefault();
+
+      const btn = document.getElementById('loginBtn');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      // Remove previous error
+      const oldError = document.querySelector('.login-error');
+      if (oldError) oldError.remove();
+
+      // Trigger Loading Animation
+      btn.classList.add('loading');
+
+      // Simulate API call delay
+      setTimeout(() => {
+        btn.classList.remove('loading');
+
+        if (email === MOCK_EMAIL && password === MOCK_PASSWORD) {
+          // Store session flag and redirect
+          sessionStorage.setItem('estaciona_logged_in', 'true');
+          sessionStorage.setItem('estaciona_user', email);
+          window.location.href = 'dashboard.html';
+        } else {
+          // Show error message
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'login-error';
+          errorDiv.textContent = 'E-mail ou senha incorretos.';
+          errorDiv.style.cssText = `
+            background: rgba(220, 38, 38, 0.08);
+            color: #dc2626;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+            animation: slideUp 0.3s ease;
+          `;
+          const form = document.getElementById('loginForm');
+          form.insertBefore(errorDiv, form.firstChild);
+        }
+      }, 1200);
+    }
+  </script>
+</body>
+</html>
