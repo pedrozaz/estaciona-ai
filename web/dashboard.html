@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Estaciona AI</title>
   <meta name="description" content="Painel de controle 3D do Estaciona AI">
+  <link rel="icon" href="data:,">
   <link rel="preconnect" href="https:
   <link rel="preconnect" href="https:
   <link href="https:
@@ -262,12 +263,36 @@
       overflow-y: auto;
       pointer-events: auto;
     }
+    .test-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
     .test-panel h4 {
       font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: #64748b;
-      margin-bottom: 0.8rem;
+      margin: 0;
+    }
+    #toggleTestPanelBtn {
+      background: none;
+      border: none;
+      color: #1ca745;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    #toggleTestPanelBtn:hover {
+      text-decoration: underline;
+    }
+    .test-panel.collapsed #testSpotsContainer {
+      display: none;
+    }
+    .test-panel.collapsed .test-panel-header {
+      margin-bottom: 0;
     }
     .test-spot {
       display: flex;
@@ -373,6 +398,14 @@
         display: flex;
         justify-content: space-between;
       }
+      .test-panel {
+        top: auto;
+        bottom: 110px;
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+        max-height: 40vh;
+      }
     }
   </style>
 </head>
@@ -407,8 +440,11 @@
     <div id="infoPanelContent"></div>
   </div>
 
-  <div class="test-panel" id="testPanel" style="display: none;">
-    <h4>PAINEL DE TESTE</h4>
+  <div class="test-panel collapsed" id="testPanel" style="display: none;">
+    <div class="test-panel-header">
+      <h4>PAINEL DE TESTE</h4>
+      <button id="toggleTestPanelBtn" onclick="window.toggleTestPanel()">Expandir</button>
+    </div>
     <div id="testSpotsContainer"></div>
   </div>
 
@@ -527,6 +563,51 @@
     const loadingProgress = document.getElementById('loadingProgress');
 
     let loadedModel = null;
+    
+    let lancerModel = null;
+    let pendingCars = [];
+
+    loader.load(
+      'assets/car/mitsubishi_lancer_evolution_viii_low_poly.glb',
+      function (gltf) {
+        const model = gltf.scene;
+        
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        
+        const scale = 1.1 / maxDim; 
+        model.scale.setScalar(scale);
+
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center).multiplyScalar(scale);
+        
+        const newBox = new THREE.Box3().setFromObject(model);
+        model.position.y -= newBox.min.y;
+        
+        model.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        
+        lancerModel = model;
+        
+        pendingCars.forEach(data => {
+          const { group } = data;
+          group.clear();
+          group.add(lancerModel.clone());
+        });
+        
+        if (typeof carGroup !== 'undefined' && carGroup) {
+          carGroup.clear();
+          carGroup.add(lancerModel.clone());
+        }
+      },
+      undefined,
+      (err) => console.error("Erro ao carregar o Lancer:", err)
+    );
 
     loader.load(
       modelPath,
@@ -623,8 +704,7 @@
       document.getElementById('infoPanelContent').innerHTML = infoHTML;
     }
 
-    function createStaticCar() {
-      const g = new THREE.Group();
+    function buildFallbackCarModel(g) {
       const chassisGeo = new THREE.BoxGeometry(0.3, 0.12, 0.6);
       const chassisMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.3 });
       const chassis = new THREE.Mesh(chassisGeo, chassisMat);
@@ -652,6 +732,16 @@
         wheel.castShadow = true;
         g.add(wheel);
       });
+    }
+
+    function createStaticCar(spotId) {
+      const g = new THREE.Group();
+      if (lancerModel) {
+        g.add(lancerModel.clone());
+      } else {
+        pendingCars.push({ group: g, spotId: spotId });
+        buildFallbackCarModel(g);
+      }
       g.scale.setScalar(0.5);
       return g;
     }
@@ -694,7 +784,7 @@
               const mat = new THREE.MeshBasicMaterial({ 
                 color: 0x1ca745, 
                 transparent: true, 
-                opacity: 0.45,
+                opacity: 0.08,
                 depthTest: true,
                 depthWrite: false, 
                 side: THREE.DoubleSide,
@@ -711,7 +801,9 @@
               const edges = new THREE.EdgesGeometry(geo);
               const lineMat = new THREE.LineBasicMaterial({ 
                 color: 0x1ca745, 
-                linewidth: 2, 
+                transparent: true,
+                opacity: 0.25,
+                linewidth: 1, 
                 depthTest: true,
                 depthWrite: false,
                 polygonOffset: true,
@@ -767,7 +859,7 @@
         spotObj.line.material.color.setHex(0xef4444);
         if(btn) { btn.textContent = "Liberar"; btn.className = "occupied"; }
 
-        const car = createStaticCar();
+        const car = createStaticCar(id);
         const p1 = spotObj.data.polygon3D[0];
         const p2 = spotObj.data.polygon3D[1];
         let angle = Math.atan2(p2.x - p1.x, p2.z - p1.z); 
@@ -796,6 +888,17 @@
       updateInfoPanel();
     };
 
+    window.toggleTestPanel = function() {
+      const panel = document.getElementById('testPanel');
+      const btn = document.getElementById('toggleTestPanelBtn');
+      panel.classList.toggle('collapsed');
+      if (panel.classList.contains('collapsed')) {
+        btn.textContent = "Expandir";
+      } else {
+        btn.textContent = "Minimizar";
+      }
+    };
+
     function buildTestPanel() {
       const container = document.getElementById('testSpotsContainer');
       let html = '';
@@ -812,49 +915,28 @@
     }
 
     function buildCar() {
-      const chassisGeo = new THREE.BoxGeometry(0.3, 0.12, 0.6);
-      const chassisMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.3 });
-      const chassis = new THREE.Mesh(chassisGeo, chassisMat);
-      chassis.position.y = 0.1;
-      carGroup.add(chassis);
+      if (lancerModel) {
+        carGroup.add(lancerModel.clone());
+      } else {
+        pendingCars.push({ group: carGroup, spotId: "moving_car" });
+        buildFallbackCarModel(carGroup);
 
-      const cabinGeo = new THREE.BoxGeometry(0.24, 0.1, 0.3);
-      const cabinMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.1, metalness: 0.8 });
-      const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-      cabin.position.y = 0.21;
-      cabin.position.z = -0.05;
-      carGroup.add(cabin);
+        const headlightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
+        const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+        const h1 = new THREE.Mesh(headlightGeo, headlightMat);
+        h1.position.set(0.08, 0.12, -0.31);
+        const h2 = h1.clone();
+        h2.position.set(-0.08, 0.12, -0.31);
+        carGroup.add(h1, h2);
 
-      const wheelGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.04, 16);
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-      
-      const wheelPos = [
-        [0.16, 0.06, 0.18], [-0.16, 0.06, 0.18],
-        [0.16, 0.06, -0.18], [-0.16, 0.06, -0.18]
-      ];
-      
-      wheelPos.forEach(pos => {
-        const w = new THREE.Mesh(wheelGeo, wheelMat);
-        w.rotation.z = Math.PI / 2;
-        w.position.set(...pos);
-        carGroup.add(w);
-      });
-
-      const headlightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
-      const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
-      const h1 = new THREE.Mesh(headlightGeo, headlightMat);
-      h1.position.set(0.08, 0.12, -0.31);
-      const h2 = h1.clone();
-      h2.position.set(-0.08, 0.12, -0.31);
-      carGroup.add(h1, h2);
-
-      const taillightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
-      const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-      const t1 = new THREE.Mesh(taillightGeo, taillightMat);
-      t1.position.set(0.08, 0.12, 0.31);
-      const t2 = t1.clone();
-      t2.position.set(-0.08, 0.12, 0.31);
-      carGroup.add(t1, t2);
+        const taillightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
+        const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const t1 = new THREE.Mesh(taillightGeo, taillightMat);
+        t1.position.set(0.08, 0.12, 0.31);
+        const t2 = t1.clone();
+        t2.position.set(-0.08, 0.12, 0.31);
+        carGroup.add(t1, t2);
+      }
     }
     buildCar();
     carGroup.scale.setScalar(0.5);
