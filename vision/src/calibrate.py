@@ -1,6 +1,9 @@
 import json
+import os
 import sys
 from pathlib import Path
+
+os.environ["QT_LOGGING_RULES"] = "*=false"
 
 import cv2
 

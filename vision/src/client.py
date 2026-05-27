@@ -1,18 +1,21 @@
 import json
+import os
 import sys
+
+os.environ["QT_LOGGING_RULES"] = "*=false"
 
 import cv2
 import numpy as np
 from ultralytics import YOLO
 
-MODEL_PATH = "yolo26m.pt"
+MODEL_PATH = "yolov8m-seg.pt"
 VIDEO_PATH = "data/test.mp4"
 SPOTS_PATH = "data/spots.json"
 
 # COCO CLASSES = <2,car>,<3,motorcycle>
-VEHICLE_CLASSES = [2, 3]
+VEHICLE_CLASSES = [2, 3, 5, 7]
 
-OCCUPANCY_THRESHOLD = 0.6
+OCCUPANCY_THRESHOLD = 0.5
 
 
 def load_spots(path: str) -> dict:
