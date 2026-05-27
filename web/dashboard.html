@@ -564,20 +564,20 @@
 
     function buildCar() {
       const chassisGeo = new THREE.BoxGeometry(0.3, 0.12, 0.6);
-      const chassisMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+      const chassisMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.3 });
       const chassis = new THREE.Mesh(chassisGeo, chassisMat);
       chassis.position.y = 0.1;
       carGroup.add(chassis);
 
       const cabinGeo = new THREE.BoxGeometry(0.24, 0.1, 0.3);
-      const cabinMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.8 });
+      const cabinMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.1, metalness: 0.8 });
       const cabin = new THREE.Mesh(cabinGeo, cabinMat);
       cabin.position.y = 0.21;
       cabin.position.z = -0.05;
       carGroup.add(cabin);
 
       const wheelGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.04, 16);
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
       
       const wheelPos = [
         [0.16, 0.06, 0.18], [-0.16, 0.06, 0.18],
@@ -590,8 +590,25 @@
         w.position.set(...pos);
         carGroup.add(w);
       });
+
+      const headlightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
+      const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+      const h1 = new THREE.Mesh(headlightGeo, headlightMat);
+      h1.position.set(0.08, 0.12, -0.31);
+      const h2 = h1.clone();
+      h2.position.set(-0.08, 0.12, -0.31);
+      carGroup.add(h1, h2);
+
+      const taillightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
+      const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const t1 = new THREE.Mesh(taillightGeo, taillightMat);
+      t1.position.set(0.08, 0.12, 0.31);
+      const t2 = t1.clone();
+      t2.position.set(-0.08, 0.12, 0.31);
+      carGroup.add(t1, t2);
     }
     buildCar();
+    carGroup.scale.setScalar(0.5);
 
     const pinpoints = [];
     const markersLayer = document.getElementById('markersLayer');
@@ -726,6 +743,13 @@
       const t = Date.now() * 0.0008;
 
       pinpoints.forEach((pin, i) => {
+        if (carGroup.visible) {
+          pin.element.style.display = 'none';
+          pin.ring3D.visible = false;
+          return;
+        }
+
+        pin.ring3D.visible = true;
         const rippleCycle = (t + i * 0.5) % 1.0;
         const scale = 1 + rippleCycle * 3.5;
         pin.ring3D.scale.set(scale, scale, scale);
