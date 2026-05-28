@@ -674,7 +674,8 @@ footer {
   }
   
   .nav-links {
-    display: none;
+    display: flex;
+    gap: 1rem;
   }
   
   .content-split {
