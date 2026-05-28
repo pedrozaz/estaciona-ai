@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE reservations\n        SET status = 'cancelled'\n        WHERE id = $1 AND status = 'active'\n        RETURNING spot_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "spot_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "47ea65b99a8fd19fb5175709efefb75c5b2d7635b0578b50c4a2e8f4cba6b084"
+}
