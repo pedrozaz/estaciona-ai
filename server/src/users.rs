@@ -8,6 +8,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::security::hash_plate;
 use crate::state::SharedState;
 
 #[derive(Deserialize)]
@@ -28,6 +29,8 @@ pub async fn create_user(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let new_id = Uuid::new_v4();
 
+    let hashed_plate = hash_plate(&payload.plate, &state.plate_pepper);
+
     let record = sqlx::query!(
         r#"
         INSERT INTO users (id, plate)
@@ -35,7 +38,7 @@ pub async fn create_user(
         RETURNING id, plate, created_at as "created_at?"
         "#,
         new_id,
-        payload.plate
+        hashed_plate
     )
     .fetch_one(&state.pool)
     .await
