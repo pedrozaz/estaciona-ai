@@ -12,8 +12,22 @@ use crate::ws::messages::{EdgeToServerMsg, ServerToAppMsg};
 
 pub async fn ws_edge_handler(
     ws: WebSocketUpgrade,
+    headers: axum::http::HeaderMap,
     State(state): State<SharedState>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
+    let api_key = std::env::var("EDGE_API_KEY").unwrap_or_else(|_| "secret_edge_key".to_string());
+    let expected_auth = format!("Bearer {}", api_key);
+
+    let is_authorized = headers
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .map(|h| h == expected_auth)
+        .unwrap_or(false);
+
+    if !is_authorized {
+        return (axum::http::StatusCode::UNAUTHORIZED, "Invalid Edge API Key").into_response();
+    }
+
     ws.on_upgrade(|socket| handle_edge_socket(socket, state))
 }
 
@@ -80,18 +94,17 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
 }
 
 async fn handle_car_detected(state: &SharedState, plate: String, camera_id: String) {
+    let hashed_plate = crate::security::hash_plate(&plate, &state.plate_pepper);
+
     // 1. Validação do usuário
-    let user_record = sqlx::query!("SELECT id FROM users WHERE plate = $1", plate)
+    let user_record = sqlx::query!("SELECT id FROM users WHERE plate = $1", hashed_plate)
         .fetch_optional(&state.pool)
         .await;
 
     let user_id = match user_record {
         Ok(Some(record)) => record.id,
         _ => {
-            tracing::warn!(
-                "Veículo não cadastrado detectado ignorado. Placa: {}",
-                plate
-            );
+            tracing::warn!("Veículo não cadastrado detectado e ignorado.",);
             return;
         }
     };
