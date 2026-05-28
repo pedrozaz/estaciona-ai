@@ -2,12 +2,17 @@ import json
 import os
 import sys
 import time
+import asyncio
+import websockets
 
 os.environ["QT_LOGGING_RULES"] = "*=false"
 
 import cv2
 import numpy as np
 from ultralytics import YOLO
+
+WS_URL = os.environ.get("SERVER_WS_URL") or "ws//localhost:8000/ws/edge"
+EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or ""
 
 MODEL_PATH = "yolov8m-seg.pt"
 VIDEO_PATH = "data/test.mp4"
@@ -66,8 +71,11 @@ def compute_occupancy(
     return overlap_area / spot_area
 
 
-def main():
+async def main():
     spots_path = sys.argv[1] if len(sys.argv) > 1 else SPOTS_PATH
+
+    headers = {"Authorization": f"Bearer {EDGE_API_KEY}"}
+    websocket = await websockets.connect(WS_URL, extra_headers=headers)
 
     spots = load_spots(spots_path)
     model = YOLO(MODEL_PATH)
@@ -87,9 +95,9 @@ def main():
     spot_masks = build_spots_masks(spots, frame.shape)
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset to first frame
 
-    print(f"Loaded {len(spots)} parking spots from {spots_path}")
-
     debounce_map = {}
+
+    print(f"Loaded {len(spots)} parking spots from {spots_path}")
 
     while True:
         ret, frame = cap.read()
@@ -119,7 +127,7 @@ def main():
                 debounce_map[spot_id] = {
                     "confirmed": raw_status,
                     "candidate": raw_status,
-                    "consective_frames": 0,
+                    "consecutive_frames": 0,
                     "last_change_time": time.time(),
                 }
 
@@ -127,42 +135,49 @@ def main():
 
             if raw_status == state["confirmed"]:
                 state["candidate"] = raw_status
-                state["consective_frames"] = 0
+                state["consecutive_frames"] = 0
             else:
                 if raw_status == state["candidate"]:
-                    state["consective_frames"] += 1
+                    state["consecutive_frames"] += 1
                     elapsed_time = time.time() - state["last_change_time"]
 
                     if state["consecutive_frames"] >= 3 or elapsed_time >= 2.0:
-                        old_status = state["confirmed"]
                         state["confirmed"] = raw_status
                         state["consecutive_frames"] = 0
                         state["last_change_time"] = time.time()
 
-                        print(
-                            f"[{spot_id}] Estado alterado de {old_status} para -> {raw_status}"
-                        )
+                        payload = {
+                            "type": "SPOT_UPDATE",
+                            "spot_id": spot_id,
+                            "status": raw_status,
+                            "camera_id": "cam_01",
+                            "confidence": float(ratio)
+                            if raw_status == "occupied"
+                            else 1.0,
+                            "timestamp": time.strftime(
+                                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                            ),
+                        }
+                        await websocket.send(json.dumps(payload))
 
                 else:
                     state["candidate"] = raw_status
                     state["consecutive_frames"] = 1
                     state["last_change_time"] = time.time()
 
-            confirmed_occupied = state["confirmed"] == "occupied"
-            color = (0, 0, 255) if confirmed_occupied else (0, 255, 0)
+            is_confirmed_occupied = state["confirmed"] == "occupied"
+            color = (0, 0, 255) if is_confirmed_occupied else (0, 255, 0)
+
             status = f"{ratio:.0%}"
 
-            is_unstable = state["candidate"] != state["confirmed"]
-            label_suffix = " (Unstable)" if is_unstable else ""
-
             polygon = np.array(spots[spot_id], dtype=np.int32)
-            cv2.polylines(frame, [polygon], True, color, 2)
+            cv2.polylines(frame, [polygon], isClosed=True, color=color, thickness=2)
             cv2.putText(
                 frame,
-                f"{spot_id} {status}{label_suffix}",
-                tuple(polygon[0]),
-                cv2.FONT_HERSHEY_COMPLEX,
-                0.5,
+                f"{spot_id} {status}",
+                polygon[0],
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
                 color,
                 2,
             )
@@ -175,9 +190,12 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
+        await asyncio.sleep(0.01)
+
     cap.release()
     cv2.destroyAllWindows()
+    await websocket.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
