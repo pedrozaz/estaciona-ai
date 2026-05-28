@@ -1,1 +1,2 @@
-estaciona-ai/web/lib/* linguist-vendored
+* linguis-vendored
+*.js linguist-vendored=false
