@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 
 os.environ["QT_LOGGING_RULES"] = "*=false"
 
@@ -88,6 +89,8 @@ def main():
 
     print(f"Loaded {len(spots)} parking spots from {spots_path}")
 
+    debounce_map = {}
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -109,14 +112,54 @@ def main():
         for spot_id, (mask, area) in spot_masks.items():
             ratio = compute_occupancy(mask, area, detections, frame.shape)
             is_occupied = ratio >= OCCUPANCY_THRESHOLD
-            color = (0, 0, 255) if is_occupied else (0, 255, 0)
+
+            raw_status = "occupied" if is_occupied else "free"
+
+            if spot_id not in debounce_map:
+                debounce_map[spot_id] = {
+                    "confirmed": raw_status,
+                    "candidate": raw_status,
+                    "consective_frames": 0,
+                    "last_change_time": time.time(),
+                }
+
+            state = debounce_map[spot_id]
+
+            if raw_status == state["confirmed"]:
+                state["candidate"] = raw_status
+                state["consective_frames"] = 0
+            else:
+                if raw_status == state["candidate"]:
+                    state["consective_frames"] += 1
+                    elapsed_time = time.time() - state["last_change_time"]
+
+                    if state["consecutive_frames"] >= 3 or elapsed_time >= 2.0:
+                        old_status = state["confirmed"]
+                        state["confirmed"] = raw_status
+                        state["consecutive_frames"] = 0
+                        state["last_change_time"] = time.time()
+
+                        print(
+                            f"[{spot_id}] Estado alterado de {old_status} para -> {raw_status}"
+                        )
+
+                else:
+                    state["candidate"] = raw_status
+                    state["consecutive_frames"] = 1
+                    state["last_change_time"] = time.time()
+
+            confirmed_occupied = state["confirmed"] == "occupied"
+            color = (0, 0, 255) if confirmed_occupied else (0, 255, 0)
             status = f"{ratio:.0%}"
+
+            is_unstable = state["candidate"] != state["confirmed"]
+            label_suffix = " (Unstable)" if is_unstable else ""
 
             polygon = np.array(spots[spot_id], dtype=np.int32)
             cv2.polylines(frame, [polygon], True, color, 2)
             cv2.putText(
                 frame,
-                f"{spot_id} {status}",
+                f"{spot_id} {status}{label_suffix}",
                 tuple(polygon[0]),
                 cv2.FONT_HERSHEY_COMPLEX,
                 0.5,
