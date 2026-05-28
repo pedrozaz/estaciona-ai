@@ -1,3 +1,4 @@
+mod auth;
 mod pathfinding;
 mod reservations;
 mod security;
@@ -81,6 +82,7 @@ async fn main() {
         )
         .route("/users", post(users::create_user))
         .route("/users/{id}", get(users::get_user))
+        .route("/login", post(auth::login_dashboard))
         .with_state(parking_state.clone())
         .layer(cors)
         .layer(TraceLayer::new_for_http());
