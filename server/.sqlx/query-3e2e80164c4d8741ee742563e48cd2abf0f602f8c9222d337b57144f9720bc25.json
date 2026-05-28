@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, spot_id FROM reservations WHERE user_id = $1 AND status = 'active' LIMIT 1",
+  "query": "SELECT id, password_hash FROM dashboard_admins WHERE username = $1",
   "describe": {
     "columns": [
       {
@@ -9,26 +9,26 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "reservations",
+            "table": "dashboard_admins",
             "name": "id"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "spot_id",
-        "type_info": "Text",
+        "name": "password_hash",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "reservations",
-            "name": "spot_id"
+            "table": "dashboard_admins",
+            "name": "password_hash"
           }
         }
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Text"
       ]
     },
     "nullable": [
@@ -36,5 +36,5 @@
       false
     ]
   },
-  "hash": "7df7478c81964c533dde2c0bbdc673973462959be61ea7e39a238a8c5378bc0b"
+  "hash": "3e2e80164c4d8741ee742563e48cd2abf0f602f8c9222d337b57144f9720bc25"
 }
