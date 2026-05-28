@@ -36,6 +36,30 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 4 && args[1] == "--create-admin" {
+        let username = &args[2];
+        let plain_password = &args[3];
+
+        let hashed = crate::security::hash_password(plain_password)
+            .expect("Falha ao gerar o hash da senha via Argon2");
+
+        sqlx::query!(
+            "INSERT INTO dashboard_admins (username, password_hash) VALUES ($1, $2)",
+            username,
+            hashed
+        )
+        .execute(&pool)
+        .await
+        .expect("Falha ao salvar administrador no banco. Ele já existe?");
+
+        tracing::info!(
+            "Administrador '{}' criado com sucesso! Servidor sendo finalizado.",
+            username
+        );
+        return;
+    }
+
     let parking_state: SharedState = init_state(pool, jwt_secret, plate_pepper).await;
 
     let cors = CorsLayer::new()
