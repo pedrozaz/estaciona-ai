@@ -20,11 +20,13 @@ pub struct AppState {
     pub tx: broadcast::Sender<String>,
     pub user_sessions: DashMap<Uuid, mpsc::UnboundedSender<String>>,
     pub graph: RwLock<ParkingGraph>,
+    pub jwt_secret: String,
+    pub plate_pepper: String,
 }
 
 pub type SharedState = Arc<AppState>;
 
-pub async fn init_state(pool: PgPool) -> SharedState {
+pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) -> SharedState {
     let (tx, _) = broadcast::channel(100);
 
     let mut graph = ParkingGraph::new();
@@ -87,5 +89,7 @@ pub async fn init_state(pool: PgPool) -> SharedState {
         tx,
         user_sessions: DashMap::new(),
         graph: RwLock::new(graph),
+        jwt_secret,
+        plate_pepper,
     })
 }

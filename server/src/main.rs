@@ -26,6 +26,9 @@ async fn main() {
 
     dotenvy::from_path("../.env").ok();
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL missing in .env");
+    let plate_pepper =
+        std::env::var("PLATE_SECRET_PEPPER").expect("PLATE_SECRET_PEPPER missing in .env");
+    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET missing in .env");
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -33,7 +36,7 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
-    let parking_state: SharedState = init_state(pool).await;
+    let parking_state: SharedState = init_state(pool, jwt_secret, plate_pepper).await;
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
