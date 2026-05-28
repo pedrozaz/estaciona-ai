@@ -1,1 +1,2 @@
 web/lib/* linguist-vendored
+*.html linguist-vendored
