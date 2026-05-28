@@ -24,8 +24,13 @@ Thumbs.db
 datasets/
 **/db/
 **/data/
-
 # COLMAP
 reconstruction/photos/
 reconstruction/colmap/
 **/sparse/
+
+# YOLO / Models
+**/models/
+**/yolo**
+**/yolo26n.*
+**/yolo26n.pt
