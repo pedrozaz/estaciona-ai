@@ -22,14 +22,33 @@ use crate::ws::messages::{AppToServerMsg, ServerToAppMsg};
 #[derive(Deserialize)]
 pub struct WsAppQuery {
     pub user_id: Uuid,
+    pub token: String,
 }
 
 pub async fn ws_app_handler(
     ws: WebSocketUpgrade,
     Query(query): Query<WsAppQuery>,
     State(state): State<SharedState>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
+    let claims = match crate::security::verify_jwt(&query.token, &state.jwt_secret) {
+        Ok(c) => c,
+        Err(_) => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                "Invalid or expired JWT token",
+            )
+                .into_response();
+        }
+    };
+    if claims.sub != query.user_id.to_string() {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            "Token does not match user_id",
+        )
+            .into_response();
+    }
     ws.on_upgrade(move |socket| handle_app_socket(socket, state, query.user_id))
+        .into_response()
 }
 
 async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid) {
