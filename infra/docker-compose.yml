@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:15-alpine
     container_name: estaciona_db
+    restart: always
     env_file:
       - ../.env
     ports:
@@ -9,43 +10,35 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - estaciona_net
+      - estaciona_ai
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   server:
     build:
       context: ..
       dockerfile: infra/Dockerfile.server
     container_name: estaciona_server
+    restart: always
     ports:
       - "8000:8000"
+    env_file:
+      - ../.env
     environment:
       - RUST_LOG=info
-    depends_on:
-      - db
-    env_file:
-      - ../.env
-    networks:
-      - estaciona_net
 
-  vision:
-    build:
-      context: ..
-      dockerfile: infra/Dockerfile.vision
-    container_name: estaciona_vision
     depends_on:
-      - server
-    volumes:
-      - ../datasets:/app/datasets
+      db:
+        condition: service_healthy
     networks:
-      - estaciona_net
-    env_file:
-      - ../.env
-    restart: always
+      - estaciona_ai
 
 volumes:
   postgres_data:
+    name: estaciona_postgres_data
 
 networks:
-  estaciona_net:
-    driver: bridge
-
+  estaciona_ai:

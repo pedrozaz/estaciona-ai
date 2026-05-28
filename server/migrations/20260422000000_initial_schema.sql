@@ -1,72 +1,54 @@
--- Initial schema for Estaciona AI
+    -- Initial schema for Estaciona AI
 
--- 1. Extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    -- 1. Extensions
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Types
-CREATE TYPE spot_status AS ENUM ('free', 'occupied', 'reserved', 'blocked');
-CREATE TYPE reservation_status AS ENUM ('active', 'cancelled', 'expired', 'completed');
+    -- 2. Autenticação (Terreno preparado para o futuro)
+    CREATE TABLE dashboard_admins (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    );
 
--- 3. Tables
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+    -- 3. Usuários e Placas
+    CREATE TABLE users (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        plate TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    );
 
-CREATE TABLE spots (
-    id TEXT PRIMARY KEY,
-    status spot_status DEFAULT 'free',
-    x FLOAT NOT NULL,
-    y FLOAT NOT NULL,
-    z FLOAT DEFAULT 0,
-    last_updated TIMESTAMPTZ DEFAULT NOW()
-);
+    -- 4. Vagas e Reservas
+    CREATE TABLE spots (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL DEFAULT 'free',
+        x FLOAT NOT NULL,
+        y FLOAT NOT NULL,
+        z FLOAT DEFAULT 0,
+        last_updated TIMESTAMPTZ DEFAULT NOW()
+    );
 
-CREATE TABLE reservations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    spot_id TEXT REFERENCES spots(id),
-    status reservation_status DEFAULT 'active',
-    expires_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+    CREATE TABLE reservations (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        spot_id TEXT NOT NULL REFERENCES spots(id),
+        status TEXT NOT NULL DEFAULT 'active',
+        expires_at TIMESTAMPTZ NOT NULL,
+        completed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
 
-CREATE TABLE graph_nodes (
-    id TEXT PRIMARY KEY,
-    x FLOAT NOT NULL,
-    y FLOAT NOT NULL,
-    is_spot BOOLEAN DEFAULT FALSE,
-    spot_id TEXT REFERENCES spots(id)
-);
+    -- 5. Integração Câmera x Dashboard (Terreno preparado para o futuro)
+    CREATE TABLE vision_spot_mappings (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        camera_id VARCHAR(50) NOT NULL,
+        vision_spot_name VARCHAR(50) NOT NULL,
+        dashboard_spot_id TEXT NOT NULL REFERENCES spots(id),
+        UNIQUE(camera_id, vision_spot_name)
+    );
 
-CREATE TABLE graph_edges (
-    from_node TEXT REFERENCES graph_nodes(id),
-    to_node TEXT REFERENCES graph_nodes(id),
-    cost INTEGER NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    PRIMARY KEY (from_node, to_node)
-);
+    -- 6. Indexes para performance
+    CREATE INDEX idx_active_reservations ON reservations (status, expires_at)
+    WHERE status = 'active';
 
--- 4. Indexes
-CREATE INDEX idx_active_reservations ON reservations (status, expires_at) 
-WHERE status = 'active';
-
-CREATE INDEX idx_spots_status ON spots (status);
-
--- 5. Triggers/Functions (Optional but helpful)
--- Update the last_updated timestamp on spot changes
-CREATE OR REPLACE FUNCTION update_spot_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.last_updated = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_update_spot_timestamp
-BEFORE UPDATE ON spots
-FOR EACH ROW
-EXECUTE FUNCTION update_spot_timestamp();
+    CREATE INDEX idx_spots_status ON spots (status);
