@@ -1,5 +1,6 @@
 mod pathfinding;
 mod reservations;
+mod security;
 mod state;
 mod users;
 mod ws;
