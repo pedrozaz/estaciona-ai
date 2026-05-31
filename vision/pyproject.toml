@@ -7,4 +7,5 @@ dependencies = [
     "opencv-python>=4.13.0.92",
     "ultralytics>=8.4.53",
     "websockets>=16.0",
+    "python-dotenv>=1.0.1",
 ]

@@ -28,6 +28,8 @@ pub async fn ws_edge_handler(
         return (axum::http::StatusCode::UNAUTHORIZED, "Invalid Edge API Key").into_response();
     }
 
+    tracing::info!("[WS EDGE] Camera connected with valid API key.");
+
     ws.on_upgrade(|socket| handle_edge_socket(socket, state))
 }
 
@@ -48,7 +50,7 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                     confidence,
                     ..
                 } => {
-                    if confidence < 0.70 {
+                    if confidence < 0.60 {
                         tracing::debug!(
                             "Ignorando SpotUpdate para {} devido a baixa confiança ({})",
                             spot_id,
@@ -67,6 +69,13 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                     };
 
                     state.spots.insert(spot_id.clone(), new_status);
+
+                    tracing::info!(
+                        "[WS EDGE] Spot {} updated to {} (Confidence: {:.2})",
+                        spot_id,
+                        status,
+                        confidence
+                    );
 
                     let update_msg = ServerToAppMsg::SpotUpdate { spot_id, status };
 
@@ -91,6 +100,8 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
             }
         }
     }
+    
+    tracing::info!("[WS EDGE] Camera disconnected.");
 }
 
 async fn handle_car_detected(state: &SharedState, plate: String, camera_id: String) {

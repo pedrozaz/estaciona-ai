@@ -4,6 +4,9 @@ import sys
 import time
 import asyncio
 import websockets
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
 os.environ["QT_LOGGING_RULES"] = "*=false"
 
@@ -11,8 +14,9 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-WS_URL = os.environ.get("SERVER_WS_URL") or "ws//localhost:8000/ws/edge"
-EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or ""
+WS_URL = os.environ.get("SERVER_WS_URL", "ws://localhost:8000/ws/edge")
+WS_URL = WS_URL.replace("ws://server:", "ws://localhost:")
+EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or "secret_edge_key"
 
 MODEL_PATH = "yolov8m-seg.pt"
 VIDEO_PATH = "data/test.mp4"
@@ -75,7 +79,7 @@ async def main():
     spots_path = sys.argv[1] if len(sys.argv) > 1 else SPOTS_PATH
 
     headers = {"Authorization": f"Bearer {EDGE_API_KEY}"}
-    websocket = await websockets.connect(WS_URL, extra_headers=headers)
+    websocket = await websockets.connect(WS_URL, additional_headers=headers)
 
     spots = load_spots(spots_path)
     model = YOLO(MODEL_PATH)
@@ -119,7 +123,12 @@ async def main():
 
         for spot_id, (mask, area) in spot_masks.items():
             ratio = compute_occupancy(mask, area, detections, frame.shape)
-            is_occupied = ratio >= OCCUPANCY_THRESHOLD
+            
+            # Hysteresis to prevent flickering
+            if spot_id in debounce_map and debounce_map[spot_id]["confirmed"] == "occupied":
+                is_occupied = ratio >= 0.40  # Lower threshold to stay occupied
+            else:
+                is_occupied = ratio >= 0.60  # Higher threshold to become occupied
 
             raw_status = "occupied" if is_occupied else "free"
 
@@ -130,6 +139,16 @@ async def main():
                     "consecutive_frames": 0,
                     "last_change_time": time.time(),
                 }
+
+                payload = {
+                    "type": "SPOT_UPDATE",
+                    "spot_id": spot_id,
+                    "status": raw_status,
+                    "camera_id": "cam_01",
+                    "confidence": float(ratio) if raw_status == "occupied" else 1.0,
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                }
+                await websocket.send(json.dumps(payload))
 
             state = debounce_map[spot_id]
 
