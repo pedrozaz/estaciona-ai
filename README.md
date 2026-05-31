@@ -1,2 +1,1 @@
-# Visão Geral
-O Estaciona AI consiste em câmeras fixas instaladas no estacionamento da universidade que detectam vagas ocupadas e livres, e transmitem esse estado para um aplicativo que exibe um modelo 3D interativo do ambiente. O motorista poderá verificar disponibilidades de alguma vaga específica ou qualquer antes mesmo de chegar ao campus e, ao entrar no estacionamento, é guiado automaticamente — as câmeras identificam o carro e movem a visualização na aplicação sem que o motorista precise tocar nela.
+
