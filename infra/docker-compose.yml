@@ -36,9 +36,27 @@ services:
     networks:
       - estaciona_ai
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: estaciona_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - estaciona_ai
+    depends_on:
+      - server
+
 volumes:
   postgres_data:
     name: estaciona_postgres_data
+  caddy_data:
+  caddy_config:
 
 networks:
   estaciona_ai:

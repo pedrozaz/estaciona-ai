@@ -1190,12 +1190,12 @@
     function connectAppWebSocket() {
       try {
         const host = window.location.hostname || 'localhost';
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         
-        const backendHost = (host === 'estaciona.tech' || host === 'localhost' || host === '127.0.0.1') 
-            ? '104.210.14.223' 
-            : host;
-        const wsUrl = `${protocol}//${backendHost}:8000/ws/dashboard`;
+        // Em produção (GitHub Pages com HTTPS) obrigatoriamente usa o subdomínio com SSL
+        // Localmente pode conectar direto no IP na porta 8000
+        const wsUrl = host === 'estaciona.tech' 
+            ? 'wss://api.estaciona.tech/ws/dashboard'
+            : 'ws://104.210.14.223:8000/ws/dashboard';
         
         const ws = new WebSocket(wsUrl);
 
