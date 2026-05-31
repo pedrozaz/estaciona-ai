@@ -1187,9 +1187,10 @@
         const host = window.location.hostname || 'localhost';
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         
-        // Se estiver no site de prod, aponta para o IP da VM (que precisará de proxy SSL no futuro)
-        const backendHost = host === 'estaciona.tech' ? '104.210.14.223' : host;
-        const wsUrl = `${protocol}//${backendHost}:8000/ws/app`;
+        const backendHost = (host === 'estaciona.tech' || host === 'localhost' || host === '127.0.0.1') 
+            ? '104.210.14.223' 
+            : host;
+        const wsUrl = `${protocol}//${backendHost}:8000/ws/dashboard`;
         
         const ws = new WebSocket(wsUrl);
 
@@ -1200,7 +1201,6 @@
               const isOccupied = data.status === 'occupied' || data.status === 'reserved';
               window.toggleSpot(data.spot_id, isOccupied, true);
             } else if (data.type === 'NAVIGATION_START') {
-              // Futura integração de navegação
             }
           } catch (e) {
             console.error("WebSocket message parsing error:", e);
@@ -1208,14 +1208,13 @@
         };
 
         ws.onclose = () => {
-          setTimeout(connectAppWebSocket, 5000); // Reconnect
+          setTimeout(connectAppWebSocket, 5000);
         };
       } catch (err) {
-        console.error("Erro crítico ao iniciar WebSocket (possível bloqueio de Mixed Content):", err);
+        console.error("Erro crítico ao iniciar WebSocket:", err);
       }
     }
     
-    // Inicia conexão WebSockets
     connectAppWebSocket();
 
     animate();

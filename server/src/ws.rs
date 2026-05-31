@@ -193,3 +193,35 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
 
     state.user_sessions.remove(&user_id);
 }
+
+pub async fn ws_dashboard_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<SharedState>,
+) -> axum::response::Response {
+    ws.on_upgrade(move |socket| handle_dashboard_socket(socket, state))
+        .into_response()
+}
+
+async fn handle_dashboard_socket(mut socket: WebSocket, state: SharedState) {
+    let mut broadcast_rx = state.tx.subscribe();
+
+    for entry in state.spots.iter() {
+        let msg = ServerToAppMsg::SpotUpdate {
+            spot_id: entry.key().clone(),
+            status: match entry.value() {
+                SpotStatus::Free => "free".to_string(),
+                SpotStatus::Occupied => "occupied".to_string(),
+                SpotStatus::Reserved => "reserved".to_string(),
+            },
+        };
+        if let Ok(json_str) = serde_json::to_string(&msg) {
+            let _ = socket.send(Message::Text(json_str.into())).await;
+        }
+    }
+
+    while let Ok(broadcast_msg) = broadcast_rx.recv().await {
+        if socket.send(Message::Text(broadcast_msg.into())).await.is_err() {
+            break;
+        }
+    }
+}

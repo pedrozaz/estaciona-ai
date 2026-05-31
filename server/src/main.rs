@@ -72,6 +72,7 @@ async fn main() {
         .route("/health", get(health_check))
         .route("/ws/edge", get(ws::ws_edge_handler))
         .route("/ws/app", get(ws::ws_app_handler))
+        .route("/ws/dashboard", get(ws::ws_dashboard_handler))
         .route(
             "/reservations",
             post(reservations::create_reservation).get(reservations::get_reservations),
