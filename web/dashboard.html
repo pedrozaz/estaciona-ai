@@ -827,6 +827,11 @@
               setTimeout(() => {
                 loadingOverlay.style.display = 'none';
                 document.getElementById('infoPanel').style.display = 'block';
+                
+                // Conecta o WebSocket só depois que o modelo estiver 100% carregado
+                if (typeof connectAppWebSocket === 'function') {
+                  connectAppWebSocket();
+                }
               }, 600);
             }
           }
@@ -1215,8 +1220,6 @@
       }
     }
     
-    connectAppWebSocket();
-
     animate();
 
     window.addEventListener('resize', () => {
