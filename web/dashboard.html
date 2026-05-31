@@ -1182,6 +1182,33 @@
       }
     });
 
+    function connectAppWebSocket() {
+      const host = window.location.hostname || 'localhost';
+      const wsUrl = `ws://${host}:8000/ws/app`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'SPOT_UPDATE') {
+            const isOccupied = data.status === 'occupied' || data.status === 'reserved';
+            window.toggleSpot(data.spot_id, isOccupied, true);
+          } else if (data.type === 'NAVIGATION_START') {
+            // Futura integração de navegação
+          }
+        } catch (e) {
+          console.error("WebSocket message parsing error:", e);
+        }
+      };
+
+      ws.onclose = () => {
+        setTimeout(connectAppWebSocket, 5000); // Reconnect
+      };
+    }
+    
+    // Inicia conexão WebSockets
+    connectAppWebSocket();
+
     animate();
 
     window.addEventListener('resize', () => {
