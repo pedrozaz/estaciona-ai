@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main", "feat/*", "app/*"]
+    branches: ["main", "feat/**", "develop"]
     paths: ["web/**"]
 
 permissions:
