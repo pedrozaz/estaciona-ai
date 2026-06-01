@@ -3,7 +3,7 @@ NOTICE
 
 estaciona-ai (C) Copyright 2026 Guilherme Pedroza
 
-This project is licensed under the Apache License, Version 2.0.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 See the LICENSE file for details.
 
 ---
@@ -16,7 +16,7 @@ Users and distributors of this software must comply with all applicable licenses
 
 ---
 
-1. YOLOv8n (Ultralytics)
+1. YOLOv8 (Ultralytics)
    Project:   https://github.com/ultralytics/ultralytics
    License:   GNU Affero General Public License v3.0 (AGPL-3.0)
               https://www.gnu.org/licenses/agpl-3.0.html
@@ -35,5 +35,46 @@ Users and distributors of this software must comply with all applicable licenses
 
      c) Comply fully with the AGPL-3.0 terms, including publishing all
         source code of the complete application.
+
+---
+
+2. Three.js (Mr.doob & Contributors)
+   Project:   https://github.com/mrdoob/three.js
+   License:   MIT License
+              https://opensource.org/licenses/MIT
+   Used for:  Interactive 3D rendering of the parking dashboard and
+              geometric calibration tools.
+
+---
+
+3. Draco 3D Data Compression (Google)
+   Project:   https://github.com/google/draco
+   License:   Apache License 2.0
+              http://www.apache.org/licenses/LICENSE-2.0
+   Used for:  Fast decompression of optimized 3D meshes (e.g. terrain models)
+              rendered in the web dashboard.
+
+---
+
+4. Axum Framework (Tokio Contributors)
+   Project:   https://github.com/tokio-rs/axum
+   License:   MIT License
+              https://opensource.org/licenses/MIT
+   Used for:  Asynchronous web server framework in the Rust backend, providing
+              REST APIs and WebSocket routing.
+
+---
+
+5. SQLx (Launchbadge)
+   Project:   https://github.com/launchbadge/sqlx
+   License:   Apache License 2.0 or MIT License
+   Used for:  Asynchronous SQL database connectivity to PostgreSQL.
+
+---
+
+6. Argon2 (RustCrypto)
+   Project:   https://github.com/RustCrypto/password-hashes
+   License:   MIT License or Apache License 2.0
+   Used for:  Secure hashing of dashboard administrator passwords.
 
 ---
