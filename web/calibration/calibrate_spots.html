@@ -319,14 +319,14 @@
     // ── Loader ──
     async function init() {
       try {
-        const res = await fetch('ortho_calibration.json');
+        const res = await fetch('../data/ortho_calibration.json');
         if (!res.ok) throw new Error('Falha ao carregar ortho_calibration.json');
         const calData = await res.json();
         calibrationTransform = calData.transform.imageToModel;
         document.getElementById('calibrationStatus').textContent = "Calibração: Ativa (imageToModel)";
         document.getElementById('calibrationStatus').style.color = "#22c55e";
         
-        orthoImg.src = calData.image || 'uniube_ortho_projection.png';
+        orthoImg.src = '../assets/images/' + (calData.image ? calData.image.split('/').pop() : 'uniube_ortho_projection.png');
         orthoImg.onload = () => {
           fitImage();
           draw();

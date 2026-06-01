@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https:
   <link href="https:
     rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -642,7 +642,7 @@
         currentCameraTarget.copy(globalCameraTarget);
         camera.lookAt(currentCameraTarget);
 
-        fetch('config.json?v=' + Date.now())
+        fetch('data/config.json?v=' + Date.now())
           .then(res => res.json())
           .then(data => {
             configData = data;
@@ -755,7 +755,7 @@
     }
 
     function loadSpots() {
-      fetch('spots_3d.json?v=' + Date.now())
+      fetch('data/spots_3d.json?v=' + Date.now())
         .then(res => res.json())
         .then(data => {
           parkingSpotsData = data;

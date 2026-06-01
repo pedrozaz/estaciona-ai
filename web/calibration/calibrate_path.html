@@ -4,12 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calibração de Pinpoints - Estaciona AI</title>
+  <title>Calibração de Trilhos (Path) - Estaciona AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../css/styles.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -47,7 +47,7 @@
 
     .cal-nav .title .dot {
       width: 8px; height: 8px;
-      background: var(--primary-green);
+      background: #f59e0b;
       border-radius: 50%;
       animation: pulse-dot 2s infinite;
     }
@@ -81,13 +81,13 @@
     }
 
     .btn-action.primary {
-      background: var(--primary-green);
-      border-color: var(--primary-green);
+      background: #f59e0b;
+      border-color: #f59e0b;
       color: #fff;
     }
 
     .btn-action.primary:hover {
-      background: var(--primary-dark);
+      background: #d97706;
     }
 
     .btn-action.danger {
@@ -146,7 +146,7 @@
 
     .pin-item {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 0.5rem;
       padding: 0.6rem 0.7rem;
       border-radius: 8px;
@@ -154,19 +154,31 @@
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.04);
       transition: all 0.2s;
+      cursor: pointer;
     }
 
     .pin-item:hover {
       background: rgba(255,255,255,0.06);
-      border-color: rgba(28, 167, 69, 0.2);
+    }
+
+    .pin-item.active {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .pin-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
     }
 
     .pin-marker {
       width: 10px; height: 10px;
-      background: var(--primary-green);
+      background: #f59e0b;
       border-radius: 50%;
       flex-shrink: 0;
-      box-shadow: 0 0 6px rgba(28, 167, 69, 0.4);
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
     }
 
     .pin-info {
@@ -216,12 +228,9 @@
     .sidebar-footer {
       padding: 0.75rem 1rem;
       border-top: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .pin-count {
-      font-size: 0.75rem;
-      color: #64748b;
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
     }
 
     /* ── JSON Output Modal ── */
@@ -257,7 +266,7 @@
       width: 100%;
       height: 300px;
       background: #0f1117;
-      color: var(--primary-green);
+      color: #f59e0b;
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 8px;
       padding: 1rem;
@@ -310,8 +319,8 @@
 
     .loading-ring {
       width: 48px; height: 48px;
-      border: 3px solid rgba(28, 167, 69, 0.15);
-      border-top-color: var(--primary-green);
+      border: 3px solid rgba(245, 158, 11, 0.15);
+      border-top-color: #f59e0b;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 1rem;
@@ -320,7 +329,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .loading-text { font-size: 0.9rem; color: #64748b; }
-    .loading-progress { margin-top: 0.5rem; font-size: 0.8rem; color: var(--primary-green); font-weight: 600; }
+    .loading-progress { margin-top: 0.5rem; font-size: 0.8rem; color: #f59e0b; font-weight: 600; }
   </style>
 </head>
 
@@ -329,12 +338,12 @@
   <nav class="cal-nav">
     <div class="title">
       <div class="dot"></div>
-      Modo Calibração — Pinpoints
+      Modo Calibração — Trilhos do Carro (Path)
     </div>
     <div class="nav-actions">
       <button class="btn-action danger" onclick="clearAllPins()">Limpar Tudo</button>
-      <button class="btn-action" onclick="importJSON()">Importar JSON</button>
-      <button class="btn-action primary" onclick="exportJSON()">Exportar JSON</button>
+      <button class="btn-action" onclick="importJSON()">Importar JSON Existente</button>
+      <button class="btn-action primary" onclick="exportJSON()">Exportar JSON Atualizado</button>
     </div>
   </nav>
 
@@ -351,29 +360,30 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-header">
-      <h3>📍 Pinpoints</h3>
-      <p>Clique no modelo 3D para adicionar</p>
+      <h3>🛣️ Trilhos (Rotas)</h3>
+      <p>Crie um estacionamento, selecione-o e clique no modelo para desenhar o trilho.</p>
     </div>
     <div class="pin-list" id="pinList">
       <!-- pins appear here -->
     </div>
     <div class="sidebar-footer">
-      <div class="pin-count" id="pinCount">0 pinpoints</div>
+      <button class="btn-action primary" style="width: 100%; text-align: center;" onclick="addNewRoute()">+ Nova Rota</button>
+      <div class="pin-count" id="pinCount" style="text-align: center; color: #64748b; font-size: 0.75rem;">0 rotas</div>
     </div>
   </div>
 
   <!-- Instructions -->
   <div class="instructions" id="instructions">
-    <strong>Clique</strong> no modelo para adicionar pinpoint &nbsp;|&nbsp;
-    <strong>LMB</strong> Rotacionar &nbsp;|&nbsp;
-    <strong>RMB</strong> Mover &nbsp;|&nbsp;
+    <strong>Selecione uma rota</strong> na barra lateral &nbsp;|&nbsp;
+    <strong>LMB</strong> Adicionar ponto no caminho &nbsp;|&nbsp;
+    <strong>RMB</strong> Mover câmera &nbsp;|&nbsp;
     <strong>Scroll</strong> Zoom
   </div>
 
   <!-- JSON Modal -->
   <div class="json-modal" id="jsonModal">
     <div class="json-content">
-      <h3>📋 JSON dos Pinpoints</h3>
+      <h3>📋 JSON Atualizado das Rotas</h3>
       <textarea id="jsonOutput" readonly></textarea>
       <div class="json-actions">
         <button class="btn-action" onclick="closeModal()">Fechar</button>
@@ -386,10 +396,10 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "./lib/three/three.module.js",
-        "three/addons/controls/OrbitControls.js": "./lib/three/OrbitControls.js",
-        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js",
-        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js"
+        "three": "../lib/three/three.module.js",
+        "three/addons/controls/OrbitControls.js": "../lib/three/OrbitControls.js",
+        "three/addons/loaders/GLTFLoader.js": "../lib/three/GLTFLoader.js",
+        "three/addons/loaders/DRACOLoader.js": "../lib/three/DRACOLoader.js"
       }
     }
   </script>
@@ -401,8 +411,25 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
     // ── State ──
+    // Each pin: { id, name, position, camera, path: [{x,y,z}, ...], lineMesh, markerMeshes }
     const pins = [];
     let loadedModel = null;
+    let activeRouteId = null;
+
+    window.addNewRoute = function() {
+      const id = Date.now();
+      pins.push({
+        id: id,
+        name: `Estacionamento ${pins.length + 1}`,
+        position: null, // will be the LAST point of the path
+        camera: null,
+        path: [],
+        lineMesh: null,
+        markerMeshes: []
+      });
+      activeRouteId = id;
+      renderPinList();
+    };
 
     // ── Scene ──
     const viewport = document.getElementById('viewport');
@@ -453,20 +480,16 @@
     const loadingProgress = document.getElementById('loadingProgress');
 
     loader.load(
-      '../reconstruction/melhorresultado_otimizado.glb',
+      '../../reconstruction/melhorresultado_otimizado.glb',
       (gltf) => {
         loadedModel = gltf.scene;
-
         const box = new THREE.Box3().setFromObject(loadedModel);
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
-
         loadedModel.position.sub(center);
-
         const maxDim = Math.max(size.x, size.y, size.z);
         const scale = 15 / maxDim;
         loadedModel.scale.setScalar(scale);
-
         scene.add(loadedModel);
 
         const finalBox = new THREE.Box3().setFromObject(loadedModel);
@@ -492,54 +515,51 @@
       },
       (error) => {
         console.error('Erro:', error);
-        document.querySelector('.loading-text').textContent = 'Erro ao carregar modelo.';
       }
     );
 
-    // ── Create Pin Mesh ──
-    function createPinMesh(position) {
-      const group = new THREE.Group();
-
-      // Sphere head
-      const sphereGeo = new THREE.SphereGeometry(0.15, 16, 16);
-      const sphereMat = new THREE.MeshStandardMaterial({
-        color: 0x1ca745,
-        emissive: 0x1ca745,
-        emissiveIntensity: 0.5,
-        metalness: 0.3,
-        roughness: 0.4,
+    // ── Meshes ──
+    function createPointMarker(pos, isStart) {
+      const geo = new THREE.SphereGeometry(isStart ? 0.2 : 0.1, 16, 16);
+      const mat = new THREE.MeshStandardMaterial({
+        color: isStart ? 0xef4444 : 0xf59e0b,
+        emissive: isStart ? 0xef4444 : 0xf59e0b,
+        emissiveIntensity: 0.5
       });
-      const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-      sphere.position.y = 0.5;
-      group.add(sphere);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(pos);
+      return mesh;
+    }
 
-      // Stem
-      const stemGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 8);
-      const stemMat = new THREE.MeshStandardMaterial({ color: 0x1ca745 });
-      const stem = new THREE.Mesh(stemGeo, stemMat);
-      stem.position.y = 0.25;
-      group.add(stem);
+    function updatePathMeshes(pin) {
+      if (pin.lineMesh) scene.remove(pin.lineMesh);
+      pin.markerMeshes.forEach(m => scene.remove(m));
+      pin.markerMeshes = [];
 
-      // Glow ring
-      const ringGeo = new THREE.RingGeometry(0.2, 0.35, 32);
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: 0x1ca745,
-        transparent: true,
-        opacity: 0.25,
-        side: THREE.DoubleSide,
+      if (pin.path.length === 0) return;
+
+      const points = pin.path.map(p => new THREE.Vector3(p.x, p.y + 0.1, p.z));
+      
+      // Draw Line
+      if (points.length > 1) {
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+        const mat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
+        pin.lineMesh = new THREE.Line(geo, mat);
+        scene.add(pin.lineMesh);
+      }
+
+      // Draw Markers
+      points.forEach((p, i) => {
+        const isStart = i === 0;
+        const marker = createPointMarker(p, isStart);
+        pin.markerMeshes.push(marker);
+        scene.add(marker);
       });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.01;
-      group.add(ring);
-
-      group.position.copy(position);
-      return group;
     }
 
     // ── Click Handler ──
     viewport.addEventListener('click', (event) => {
-      if (!loadedModel) return;
+      if (!loadedModel || !activeRouteId) return;
 
       const rect = viewport.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -550,16 +570,12 @@
 
       if (intersects.length > 0) {
         const point = intersects[0].point.clone();
-        const pinMesh = createPinMesh(point);
-        scene.add(pinMesh);
-
-        const pinData = {
-          id: Date.now(),
-          name: '',
-          position: { x: point.x, y: point.y, z: point.z },
-          mesh: pinMesh,
-        };
-        pins.push(pinData);
+        
+        const pin = pins.find(p => p.id === activeRouteId);
+        pin.path.push({ x: point.x, y: point.y, z: point.z });
+        pin.position = { x: point.x, y: point.y, z: point.z }; // update final pos
+        
+        updatePathMeshes(pin);
         renderPinList();
       }
     });
@@ -571,26 +587,29 @@
 
       pins.forEach((pin, i) => {
         const el = document.createElement('div');
-        el.className = 'pin-item';
-        el.style.flexWrap = 'wrap';
+        el.className = 'pin-item' + (pin.id === activeRouteId ? ' active' : '');
+        el.onclick = () => {
+          activeRouteId = pin.id;
+          renderPinList();
+        };
         
-        const hasCamera = pin.camera ? '✅ Câmera' : '📷 Salvar Câmera';
-        const camClass = pin.camera ? 'primary' : '';
-
+        const pointsCount = pin.path.length;
+        
         el.innerHTML = `
-          <div class="pin-marker"></div>
-          <div class="pin-info">
-            <input class="pin-name" type="text" placeholder="Estacionamento ${i + 1}"
-                   value="${pin.name}" data-id="${pin.id}" />
-            <div class="pin-coords">
-              x: ${pin.position.x.toFixed(2)}
-              y: ${pin.position.y.toFixed(2)}
-              z: ${pin.position.z.toFixed(2)}
+          <div class="pin-header">
+            <div class="pin-marker"></div>
+            <div class="pin-info">
+              <input class="pin-name" type="text" placeholder="Estacionamento ${i + 1}"
+                     value="${pin.name}" data-id="${pin.id}" />
+              <div class="pin-coords">
+                ${pointsCount} ponto(s) no trilho
+              </div>
             </div>
+            <button class="pin-delete" data-id="${pin.id}" title="Remover">&times;</button>
           </div>
-          <button class="pin-delete" data-id="${pin.id}" title="Remover">&times;</button>
-          <div style="width: 100%; margin-top: 5px; display: flex; justify-content: flex-end;">
-            <button class="btn-action ${camClass} btn-camera" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;" data-id="${pin.id}">${hasCamera}</button>
+          <div style="width: 100%; display: flex; justify-content: flex-end; gap: 5px;">
+            <button class="btn-action ${pin.camera ? 'primary' : ''} btn-camera" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;" data-id="${pin.id}">${pin.camera ? '✅ Câmera' : '📷 Salvar Câmera'}</button>
+            <button class="btn-action btn-undo" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;" data-id="${pin.id}">⮌ Desfazer Ponto</button>
           </div>
         `;
         list.appendChild(el);
@@ -598,6 +617,7 @@
 
       // Bind events
       list.querySelectorAll('.pin-name').forEach(input => {
+        input.addEventListener('click', e => e.stopPropagation());
         input.addEventListener('input', (e) => {
           const pin = pins.find(p => p.id === Number(e.target.dataset.id));
           if (pin) pin.name = e.target.value;
@@ -606,11 +626,15 @@
 
       list.querySelectorAll('.pin-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          e.stopPropagation();
           const id = Number(e.target.dataset.id);
           const idx = pins.findIndex(p => p.id === id);
           if (idx !== -1) {
-            scene.remove(pins[idx].mesh);
+            const p = pins[idx];
+            if (p.lineMesh) scene.remove(p.lineMesh);
+            p.markerMeshes.forEach(m => scene.remove(m));
             pins.splice(idx, 1);
+            if (activeRouteId === id) activeRouteId = null;
             renderPinList();
           }
         });
@@ -618,6 +642,7 @@
 
       list.querySelectorAll('.btn-camera').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          e.stopPropagation();
           const id = Number(e.target.dataset.id);
           const pin = pins.find(p => p.id === id);
           if (pin) {
@@ -630,20 +655,38 @@
         });
       });
 
-      document.getElementById('pinCount').textContent =
-        `${pins.length} pinpoint${pins.length !== 1 ? 's' : ''}`;
+      list.querySelectorAll('.btn-undo').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = Number(e.target.dataset.id);
+          const pin = pins.find(p => p.id === id);
+          if (pin && pin.path.length > 0) {
+            pin.path.pop();
+            pin.position = pin.path.length > 0 ? { ...pin.path[pin.path.length - 1] } : null;
+            updatePathMeshes(pin);
+            renderPinList();
+          }
+        });
+      });
+
+      document.getElementById('pinCount').textContent = `${pins.length} rota(s)`;
     }
 
-    // ── Export / Import / Clear ──
+    // ── Export / Import ──
     window.exportJSON = function () {
       const data = pins.map((p, i) => {
         const out = {
           name: p.name || `Estacionamento ${i + 1}`,
-          position: {
+          position: p.position ? {
             x: parseFloat(p.position.x.toFixed(4)),
             y: parseFloat(p.position.y.toFixed(4)),
             z: parseFloat(p.position.z.toFixed(4)),
-          }
+          } : null,
+          path: p.path.map(pt => ({
+            x: parseFloat(pt.x.toFixed(4)),
+            y: parseFloat(pt.y.toFixed(4)),
+            z: parseFloat(pt.z.toFixed(4)),
+          }))
         };
         if (p.camera) {
           out.camera = {
@@ -672,25 +715,28 @@
     };
 
     window.importJSON = function () {
-      const input = prompt('Cole o JSON dos pinpoints aqui:');
+      const input = prompt('Cole o JSON de rotas/pinpoints aqui:');
       if (!input) return;
       try {
         const data = JSON.parse(input);
-        // Clear existing
-        pins.forEach(p => scene.remove(p.mesh));
+        pins.forEach(p => {
+          if (p.lineMesh) scene.remove(p.lineMesh);
+          p.markerMeshes.forEach(m => scene.remove(m));
+        });
         pins.length = 0;
 
         data.forEach(item => {
-          const pos = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
-          const pinMesh = createPinMesh(pos);
-          scene.add(pinMesh);
-          pins.push({
+          const pin = {
             id: Date.now() + Math.random(),
             name: item.name || '',
-            position: { x: pos.x, y: pos.y, z: pos.z },
+            position: item.position || null,
             camera: item.camera || null,
-            mesh: pinMesh,
-          });
+            path: item.path || (item.position ? [item.position] : []),
+            lineMesh: null,
+            markerMeshes: []
+          };
+          pins.push(pin);
+          updatePathMeshes(pin);
         });
         renderPinList();
       } catch (e) {
@@ -699,23 +745,24 @@
     };
 
     function loadConfig() {
-      fetch('config.json')
+      fetch('../data/config.json')
         .then(res => {
           if (!res.ok) throw new Error('config.json not found');
           return res.json();
         })
         .then(data => {
           data.forEach(item => {
-            const pos = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
-            const pinMesh = createPinMesh(pos);
-            scene.add(pinMesh);
-            pins.push({
+            const pin = {
               id: Date.now() + Math.random(),
               name: item.name || '',
-              position: { x: pos.x, y: pos.y, z: pos.z },
+              position: item.position || null,
               camera: item.camera || null,
-              mesh: pinMesh,
-            });
+              path: item.path || (item.position ? [item.position] : []),
+              lineMesh: null,
+              markerMeshes: []
+            };
+            pins.push(pin);
+            updatePathMeshes(pin);
           });
           renderPinList();
         })
@@ -725,9 +772,13 @@
 
     window.clearAllPins = function () {
       if (pins.length === 0) return;
-      if (!confirm(`Remover ${pins.length} pinpoint(s)?`)) return;
-      pins.forEach(p => scene.remove(p.mesh));
+      if (!confirm(`Remover todas as rotas?`)) return;
+      pins.forEach(p => {
+        if (p.lineMesh) scene.remove(p.lineMesh);
+        p.markerMeshes.forEach(m => scene.remove(m));
+      });
       pins.length = 0;
+      activeRouteId = null;
       renderPinList();
     };
 
@@ -748,21 +799,10 @@
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
-
-      // Animate pin glow
-      const t = Date.now() * 0.003;
-      pins.forEach(pin => {
-        const ring = pin.mesh.children[2];
-        if (ring && ring.material) {
-          ring.material.opacity = 0.15 + Math.sin(t) * 0.1;
-        }
-      });
-
       renderer.render(scene, camera);
     }
     animate();
 
-    // ── Resize ──
     window.addEventListener('resize', () => {
       const w = viewport.clientWidth;
       const h = viewport.clientHeight;
@@ -772,5 +812,4 @@
     });
   </script>
 </body>
-
 </html>
