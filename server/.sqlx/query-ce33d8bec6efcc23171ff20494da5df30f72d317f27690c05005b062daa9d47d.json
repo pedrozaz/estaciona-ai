@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM user_occupancy_history\n            WHERE id IN (\n                SELECT id FROM user_occupancy_history\n                WHERE user_id = $1\n                ORDER BY occupied_at DESC\n                OFFSET 30\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ce33d8bec6efcc23171ff20494da5df30f72d317f27690c05005b062daa9d47d"
+}
