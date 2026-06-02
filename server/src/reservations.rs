@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::state::{SharedState, SpotStatus};
+use crate::state::SharedState;
 use crate::ws::messages::ServerToAppMsg;
 
 #[derive(Deserialize)]
@@ -33,18 +33,17 @@ pub async fn create_reservation(
     State(state): State<SharedState>,
     Json(payload): Json<CreateReservation>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let reserved = if let Some(mut status) = state.spots.get_mut(&payload.spot_id) {
-        if *status == SpotStatus::Free {
-            *status = SpotStatus::Reserved;
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
 
-    if !reserved {
+    let updated_spot = sqlx::query!(
+        "UPDATE spots SET status = 'reserved', last_updated = NOW()
+        WHERE id = $1 AND status = 'free' RETURNING id",
+        payload.spot_id
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))?;
+
+    if updated_spot.is_none() {
         return Err((StatusCode::CONFLICT, "Spot is not free".to_string()));
     }
 
@@ -54,43 +53,24 @@ pub async fn create_reservation(
         r#"
         INSERT INTO reservations (id, user_id, spot_id, status, expires_at)
         VALUES ($1, $2, $3, 'active', $4)
-        RETURNING 
-            id, 
-            user_id as "user_id!", 
-            spot_id, 
-            status, 
-            created_at as "created_at?", 
-            expires_at as "expires_at?", 
-            completed_at as "completed_at?"
+        RETURNING id, user_id as "user_id!", spot_id, status, created_at as
+        "created_at?", expires_at as "expires_at?", completed_at as "completed_at?"
         "#,
-        new_id,
-        payload.user_id,
-        payload.spot_id,
-        payload.expires_at
+        new_id, payload.user_id, payload.spot_id, payload.expires_at
     )
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| {
-        state
-            .spots
-            .insert(payload.spot_id.clone(), SpotStatus::Free);
-        tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to create reservation".to_string(),
-        )
-    })?;
+    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create reservation".to_string()))?;
 
     let update_msg = ServerToAppMsg::SpotUpdate {
         spot_id: payload.spot_id.clone(),
         status: "reserved".to_string(),
     };
-
     if let Ok(json_str) = serde_json::to_string(&update_msg) {
         let _ = state.tx.send(json_str);
     }
 
-    let response = ReservationResponse {
+    Ok(Json(ReservationResponse {
         id: record.id,
         user_id: record.user_id,
         spot_id: record.spot_id,
@@ -98,9 +78,7 @@ pub async fn create_reservation(
         created_at: record.created_at,
         expires_at: record.expires_at,
         completed_at: record.completed_at,
-    };
-
-    Ok((StatusCode::CREATED, Json(response)))
+    }))
 }
 
 pub async fn get_reservations(
@@ -159,7 +137,12 @@ pub async fn cancel_reservation(
 
     match result {
         Some(record) => {
-            state.spots.insert(record.spot_id.clone(), SpotStatus::Free);
+            let _ = sqlx::query!(
+                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
+                record.spot_id
+            )
+            .execute(&state.pool)
+            .await;
 
             let update_msg = ServerToAppMsg::SpotUpdate {
                 spot_id: record.spot_id,

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO spots (id, parking_lot, status, last_updated) \n            VALUES ($1, 'Main', 'free', NOW()) \n            ON CONFLICT (id) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "018c6a55ece836509dc4b615d8e50c38d05e9b6be4adfa54782d18a6630b0346"
+}

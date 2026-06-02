@@ -7,7 +7,7 @@ use chrono::{Duration, Utc};
 use futures_util::StreamExt;
 use uuid::Uuid;
 
-use crate::state::{SharedState, SpotStatus};
+use crate::state::SharedState;
 use crate::ws::messages::{EdgeToServerMsg, ServerToAppMsg};
 
 pub async fn ws_edge_handler(
@@ -59,16 +59,18 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                         continue;
                     }
 
-                    let new_status = match status.as_str() {
-                        "occupied" => SpotStatus::Occupied,
-                        "free" => SpotStatus::Free,
-                        other => {
-                            eprintln!("Ignoring SpotUpdate with invalid status: {}", other);
-                            continue;
-                        }
-                    };
+                    if status != "occupied" && status != "free" {
+                        eprintln!("Ignoring SpotUpdate with invalid status: {}", status);
+                        continue;
+                    }
 
-                    state.spots.insert(spot_id.clone(), new_status);
+                    let _ = sqlx::query!(
+                        "UPDATE spots SET status = $1, last_updated = NOW() WHERE id = $2",
+                        status,
+                        spot_id
+                    )
+                    .execute(&state.pool)
+                    .await;
 
                     tracing::info!(
                         "[WS EDGE] Spot {} updated to {} (Confidence: {:.2})",
@@ -147,14 +149,18 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
 
         let graph = state.graph.read().await;
 
-        for entry in state.spots.iter() {
-            if *entry.value() == SpotStatus::Free
-                && let Some(route) = graph.calculate_route(&camera_id, entry.key())
-                && route.len() < min_route_length
-            {
-                min_route_length = route.len();
-                best_spot = Some(entry.key().clone());
-                best_route = Some(route);
+        let free_spots = sqlx::query!("SELECT id FROM spots WHERE status = 'free'")
+            .fetch_all(&state.pool)
+            .await
+            .unwrap_or_default();
+
+        for row in free_spots {
+            if let Some(route) = graph.calculate_route(&camera_id, &row.id) {
+                if route.len() < min_route_length {
+                    min_route_length = route.len();
+                    best_spot = Some(row.id);
+                    best_route = Some(route);
+                }
             }
         }
 
@@ -171,7 +177,12 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
 
             match insert_result {
                 Ok(res) if res.rows_affected() > 0 => {
-                    state.spots.insert(spot.clone(), SpotStatus::Reserved);
+                    let _ = sqlx::query!(
+                        "UPDATE spots SET status = 'reserved', last_updated = NOW() WHERE id = $1",
+                        spot
+                    )
+                    .execute(&state.pool)
+                    .await;
 
                     // Dispara broadcast de SPOT_UPDATE para os outros clientes saberem que a vaga foi ocupada
                     let update_msg = ServerToAppMsg::SpotUpdate {

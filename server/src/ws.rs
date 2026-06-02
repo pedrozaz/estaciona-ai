@@ -16,7 +16,7 @@ use serde::Deserialize;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
-use crate::state::{SharedState, SpotStatus};
+use crate::state::SharedState;
 use crate::ws::messages::{AppToServerMsg, ServerToAppMsg};
 
 #[derive(Deserialize)]
@@ -59,14 +59,11 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
 
     let mut broadcast_rx = state.tx.subscribe();
 
-    for entry in state.spots.iter() {
+    let db_spots = sqlx::query!("SELECT id, status FROM spots").fetch_all(&state.pool).await.unwrap_or_default();
+    for row in db_spots {
         let msg = ServerToAppMsg::SpotUpdate {
-            spot_id: entry.key().clone(),
-            status: match entry.value() {
-                SpotStatus::Free => "free".to_string(),
-                SpotStatus::Occupied => "occupied".to_string(),
-                SpotStatus::Reserved => "reserved".to_string(),
-            },
+            spot_id: row.id,
+            status: row.status,
         };
         if let Ok(json_str) = serde_json::to_string(&msg) {
             let _ = sender.send(Message::Text(json_str.into())).await;
@@ -98,17 +95,15 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                     AppToServerMsg::ReserveSpot { spot_id, .. } => {
                         let state_clone = value.clone();
 
-                        let reserved = if let Some(mut status) = state_clone.spots.get_mut(&spot_id)
-                        {
-                            if *status == SpotStatus::Free {
-                                *status = SpotStatus::Reserved;
-                                true
-                            } else {
-                                false
-                            }
-                        } else {
-                            false
-                        };
+                        let reserved_spot = sqlx::query!(
+                            "UPDATE spots SET status = 'reserved', last_updated = NOW() WHERE id = $1 AND status = 'free' RETURNING id",
+                            spot_id
+                        )
+                        .fetch_optional(&state_clone.pool)
+                        .await
+                        .unwrap_or(None);
+                        
+                        let reserved = reserved_spot.is_some();
 
                         if reserved {
                             let res_id = Uuid::new_v4();
@@ -141,7 +136,9 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                                     let _ = state_clone.tx.send(json);
                                 }
                             } else {
-                                state_clone.spots.insert(spot_id.clone(), SpotStatus::Free);
+                                let _ = sqlx::query!("UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1", spot_id)
+                                    .execute(&state_clone.pool)
+                                    .await;
                             }
                         } else {
                             let reject = ServerToAppMsg::ReservationRejected {
@@ -167,9 +164,12 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                         .await;
 
                         if let Ok(Some(row)) = res {
-                            state_clone
-                                .spots
-                                .insert(row.spot_id.clone(), SpotStatus::Free);
+                            let _ = sqlx::query!(
+                                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
+                                row.spot_id
+                            )
+                            .execute(&state_clone.pool)
+                            .await;
 
                             let update = ServerToAppMsg::SpotUpdate {
                                 spot_id: row.spot_id,
@@ -205,14 +205,11 @@ pub async fn ws_dashboard_handler(
 async fn handle_dashboard_socket(mut socket: WebSocket, state: SharedState) {
     let mut broadcast_rx = state.tx.subscribe();
 
-    for entry in state.spots.iter() {
+    let db_spots = sqlx::query!("SELECT id, status FROM spots").fetch_all(&state.pool).await.unwrap_or_default();
+    for row in db_spots {
         let msg = ServerToAppMsg::SpotUpdate {
-            spot_id: entry.key().clone(),
-            status: match entry.value() {
-                SpotStatus::Free => "free".to_string(),
-                SpotStatus::Occupied => "occupied".to_string(),
-                SpotStatus::Reserved => "reserved".to_string(),
-            },
+            spot_id: row.id,
+            status: row.status,
         };
         if let Ok(json_str) = serde_json::to_string(&msg) {
             let _ = socket.send(Message::Text(json_str.into())).await;

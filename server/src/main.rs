@@ -18,7 +18,6 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::state::SpotStatus;
 use crate::ws::messages::ServerToAppMsg;
 
 #[tokio::main]
@@ -110,9 +109,12 @@ async fn main() {
 
             if let Ok(records) = expired_records {
                 for record in records {
-                    state_for_bg_task
-                        .spots
-                        .insert(record.spot_id.clone(), SpotStatus::Free);
+                    let _ = sqlx::query!(
+                        "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
+                        record.spot_id
+                    )
+                    .execute(&state_for_bg_task.pool)
+                    .await;
 
                     let expired_msg = ServerToAppMsg::ReservationExpired {
                         spot_id: record.spot_id.clone(),
