@@ -33,6 +33,30 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
     let spots = DashMap::new();
 
     #[derive(Deserialize)]
+    struct Spot3DDef {
+        id: String,
+    }
+
+    let spots_3d_content = std::fs::read_to_string("../web/data/spots_3d.json")
+        .expect("Failed while reading spots_3d.json");
+    let spots_3d: Vec<Spot3DDef> =
+        serde_json::from_str(&spots_3d_content).expect("Failed while parsing spots_3d.json");
+
+    for spot in spots_3d {
+        sqlx::query!(
+            r#"
+            INSERT INTO spots (id, parking_lot, status, last_updated)
+            VALUES ($1, 'Main', 'free', NOW())
+            ON conflict (id) DO NOTHING
+            "#,
+            spot.id
+        )
+        .execute(&pool)
+        .await
+        .expect("Failed while synchronizing 3D spots with database");
+    }
+
+    #[derive(Deserialize)]
     struct NodeDef {
         id: String,
         x: f32,
