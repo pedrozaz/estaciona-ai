@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="css/styles.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -405,10 +405,10 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "../lib/three/three.module.js",
-        "three/addons/controls/OrbitControls.js": "../lib/three/OrbitControls.js",
-        "three/addons/loaders/GLTFLoader.js": "../lib/three/GLTFLoader.js",
-        "three/addons/loaders/DRACOLoader.js": "../lib/three/DRACOLoader.js"
+        "three": "./lib/three/three.module.js",
+        "three/addons/controls/OrbitControls.js": "./lib/three/OrbitControls.js",
+        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js",
+        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js"
       }
     }
   </script>
@@ -470,7 +470,7 @@
     const loadingProgress = document.getElementById('loadingProgress');
 
     loader.load(
-      '../../reconstruction/melhorresultado_otimizado.glb',
+      'assets/reconstruction/melhorresultado_otimizado.glb',
       (gltf) => {
         loadedModel = gltf.scene;
         const box = new THREE.Box3().setFromObject(loadedModel);
@@ -555,7 +555,7 @@
       fitOrthoImage();
       drawOrtho();
     };
-    orthoImg.src = '../assets/images/uniube_ortho_projection.png';
+    orthoImg.src = 'assets/images/uniube_ortho_projection.png';
 
     function fitOrthoImage() {
       const wrapW = orthoWrap.clientWidth;
@@ -829,7 +829,7 @@
       const round = (v) => parseFloat(v.toFixed(6));
 
       const calibration = {
-        image: '../assets/images/uniube_ortho_projection.png',
+        image: 'assets/images/uniube_ortho_projection.png',
         imageSize: { width: orthoImg.width, height: orthoImg.height },
         referencePoints: completePairs.map(p => ({
           model: { x: round(p.model.x), z: round(p.model.z) },
