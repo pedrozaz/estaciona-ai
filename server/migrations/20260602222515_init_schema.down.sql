@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS user_occupancy_history;
+DROP TABLE IF EXISTS spots;
+DROP TABLE IF EXISTS users;
