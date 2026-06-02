@@ -49,7 +49,6 @@ class Calibrator:
             print("Need at least 3 points to define a parking spot.")
             return
 
-        # Closes the polygoin visually
         pt1 = tuple(self.current_points[-1])
         pt2 = tuple(self.current_points[0])
         cv2.line(self.canvas, pt1, pt2, (0, 255, 0), 2)
@@ -68,7 +67,6 @@ class Calibrator:
 
         self.current_points.pop()
 
-        # Redraw everything from scratch
         self.canvas = self.original.copy()
         self._redraw_saved_spots()
 
@@ -115,12 +113,14 @@ class Calibrator:
 
 
 def main():
-    video_path = sys.argv[1] if len(sys.argv) > 1 else "data/test.mp4"
+    video_path = sys.argv[1] if len(sys.argv) > 1 else "data/test_metade.mp4"
     output_path = "data/spots.json"
 
     frame = extract_first_name(video_path)
     cal = Calibrator(frame)
 
+    cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WINDOW_NAME, 1280, 720)
     cv2.imshow(WINDOW_NAME, cal.canvas)
     cv2.setMouseCallback(WINDOW_NAME, cal.on_click)
 
@@ -141,7 +141,7 @@ def main():
         elif key == ord("s"):
             cal.export(output_path)
             break
-        elif key == 27:  # ESC
+        elif key == 27:
             print("Exiting without saving.")
             break
 

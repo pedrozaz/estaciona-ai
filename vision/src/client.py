@@ -13,19 +13,43 @@ os.environ["QT_LOGGING_RULES"] = "*=false"
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import torch
 
 WS_URL = os.environ.get("SERVER_WS_URL", "ws://localhost:8000/ws/edge")
 WS_URL = WS_URL.replace("ws://server:", "ws://localhost:")
 EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or "secret_edge_key"
 
-MODEL_PATH = "yolov8m-seg.pt"
-VIDEO_PATH = "data/test.mp4"
+MODEL_PATH = "yolo26x-seg.pt"
+VIDEO_PATH = "data/test_metade.mp4"
 SPOTS_PATH = "data/spots.json"
 
-# COCO CLASSES = <2,car>,<3,motorcycle>
-VEHICLE_CLASSES = [2, 3, 5, 7]
+VEHICLE_CLASSES = [2, 7]
 
-OCCUPANCY_THRESHOLD = 0.5
+TRIGGER_OCCUPIED_THRESHOLD = 0.35
+STAY_OCCUPIED_THRESHOLD = 0.20
+
+CONF_THRESHOLD = 0.10
+INFERENCE_SIZE = 1312
+BOX_SHRINK_FACTOR = 0.15
+GAMMA_CORRECTION = 1.4
+CLAHE_ENABLED = False
+
+
+def preprocess_frame(frame, gamma=1.0, clahe_enabled=False) -> np.ndarray:
+    processed = frame.copy()
+    if gamma != 1.0:
+        inv_gamma = 1.0 / gamma
+        table = np.array(
+            [((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]
+        ).astype("uint8")
+        processed = cv2.LUT(processed, table)
+    if clahe_enabled:
+        lab = cv2.cvtColor(processed, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+        processed = cv2.cvtColor(cv2.merge((cl, a, b)), cv2.COLOR_LAB2BGR)
+    return processed
 
 
 def load_spots(path: str) -> dict:
@@ -34,12 +58,8 @@ def load_spots(path: str) -> dict:
 
 
 def build_spots_masks(
-    spots: dict,
-    frame_shape: tuple,
+    spots: dict, frame_shape: tuple
 ) -> dict[str, tuple[np.ndarray, float]]:
-    """
-    Convert polygon points to binary masks and precompute their areas.
-    """
     height, width = frame_shape[:2]
     masks = {}
 
@@ -59,7 +79,6 @@ def compute_occupancy(
     detections: list[tuple[int, int, int, int]],
     frame_shape: tuple,
 ) -> float:
-    """Return the fraction of the spot covered by any detected vehicle."""
     if spot_area == 0:
         return 0.0
 
@@ -82,6 +101,14 @@ async def main():
     websocket = await websockets.connect(WS_URL, additional_headers=headers)
 
     spots = load_spots(spots_path)
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"\n[VISION DEVICE] Rodando em: {device.upper()}")
+    if device == "cpu":
+        print(
+            "[AVISO] CUDA não está disponível. O modelo rodará no processador (CPU), o que causará engasgos!"
+        )
+
     model = YOLO(MODEL_PATH)
     cap = cv2.VideoCapture(VIDEO_PATH)
 
@@ -89,19 +116,22 @@ async def main():
         print(f"Error: could not open {VIDEO_PATH}")
         return
 
-    ret, frame = (
-        cap.read()
-    )  # Build masks based on the first frame to get correct dimensions
+    ret, frame = cap.read()
     if not ret:
         print("Error: could not read first frame.")
         return
 
     spot_masks = build_spots_masks(spots, frame.shape)
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset to first frame
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     debounce_map = {}
 
+    cv2.namedWindow("Estaciona AI - Vision", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Estaciona AI - Vision", 1280, 720)
+
     print(f"Loaded {len(spots)} parking spots from {spots_path}")
+
+    prev_time = time.time()
 
     while True:
         ret, frame = cap.read()
@@ -109,26 +139,49 @@ async def main():
             print("End of video.")
             break
 
+        inference_frame = preprocess_frame(
+            frame, gamma=GAMMA_CORRECTION, clahe_enabled=CLAHE_ENABLED
+        )
+
         results = model.predict(
-            frame, classes=VEHICLE_CLASSES, verbose=False
-        )  # Detect vehicles
+            inference_frame,
+            classes=VEHICLE_CLASSES,
+            conf=CONF_THRESHOLD,
+            imgsz=INFERENCE_SIZE,
+            device=device,
+            half=(device == "cuda"),
+            verbose=False,
+        )
 
         detections: list[tuple[int, int, int, int]] = []
         for result in results:
             if result.boxes is None:
                 continue
             for box in result.boxes.xyxy:
-                x1, y1, x2, y2 = box
-                detections.append((int(x1), int(y1), int(x2), int(y2)))
+                x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+
+                w = x2 - x1
+                h = y2 - y1
+                shrink_w = int(w * BOX_SHRINK_FACTOR)
+                shrink_h = int(h * BOX_SHRINK_FACTOR)
+
+                sx1 = x1 + shrink_w
+                sy1 = y1 + shrink_h
+                sx2 = x2 - shrink_w
+                sy2 = y2 - shrink_h
+
+                detections.append((sx1, sy1, sx2, sy2))
 
         for spot_id, (mask, area) in spot_masks.items():
             ratio = compute_occupancy(mask, area, detections, frame.shape)
-            
-            # Hysteresis to prevent flickering
-            if spot_id in debounce_map and debounce_map[spot_id]["confirmed"] == "occupied":
-                is_occupied = ratio >= 0.40  # Lower threshold to stay occupied
+
+            if (
+                spot_id in debounce_map
+                and debounce_map[spot_id]["confirmed"] == "occupied"
+            ):
+                is_occupied = ratio >= STAY_OCCUPIED_THRESHOLD
             else:
-                is_occupied = ratio >= 0.60  # Higher threshold to become occupied
+                is_occupied = ratio >= TRIGGER_OCCUPIED_THRESHOLD
 
             raw_status = "occupied" if is_occupied else "free"
 
@@ -203,6 +256,20 @@ async def main():
 
         for x1, y1, x2, y2 in detections:
             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+
+        curr_time = time.time()
+        time_diff = curr_time - prev_time
+        fps = 1.0 / time_diff if time_diff > 0 else 0.0
+        prev_time = curr_time
+        cv2.putText(
+            frame,
+            f"FPS: {fps:.1f}",
+            (20, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (0, 255, 255),
+            2,
+        )
 
         cv2.imshow("Estaciona AI - Vision", frame)
 
