@@ -341,9 +341,11 @@
       Modo Calibração — Trilhos do Carro (Path)
     </div>
     <div class="nav-actions">
+      <button class="btn-action primary" id="toggleSpotsBtn" onclick="toggleSpotsVisibility()">Ocultar Vagas</button>
       <button class="btn-action danger" onclick="clearAllPins()">Limpar Tudo</button>
-      <button class="btn-action" onclick="importJSON()">Importar JSON Existente</button>
-      <button class="btn-action primary" onclick="exportJSON()">Exportar JSON Atualizado</button>
+      <button class="btn-action" onclick="openModal('import')">Importar JSON</button>
+      <button class="btn-action" onclick="openModal('export')">Ver JSON</button>
+      <button class="btn-action primary" onclick="saveToServer()">Salvar no Servidor</button>
     </div>
   </nav>
 
@@ -384,10 +386,11 @@
   <div class="json-modal" id="jsonModal">
     <div class="json-content">
       <h3>📋 JSON Atualizado das Rotas</h3>
-      <textarea id="jsonOutput" readonly></textarea>
+      <textarea id="jsonOutput" readonly style="color: #fff;"></textarea>
       <div class="json-actions">
         <button class="btn-action" onclick="closeModal()">Fechar</button>
-        <button class="btn-action primary" onclick="copyJSON()">Copiar</button>
+        <button class="btn-action primary" id="modalCopyBtn" onclick="copyJSON()">Copiar</button>
+        <button class="btn-action primary" id="modalImportBtn" style="display:none;" onclick="saveImportJSON()">Importar</button>
       </div>
     </div>
   </div>
@@ -396,10 +399,10 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "./lib/three/three.module.js",
-        "three/addons/controls/OrbitControls.js": "./lib/three/OrbitControls.js",
-        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js",
-        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js"
+        "three": "./lib/three/three.module.js?v=2",
+        "three/addons/controls/OrbitControls.js": "./lib/three/OrbitControls.js?v=2",
+        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js?v=2",
+        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js?v=2"
       }
     }
   </script>
@@ -415,17 +418,36 @@
     const pins = [];
     let loadedModel = null;
     let activeRouteId = null;
+    const spotsMeshes = {};
+    let showSpots = true;
+
+    window.toggleSpotsVisibility = function() {
+      showSpots = !showSpots;
+      
+      const btn = document.getElementById('toggleSpotsBtn');
+      if (btn) {
+        btn.textContent = showSpots ? 'Ocultar Vagas' : 'Mostrar Vagas';
+        btn.classList.toggle('primary', showSpots);
+      }
+
+      Object.values(spotsMeshes).forEach(spotObj => {
+        if (spotObj.mesh) spotObj.mesh.visible = showSpots;
+        if (spotObj.line) spotObj.line.visible = showSpots;
+        if (spotObj.labelSprite) spotObj.labelSprite.visible = showSpots;
+      });
+    };
 
     window.addNewRoute = function() {
       const id = Date.now();
       pins.push({
         id: id,
         name: `Estacionamento ${pins.length + 1}`,
-        position: null, // will be the LAST point of the path
+        position: null, // will be the FIRST point of the path
         camera: null,
         path: [],
         lineMesh: null,
-        markerMeshes: []
+        markerMeshes: [],
+        blocked: false
       });
       activeRouteId = id;
       renderPinList();
@@ -466,6 +488,120 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
 
+    const globalRaycaster = new THREE.Raycaster();
+    const rayOrigin = new THREE.Vector3();
+    const rayDirection = new THREE.Vector3(0, -1, 0);
+
+    function getTerrainY(x, z, defaultY) {
+      if (!loadedModel) return defaultY;
+      rayOrigin.set(x, 50, z);
+      globalRaycaster.set(rayOrigin, rayDirection);
+      const intersects = globalRaycaster.intersectObject(loadedModel, true);
+      return intersects.length > 0 ? intersects[0].point.y : defaultY;
+    }
+
+    function createTextSprite(text) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(15, 17, 23, 0.85)';
+      ctx.fillRect(0, 0, 128, 64);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(0, 0, 128, 64);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 24px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 64, 32);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.6, 0.3, 1);
+      return sprite;
+    }
+
+    function loadSpots() {
+      fetch('data/spots_3d.json?v=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+          const defaultGroundY = pins[0] && pins[0].position ? pins[0].position.y : -6.0;
+          const yValues = data.map(spot => getTerrainY(spot.center3D.x, spot.center3D.z, defaultGroundY));
+          
+          const bins = {};
+          yValues.forEach(y => {
+            const bin = Math.round(y * 10) / 10;
+            bins[bin] = (bins[bin] || 0) + 1;
+          });
+          
+          let modeBin = null;
+          let maxCount = -1;
+          for (const bin in bins) {
+            if (bins[bin] > maxCount) {
+              maxCount = bins[bin];
+              modeBin = parseFloat(bin);
+            }
+          }
+          
+          const valuesInMode = yValues.filter(y => Math.round(y * 10) / 10 === modeBin);
+          const groundY = valuesInMode.length > 0 
+            ? valuesInMode.reduce((a, b) => a + b, 0) / valuesInMode.length 
+            : defaultGroundY;
+
+          data.forEach(spot => {
+            const actualY = groundY;
+            const shape = new THREE.Shape();
+            spot.polygon3D.forEach((pt, idx) => {
+              if (idx === 0) shape.moveTo(pt.x, -pt.z);
+              else shape.lineTo(pt.x, -pt.z);
+            });
+            
+            const geo = new THREE.ShapeGeometry(shape);
+            const mat = new THREE.MeshBasicMaterial({ 
+              color: 0x3b82f6, 
+              transparent: true, 
+              opacity: 0.1,
+              depthTest: true,
+              depthWrite: false, 
+              side: THREE.DoubleSide,
+              polygonOffset: true,
+              polygonOffsetFactor: -1,
+              polygonOffsetUnits: -4
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = -Math.PI / 2; 
+            mesh.position.y = actualY + 0.02;
+            scene.add(mesh);
+            
+            const edges = new THREE.EdgesGeometry(geo);
+            const lineMat = new THREE.LineBasicMaterial({ 
+              color: 0x3b82f6, 
+              transparent: true,
+              opacity: 0.25,
+              linewidth: 1, 
+              depthTest: true,
+              depthWrite: false,
+              polygonOffset: true,
+              polygonOffsetFactor: -1,
+              polygonOffsetUnits: -4
+            });
+            const line = new THREE.LineSegments(edges, lineMat);
+            line.rotation.x = -Math.PI / 2;
+            line.position.y = actualY + 0.02;
+            scene.add(line);
+
+            const labelSprite = createTextSprite(spot.id);
+            labelSprite.position.set(spot.center3D.x, actualY + 0.15, spot.center3D.z);
+            scene.add(labelSprite);
+
+            spotsMeshes[spot.id] = { mesh, line, labelSprite, data: spot };
+          });
+        })
+        .catch(err => console.error("Erro ao carregar spots_3d.json:", err));
+    }
+
     // ── Raycaster ──
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -505,6 +641,7 @@
         controls.target.copy(finalCenter);
         controls.update();
 
+        loadSpots();
         loadingOverlay.classList.add('hidden');
         setTimeout(() => { loadingOverlay.style.display = 'none'; }, 600);
       },
@@ -557,9 +694,17 @@
       });
     }
 
-    // ── Click Handler ──
+    let startX = 0;
+    let startY = 0;
+    viewport.addEventListener('mousedown', (event) => {
+      startX = event.clientX;
+      startY = event.clientY;
+    });
+
     viewport.addEventListener('click', (event) => {
       if (!loadedModel || !activeRouteId) return;
+
+      if (dist > 5) return;
 
       const rect = viewport.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -572,11 +717,15 @@
         const point = intersects[0].point.clone();
         
         const pin = pins.find(p => p.id === activeRouteId);
-        pin.path.push({ x: point.x, y: point.y, z: point.z });
-        pin.position = { x: point.x, y: point.y, z: point.z }; // update final pos
-        
-        updatePathMeshes(pin);
-        renderPinList();
+        if (pin) {
+          pin.path.push({ x: point.x, y: point.y, z: point.z });
+          if (!pin.position && pin.path.length === 1) {
+            pin.position = { x: point.x, y: point.y, z: point.z };
+          }
+          
+          updatePathMeshes(pin);
+          renderPinList();
+        }
       }
     });
 
@@ -589,8 +738,10 @@
         const el = document.createElement('div');
         el.className = 'pin-item' + (pin.id === activeRouteId ? ' active' : '');
         el.onclick = () => {
-          activeRouteId = pin.id;
-          renderPinList();
+          if (activeRouteId !== pin.id) {
+            activeRouteId = pin.id;
+            renderPinList();
+          }
         };
         
         const pointsCount = pin.path.length;
@@ -607,10 +758,16 @@
             </div>
             <button class="pin-delete" data-id="${pin.id}" title="Remover">&times;</button>
           </div>
-          <div style="width: 100%; display: flex; justify-content: flex-end; gap: 5px;">
+          <div style="width: 100%; display: flex; justify-content: flex-end; gap: 5px; margin-top: 5px;">
             <button class="btn-action ${pin.camera ? 'primary' : ''} btn-camera" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;" data-id="${pin.id}">${pin.camera ? '✅ Câmera' : '📷 Salvar Câmera'}</button>
             <button class="btn-action btn-undo" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;" data-id="${pin.id}">⮌ Desfazer Ponto</button>
           </div>
+          ${pin.id === activeRouteId ? `
+            <div class="points-editor" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <div style="font-size: 0.7rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px;">Coordenadas dos Pontos:</div>
+              <div class="points-editor-list" style="max-height: 150px; overflow-y: auto; padding-right: 4px;"></div>
+            </div>
+          ` : ''}
         `;
         list.appendChild(el);
       });
@@ -634,7 +791,9 @@
             if (p.lineMesh) scene.remove(p.lineMesh);
             p.markerMeshes.forEach(m => scene.remove(m));
             pins.splice(idx, 1);
-            if (activeRouteId === id) activeRouteId = null;
+            if (activeRouteId === id) {
+              activeRouteId = pins.length > 0 ? pins[0].id : null;
+            }
             renderPinList();
           }
         });
@@ -662,18 +821,169 @@
           const pin = pins.find(p => p.id === id);
           if (pin && pin.path.length > 0) {
             pin.path.pop();
-            pin.position = pin.path.length > 0 ? { ...pin.path[pin.path.length - 1] } : null;
+            if (pin.path.length === 0) {
+              pin.position = null;
+            }
             updatePathMeshes(pin);
             renderPinList();
           }
         });
       });
 
+      const activePin = pins.find(p => p.id === activeRouteId);
+      if (activePin) {
+        const pointsContainer = list.querySelector('.active .points-editor-list');
+        if (pointsContainer) {
+          activePin.path.forEach((pt, ptIdx) => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.gap = '4px';
+            row.style.fontFamily = 'monospace';
+            row.style.fontSize = '0.65rem';
+            row.style.marginBottom = '4px';
+
+            row.innerHTML = `
+              <span style="color: #64748b; width: 16px;">#${ptIdx + 1}</span>
+              <input type="number" class="pt-val" data-idx="${ptIdx}" data-coord="x" step="0.01" style="width: 55px; background: #0f1117; border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 0.65rem; border-radius: 4px; padding: 1px 3px;" value="${parseFloat(pt.x.toFixed(4))}" />
+              <input type="number" class="pt-val" data-idx="${ptIdx}" data-coord="y" step="0.01" style="width: 55px; background: #0f1117; border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 0.65rem; border-radius: 4px; padding: 1px 3px;" value="${parseFloat(pt.y.toFixed(4))}" />
+              <input type="number" class="pt-val" data-idx="${ptIdx}" data-coord="z" step="0.01" style="width: 55px; background: #0f1117; border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 0.65rem; border-radius: 4px; padding: 1px 3px;" value="${parseFloat(pt.z.toFixed(4))}" />
+              <button class="pt-del" data-idx="${ptIdx}" style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 0.85rem; font-weight: bold; margin-left: 2px;" title="Remover ponto">&times;</button>
+            `;
+            
+            row.querySelectorAll('.pt-val').forEach(input => {
+              input.addEventListener('click', e => e.stopPropagation());
+              input.addEventListener('input', e => {
+                const idx = Number(e.target.dataset.idx);
+                const coord = e.target.dataset.coord;
+                const val = parseFloat(e.target.value);
+                if (!isNaN(val)) {
+                  activePin.path[idx][coord] = val;
+                  updatePathMeshes(activePin);
+                }
+              });
+            });
+
+            row.querySelector('.pt-del').addEventListener('click', e => {
+              e.stopPropagation();
+              const idx = Number(e.target.dataset.idx);
+              activePin.path.splice(idx, 1);
+              if (activePin.path.length === 0) {
+                activePin.position = null;
+              }
+              updatePathMeshes(activePin);
+              renderPinList();
+            });
+
+            pointsContainer.appendChild(row);
+          });
+        }
+      }
+
       document.getElementById('pinCount').textContent = `${pins.length} rota(s)`;
     }
 
-    // ── Export / Import ──
-    window.exportJSON = function () {
+    window.openModal = function (mode) {
+      const modal = document.getElementById('jsonModal');
+      const textarea = document.getElementById('jsonOutput');
+      const title = modal.querySelector('h3');
+      const copyBtn = document.getElementById('modalCopyBtn');
+      const importBtn = document.getElementById('modalImportBtn');
+
+      modal.classList.add('active');
+
+      if (mode === 'export') {
+        title.innerHTML = '📋 JSON Atualizado das Rotas';
+        textarea.readOnly = true;
+        
+        const data = pins.map((p, i) => {
+          const out = {
+            name: p.name || `Estacionamento ${i + 1}`,
+            position: p.position ? {
+              x: parseFloat(p.position.x.toFixed(4)),
+              y: parseFloat(p.position.y.toFixed(4)),
+              z: parseFloat(p.position.z.toFixed(4)),
+            } : null,
+            path: p.path.map(pt => ({
+              x: parseFloat(pt.x.toFixed(4)),
+              y: parseFloat(pt.y.toFixed(4)),
+              z: parseFloat(pt.z.toFixed(4)),
+            }))
+          };
+          if (p.camera) {
+            out.camera = {
+              position: {
+                x: parseFloat(p.camera.position.x.toFixed(4)),
+                y: parseFloat(p.camera.position.y.toFixed(4)),
+                z: parseFloat(p.camera.position.z.toFixed(4))
+              },
+              target: {
+                x: parseFloat(p.camera.target.x.toFixed(4)),
+                y: parseFloat(p.camera.target.y.toFixed(4)),
+                z: parseFloat(p.camera.target.z.toFixed(4))
+              }
+            };
+          }
+          if (p.blocked) {
+            out.blocked = true;
+          }
+          return out;
+        });
+
+        textarea.value = JSON.stringify(data, null, 2);
+        copyBtn.style.display = 'inline-block';
+        importBtn.style.display = 'none';
+      } else {
+        title.innerHTML = '📥 Importar JSON de Rotas';
+        textarea.readOnly = false;
+        textarea.value = '';
+        textarea.placeholder = 'Cole o JSON aqui...';
+        copyBtn.style.display = 'none';
+        importBtn.style.display = 'inline-block';
+      }
+    };
+
+    window.saveImportJSON = function() {
+      const textarea = document.getElementById('jsonOutput');
+      const input = textarea.value;
+      if (!input.trim()) return;
+      try {
+        const data = JSON.parse(input);
+        pins.forEach(p => {
+          if (p.lineMesh) scene.remove(p.lineMesh);
+          p.markerMeshes.forEach(m => scene.remove(m));
+        });
+        pins.length = 0;
+
+        data.forEach(item => {
+          const pin = {
+            id: Date.now() + Math.random(),
+            name: item.name || '',
+            position: item.position || null,
+            camera: item.camera || null,
+            path: item.path || (item.position ? [item.position] : []),
+            lineMesh: null,
+            markerMeshes: [],
+            blocked: item.blocked || false
+          };
+          pins.push(pin);
+          updatePathMeshes(pin);
+        });
+
+        if (pins.length > 0) {
+          activeRouteId = pins[0].id;
+        } else {
+          activeRouteId = null;
+        }
+
+        renderPinList();
+        closeModal();
+      } catch (e) {
+        alert('JSON inválido: ' + e.message);
+      }
+    };
+
+    window.saveToServer = function() {
       const data = pins.map((p, i) => {
         const out = {
           name: p.name || `Estacionamento ${i + 1}`,
@@ -704,48 +1014,30 @@
         }
         return out;
       });
-      const jsonStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'config.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    };
 
-    window.importJSON = function () {
-      const input = prompt('Cole o JSON de rotas/pinpoints aqui:');
-      if (!input) return;
-      try {
-        const data = JSON.parse(input);
-        pins.forEach(p => {
-          if (p.lineMesh) scene.remove(p.lineMesh);
-          p.markerMeshes.forEach(m => scene.remove(m));
-        });
-        pins.length = 0;
-
-        data.forEach(item => {
-          const pin = {
-            id: Date.now() + Math.random(),
-            name: item.name || '',
-            position: item.position || null,
-            camera: item.camera || null,
-            path: item.path || (item.position ? [item.position] : []),
-            lineMesh: null,
-            markerMeshes: []
-          };
-          pins.push(pin);
-          updatePathMeshes(pin);
-        });
-        renderPinList();
-      } catch (e) {
-        alert('JSON inválido: ' + e.message);
-      }
+      const apiUrl = 'http://localhost:8000';
+      fetch(`${apiUrl}/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Falha ao salvar configuração no servidor');
+        return res.json();
+      })
+      .then(resData => {
+        alert('Configuração salva com sucesso no servidor!');
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Erro ao salvar no servidor: ' + err.message + '\n\nNota: Certifique-se de que o backend esteja rodando fora do Docker ou com suporte a escrita local.');
+      });
     };
 
     function loadConfig() {
-      fetch('data/config.json')
+      fetch('data/config.json?v=' + Date.now())
         .then(res => {
           if (!res.ok) throw new Error('config.json not found');
           return res.json();
@@ -759,11 +1051,16 @@
               camera: item.camera || null,
               path: item.path || (item.position ? [item.position] : []),
               lineMesh: null,
-              markerMeshes: []
+              markerMeshes: [],
+              blocked: item.blocked || false
             };
             pins.push(pin);
             updatePathMeshes(pin);
           });
+          
+          if (pins.length > 0) {
+            activeRouteId = pins[0].id;
+          }
           renderPinList();
         })
         .catch(err => console.log('Nenhum config.json encontrado ou erro ao carregar:', err));
@@ -786,7 +1083,7 @@
       const textarea = document.getElementById('jsonOutput');
       textarea.select();
       navigator.clipboard.writeText(textarea.value);
-      const btn = event.target;
+      const btn = document.getElementById('modalCopyBtn');
       btn.textContent = 'Copiado!';
       setTimeout(() => { btn.textContent = 'Copiar'; }, 1500);
     };

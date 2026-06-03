@@ -49,10 +49,18 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
 
     let mut node_map = std::collections::HashMap::new();
 
-    // -- INÍCIO DA SINCRONIZAÇÃO DAS VAGAS 3D --
+    #[derive(Deserialize)]
+    struct Coords3D {
+        x: f64,
+        y: f64,
+        z: f64,
+    }
+
     #[derive(Deserialize)]
     struct Spot3DDef {
         id: String,
+        #[serde(rename = "center3D")]
+        center_3d: Coords3D,
     }
 
     let spots_3d_content =
@@ -63,17 +71,19 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
     for spot in spots_3d {
         sqlx::query!(
             r#"
-            INSERT INTO spots (id, parking_lot, status, last_updated) 
-            VALUES ($1, 'Main', 'free', NOW()) 
+            INSERT INTO spots (id, parking_lot, status, x, y, z, last_updated) 
+            VALUES ($1, 'Main', 'free', $2, $3, $4, NOW()) 
             ON CONFLICT (id) DO NOTHING
             "#,
-            spot.id
+            spot.id,
+            spot.center_3d.x,
+            spot.center_3d.y,
+            spot.center_3d.z
         )
         .execute(&pool)
         .await
         .expect("Falha ao sincronizar vaga com o banco de dados");
     }
-    // -- FIM DA SINCRONIZAÇÃO DAS VAGAS 3D --
 
     for n in config.nodes {
         let graph_node = graph.add_node(&n.id, n.x, n.y);

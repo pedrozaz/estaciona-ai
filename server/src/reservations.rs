@@ -29,6 +29,46 @@ pub struct ReservationResponse {
     pub completed_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Deserialize)]
+pub struct UpdateSpotStatus {
+    pub status: String,
+}
+
+pub async fn update_spot_status(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+    Json(payload): Json<UpdateSpotStatus>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    if payload.status != "occupied" && payload.status != "free" && payload.status != "reserved" {
+        return Err((StatusCode::BAD_REQUEST, "Invalid status".to_string()));
+    }
+
+    sqlx::query!(
+        "UPDATE spots SET status = $1, last_updated = NOW() WHERE id = $2",
+        payload.status,
+        id
+    )
+    .execute(&state.pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Error while update spot status: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error".to_string(),
+        )
+    })?;
+
+    let update_msg = ServerToAppMsg::SpotUpdate {
+        spot_id: id,
+        status: payload.status,
+    };
+    if let Ok(json_str) = serde_json::to_string(&update_msg) {
+        let _ = state.tx.send(json_str);
+    }
+
+    Ok(StatusCode::OK)
+}
+
 pub async fn create_reservation(
     State(state): State<SharedState>,
     Json(payload): Json<CreateReservation>,
@@ -239,7 +279,9 @@ pub async fn recommend_spot(
         SELECT h.spot_id, COUNT(*) as uses 
         FROM user_occupancy_history h 
         JOIN spots s ON s.id = h.spot_id
-        WHERE h.user_id = $1 AND s.status = 'free'
+        WHERE h.user_id = $1 
+          AND s.status = 'free' 
+          AND s.id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
         GROUP BY h.spot_id
         ORDER BY uses DESC
         LIMIT 1
@@ -257,16 +299,47 @@ pub async fn recommend_spot(
         ));
     }
 
-    let fallback = sqlx::query!("SELECT id FROM spots WHERE status = 'free' LIMIT 1")
-        .fetch_optional(&state.pool)
-        .await
-        .unwrap_or(None);
+    let popular_spot = sqlx::query!(
+        r#"
+        SELECT h.spot_id, COUNT(*) as uses 
+        FROM user_occupancy_history h 
+        JOIN spots s ON s.id = h.spot_id
+        WHERE s.status = 'free' 
+          AND s.id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
+        GROUP BY h.spot_id
+        ORDER BY uses DESC
+        LIMIT 1
+        "#
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
 
-    match fallback {
+    if let Some(pop) = popular_spot {
+        return Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({ "recommended_spot": pop.spot_id })),
+        ));
+    }
+
+    let closest_spot = sqlx::query!(
+        r#"
+        SELECT id 
+        FROM spots 
+        WHERE status = 'free' 
+          AND id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
+        ORDER BY ((x - 5.778) * (x - 5.778) + (COALESCE(z, 0) - 4.3207) * (COALESCE(z, 0) - 4.3207)) ASC
+        LIMIT 1
+        "#
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
+
+    match closest_spot {
         Some(spot) => Ok((
             StatusCode::OK,
-            Json(serde_json::json!({
-            "recommended_spot": spot.id })),
+            Json(serde_json::json!({ "recommended_spot": spot.id })),
         )),
         None => Err((StatusCode::NOT_FOUND, "Estacionamento Lotado".to_string())),
     }

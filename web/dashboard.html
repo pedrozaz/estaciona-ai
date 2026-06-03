@@ -7,11 +7,13 @@
   <title>Dashboard - Estaciona AI</title>
   <meta name="description" content="Painel de controle 3D do Estaciona AI">
   <link rel="icon" href="data:,">
-  <link rel="preconnect" href="https:
-  <link rel="preconnect" href="https:
-  <link href="https:
-    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="preload" href="assets/reconstruction/melhorresultado_web.glb" as="fetch" crossorigin>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -193,6 +195,16 @@
       padding: 1rem 1.25rem;
       z-index: 60;
       pointer-events: none;
+      width: 320px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .info-panel.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
     }
 
     .info-panel h4 {
@@ -247,76 +259,215 @@
       background: #158a36;
     }
 
-    .test-panel {
+    .btn-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid rgba(28, 167, 69, 0.3);
+      border-radius: 8px;
+      background: rgba(28, 167, 69, 0.08);
+      color: #1ca745;
+      font-family: var(--font-main);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    
+    .btn-control:hover {
+      background: rgba(28, 167, 69, 0.15);
+      border-color: rgba(28, 167, 69, 0.5);
+      color: #2ee566;
+      box-shadow: 0 0 10px rgba(28, 167, 69, 0.15);
+    }
+
+    .test-panel-drawer {
       position: fixed;
-      top: 5rem;
-      right: 1.25rem;
+      top: 48px;
+      right: -340px;
+      width: 340px;
+      height: calc(100vh - 48px);
       background: rgba(15, 17, 23, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px;
-      padding: 1rem;
-      z-index: 60;
-      width: 250px;
-      max-height: calc(100vh - 7rem);
-      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.5rem;
+      z-index: 120;
+      transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      color: #e2e8f0;
       pointer-events: auto;
     }
+    
+    .test-panel-drawer.open {
+      right: 0;
+    }
+
     .test-panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.8rem;
+      margin-bottom: 0.5rem;
     }
-    .test-panel h4 {
-      font-size: 0.85rem;
+
+    .test-panel-header h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64748b;
+      letter-spacing: 0.5px;
+      color: #e2e8f0;
       margin: 0;
     }
-    #toggleTestPanelBtn {
+
+    .btn-close-drawer {
       background: none;
       border: none;
-      color: #1ca745;
-      font-size: 0.75rem;
-      font-weight: bold;
+      color: #94a3b8;
+      font-size: 1.2rem;
       cursor: pointer;
-      text-transform: uppercase;
-    }
-    #toggleTestPanelBtn:hover {
-      text-decoration: underline;
-    }
-    .test-panel.collapsed #testSpotsContainer {
-      display: none;
-    }
-    .test-panel.collapsed .test-panel-header {
-      margin-bottom: 0;
-    }
-    .test-spot {
+      padding: 4px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      justify-content: center;
+      transition: color 0.2s;
     }
-    .test-spot:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .test-spot span { font-size: 0.9rem; font-weight: 600; color: #e2e8f0; }
-    .test-spot button {
-      background: rgba(255,255,255,0.1);
-      border: none;
-      color: #fff;
-      padding: 0.3rem 0.6rem;
+
+    .btn-close-drawer:hover {
+      color: #f87171;
+    }
+
+    .test-panel-instruction {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .test-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .legend-color {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .legend-color.std { background: #1ca745; }
+    .legend-color.pcd { background: #2563eb; }
+    .legend-color.eld { background: #8b5cf6; }
+    .legend-color.occ { background: #ef4444; }
+    .legend-color.res { background: #eab308; }
+
+    .test-spots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+      gap: 6px;
+      overflow-y: auto;
+      flex-grow: 1;
+      padding-right: 4px;
+    }
+
+    .test-spots-grid::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .test-spots-grid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .test-spots-grid::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    .test-spots-grid::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .spot-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
       border-radius: 6px;
       font-family: var(--font-main);
       font-size: 0.75rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.03);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      user-select: none;
     }
-    .test-spot button.occupied { background: #ef4444; }
-    .test-spot button.free { background: #1ca745; }
+    
+    .spot-pill.free-standard {
+      background: rgba(28, 167, 69, 0.12);
+      color: #4ade80;
+      border-color: rgba(28, 167, 69, 0.25);
+    }
+    .spot-pill.free-standard:hover {
+      background: rgba(28, 167, 69, 0.2);
+      border-color: rgba(28, 167, 69, 0.45);
+      box-shadow: 0 0 8px rgba(28, 167, 69, 0.2);
+    }
+    .spot-pill.free-pcd {
+      background: rgba(37, 99, 235, 0.12);
+      color: #60a5fa;
+      border-color: rgba(37, 99, 235, 0.25);
+    }
+    .spot-pill.free-pcd:hover {
+      background: rgba(37, 99, 235, 0.2);
+      border-color: rgba(37, 99, 235, 0.45);
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+    }
+    .spot-pill.free-elderly {
+      background: rgba(139, 92, 246, 0.12);
+      color: #c084fc;
+      border-color: rgba(139, 92, 246, 0.25);
+    }
+    .spot-pill.free-elderly:hover {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.45);
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+    }
+    .spot-pill.occupied {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+    .spot-pill.occupied:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.45);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+    }
+    .spot-pill.reserved {
+      background: rgba(234, 179, 8, 0.12);
+      color: #fde047;
+      border-color: rgba(234, 179, 8, 0.25);
+    }
+    .spot-pill.reserved:hover {
+      background: rgba(234, 179, 8, 0.2);
+      border-color: rgba(234, 179, 8, 0.45);
+      box-shadow: 0 0 8px rgba(234, 179, 8, 0.2);
+    }
 
         #markersLayer {
       position: absolute;
@@ -388,35 +539,140 @@
     }
 
         @media (max-width: 600px) {
+      .user-badge span {
+        display: none;
+      }
+      .btn-control .text {
+        display: none;
+      }
+      .btn-control {
+        padding: 0.4rem 0.6rem;
+      }
+      .dashboard-nav .logo-text {
+        font-size: 1.1rem;
+      }
+      .dashboard-nav .logo-pin {
+        height: 24px;
+        width: 24px;
+        font-size: 0.65rem;
+      }
       .info-panel {
         bottom: 1rem;
         left: 1rem;
         right: 1rem;
-        padding: 1rem;
+        width: auto;
+        padding: 0.8rem 1rem;
       }
       .info-panel p {
         display: flex;
         justify-content: space-between;
       }
-      .test-panel {
+      .test-panel-drawer {
+        width: 100%;
+        right: 0;
+        left: 0;
+        bottom: -60vh;
+        height: 60vh;
         top: auto;
-        bottom: 110px;
-        left: 1rem;
-        right: 1rem;
-        width: auto;
-        max-height: 40vh;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+        transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       }
+      .test-panel-drawer.open {
+        bottom: 0;
+      }
+    }
+
+    .popup-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 17, 23, 0.7);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .popup-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .popup-card {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .popup-overlay.active .popup-card {
+      transform: scale(1);
+    }
+    .popup-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    .popup-card p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .popup-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .popup-btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-main);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .popup-btn-yes {
+      background: #1ca745;
+      color: #fff;
+    }
+    .popup-btn-yes:hover {
+      background: #15803d;
+      box-shadow: 0 0 12px rgba(28, 167, 69, 0.4);
+    }
+    .popup-btn-no {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .popup-btn-no:hover {
+      background: rgba(220, 38, 38, 0.2);
+      border-color: rgba(220, 38, 38, 0.4);
+      color: #f87171;
     }
   </style>
 </head>
 
 <body>
-    <nav class="dashboard-nav">
+  <nav class="dashboard-nav">
     <a href="index.html" class="logo">
       <span class="logo-text">Estaciona</span>
       <div class="logo-pin"><span>AI</span></div>
     </a>
     <div class="nav-right">
+      <button class="btn-control" id="testPanelToggleBtn" onclick="window.toggleTestPanel()">
+        <span>🧪</span> <span class="text">Simulação</span>
+      </button>
       <div class="user-badge">
         <div class="user-avatar" id="userAvatar">A</div>
         <span id="userName">admin</span>
@@ -435,17 +691,36 @@
     <div class="loading-progress" id="loadingProgress">0%</div>
   </div>
 
-    <div class="info-panel" id="infoPanel" style="display: none;">
+  <div class="info-panel" id="infoPanel" onclick="event.stopPropagation();">
     <h4>VAGAS LIVRES</h4>
     <div id="infoPanelContent"></div>
   </div>
 
-  <div class="test-panel collapsed" id="testPanel" style="display: none;">
+  <div class="test-panel-drawer" id="testPanel" style="display: none;" onclick="event.stopPropagation();">
     <div class="test-panel-header">
-      <h4>PAINEL DE TESTE</h4>
-      <button id="toggleTestPanelBtn" onclick="window.toggleTestPanel()">Expandir</button>
+      <h4>Simulação de Vagas</h4>
+      <button class="btn-close-drawer" onclick="window.toggleTestPanel()">✕</button>
     </div>
-    <div id="testSpotsContainer"></div>
+    <p class="test-panel-instruction">Clique em uma vaga para alternar sua ocupação.</p>
+    <div class="test-legend">
+      <div class="legend-item"><span class="legend-color std"></span>Padrão</div>
+      <div class="legend-item"><span class="legend-color pcd"></span>PCD</div>
+      <div class="legend-item"><span class="legend-color eld"></span>Idoso</div>
+      <div class="legend-item"><span class="legend-color occ"></span>Ocupada</div>
+      <div class="legend-item"><span class="legend-color res"></span>Reservada</div>
+    </div>
+    <div id="testSpotsContainer" class="test-spots-grid"></div>
+  </div>
+
+  <div class="popup-overlay" id="confirmationPopup">
+    <div class="popup-card">
+      <h3>Confirmação de Ocupação</h3>
+      <p id="popupText">Detectamos um veículo na vaga reservada. Foi você quem estacionou?</p>
+      <div class="popup-buttons">
+        <button class="popup-btn popup-btn-no" onclick="window.handlePopupResponse(false)">Não</button>
+        <button class="popup-btn popup-btn-yes" onclick="window.handlePopupResponse(true)">Sim</button>
+      </div>
+    </div>
   </div>
 
     <button class="btn-back" id="backBtn" onclick="resetCamera()">← Voltar à Visão Geral</button>
@@ -453,9 +728,9 @@
     <script type="importmap">
     {
       "imports": {
-        "three": "./lib/three/three.module.js",
-        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js",
-        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js"
+        "three": "./lib/three/three.module.js?v=2",
+        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js?v=2",
+        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js?v=2"
       }
     }
   </script>
@@ -473,6 +748,142 @@
     const initial = userEmail.charAt(0).toUpperCase();
     document.getElementById('userAvatar').textContent = initial;
     document.getElementById('userName').textContent = userEmail.split('@')[0];
+
+    let simulatedUserId = null;
+    const simulatedUserPlate = "DEV-9999";
+    let activePinpointPath = null;
+    let currentReservation = null;
+
+    const host = window.location.hostname || 'localhost';
+    const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
+    const isLocal = host === 'localhost' || 
+                    host === '127.0.0.1' || 
+                    host.includes('ngrok') || 
+                    host.startsWith('192.168.') || 
+                    host.startsWith('10.') || 
+                    host.startsWith('172.') || 
+                    host.endsWith('.local') || 
+                    isIP;
+    const apiHost = host.includes('ngrok') ? 'localhost' : host;
+    const apiUrl = isLocal ? `http://${apiHost}:8000` : 'https://api.estaciona.tech';
+
+    fetch(`${apiUrl}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ plate: simulatedUserPlate })
+    })
+    .then(res => res.json())
+    .then(data => {
+      simulatedUserId = data.id;
+    })
+    .catch(err => console.error(err));
+
+    function requestRecommendationAndReserve(pathData) {
+      if (!simulatedUserId) {
+        console.warn("User not loaded.");
+        return;
+      }
+      activePinpointPath = pathData;
+
+      fetch(`${apiUrl}/reservations/recommend?user_id=${simulatedUserId}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Estacionamento Lotado");
+        return res.json();
+      })
+      .then(data => {
+        const spotId = data.recommended_spot;
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+        return fetch(`${apiUrl}/reservations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: simulatedUserId,
+            spot_id: spotId,
+            expires_at: expiresAt
+          })
+        });
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Falha ao reservar vaga");
+        return res.json();
+      })
+      .then(reservation => {
+        currentReservation = {
+          id: reservation.id,
+          spot_id: reservation.spot_id
+        };
+
+        const spotObj = spotsMeshes[reservation.spot_id];
+        if (spotObj) {
+          spotObj.status = 'reserved';
+          spotObj.mesh.material.color.setHex(0xeab308);
+          spotObj.line.material.color.setHex(0xeab308);
+
+          const actualY = spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
+
+          const spotPos = new THREE.Vector3(spotObj.data.center3D.x, actualY, spotObj.data.center3D.z);
+          
+          if (pathData.length > 1) {
+            let closestSegmentIndex = 0;
+            let minDistance = Infinity;
+            let bestProjectedPoint = null;
+
+            for (let i = 0; i < pathData.length - 1; i++) {
+              const A = new THREE.Vector3(pathData[i].x, pathData[i].y, pathData[i].z);
+              const B = new THREE.Vector3(pathData[i+1].x, pathData[i+1].y, pathData[i+1].z);
+              
+              const ab = new THREE.Vector3().subVectors(B, A);
+              const as = new THREE.Vector3().subVectors(spotPos, A);
+              
+              const abLenSq = ab.lengthSq();
+              let t = abLenSq > 0 ? as.dot(ab) / abLenSq : 0;
+              t = Math.max(0, Math.min(1, t));
+              
+              const P = new THREE.Vector3().copy(A).add(ab.multiplyScalar(t));
+              const dist = P.distanceTo(spotPos);
+              
+              if (dist < minDistance) {
+                minDistance = dist;
+                closestSegmentIndex = i;
+                bestProjectedPoint = P;
+              }
+            }
+
+            const truncatedPath = pathData.slice(0, closestSegmentIndex + 1);
+            activeCarPath = [
+              ...truncatedPath,
+              { x: bestProjectedPoint.x, y: bestProjectedPoint.y, z: bestProjectedPoint.z },
+              { x: spotPos.x, y: spotPos.y, z: spotPos.z }
+            ];
+          } else if (pathData.length === 1) {
+            activeCarPath = [
+              { x: pathData[0].x, y: pathData[0].y, z: pathData[0].z },
+              { x: spotPos.x, y: spotPos.y, z: spotPos.z }
+            ];
+          } else {
+            activeCarPath = [];
+          }
+        } else {
+          activeCarPath = pathData;
+        }
+
+        createStaticPathLine(activeCarPath);
+        currentPathIndex = 0;
+        carFinishedRoute = false;
+        carGroup.position.set(pathData[0].x, pathData[0].y, pathData[0].z);
+        carGroup.visible = true;
+        document.getElementById('infoPanel').classList.remove('visible');
+      })
+      .catch(err => {
+        console.error(err);
+        alert(err.message || "Erro na recomendação");
+      });
+    }
 
     const viewport = document.getElementById('viewport');
     const scene = new THREE.Scene();
@@ -493,7 +904,8 @@
       alpha: false,
     });
     renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -558,7 +970,7 @@
     dracoLoader.setDecoderPath('./lib/draco/');
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
-    const modelPath = 'assets/reconstruction/melhorresultado_otimizado.glb';
+    const modelPath = 'assets/reconstruction/melhorresultado_web.glb';
     const loadingOverlay = document.getElementById('loadingOverlay');
     const loadingProgress = document.getElementById('loadingProgress');
 
@@ -567,47 +979,41 @@
     let lancerModel = null;
     let pendingCars = [];
 
-    loader.load(
-      'assets/car/mitsubishi_lancer_evolution_viii_low_poly.glb',
-      function (gltf) {
-        const model = gltf.scene;
-        
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        
-        const scale = 1.1 / maxDim; 
-        model.scale.setScalar(scale);
-
-        const center = box.getCenter(new THREE.Vector3());
-        model.position.sub(center).multiplyScalar(scale);
-        
-        const newBox = new THREE.Box3().setFromObject(model);
-        model.position.y -= newBox.min.y;
-        
-        model.traverse(child => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
+    function loadCarModel() {
+      loader.load(
+        'assets/car/mitsubishi_lancer_evolution_viii_low_poly.glb',
+        function (gltf) {
+          const model = gltf.scene;
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 1.1 / maxDim;
+          model.scale.setScalar(scale);
+          const center = box.getCenter(new THREE.Vector3());
+          model.position.sub(center).multiplyScalar(scale);
+          const newBox = new THREE.Box3().setFromObject(model);
+          model.position.y -= newBox.min.y;
+          model.traverse(child => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          lancerModel = model;
+          pendingCars.forEach(data => {
+            const { group } = data;
+            group.clear();
+            group.add(lancerModel.clone());
+          });
+          if (typeof carGroup !== 'undefined' && carGroup) {
+            carGroup.clear();
+            carGroup.add(lancerModel.clone());
           }
-        });
-        
-        lancerModel = model;
-        
-        pendingCars.forEach(data => {
-          const { group } = data;
-          group.clear();
-          group.add(lancerModel.clone());
-        });
-        
-        if (typeof carGroup !== 'undefined' && carGroup) {
-          carGroup.clear();
-          carGroup.add(lancerModel.clone());
-        }
-      },
-      undefined,
-      (err) => console.error("Erro ao carregar o Lancer:", err)
-    );
+        },
+        undefined,
+        (err) => console.error("Erro ao carregar o Lancer:", err)
+      );
+    }
 
     loader.load(
       modelPath,
@@ -641,6 +1047,8 @@
         camera.position.copy(globalCameraPos);
         currentCameraTarget.copy(globalCameraTarget);
         camera.lookAt(currentCameraTarget);
+
+        loadCarModel();
 
         fetch('data/config.json?v=' + Date.now())
           .then(res => res.json())
@@ -681,8 +1089,38 @@
       let infoHTML = '';
       configData.forEach(pin => {
         if (pin.name === "Estacionamento A") {
-          if (totalSpots > 0 && freeSpots === 0) {
-            infoHTML += `<p>${pin.name}: <span class="highlight" style="color: #ef4444;">Indisponível</span></p>`;
+          const isA_Blocked = totalSpots > 0 && freeSpots === 0;
+          
+          const pinObj = pinpoints.find(p => p.name === pin.name);
+          if (pinObj) {
+            const primaryColor = isA_Blocked ? '#ef4444' : '#1ca745';
+            const icon = isA_Blocked ? '🔒' : pin.name.split(' ').pop();
+            const fontSize = isA_Blocked ? 10 : 13;
+            
+            pinObj.content.querySelector('svg').style.fill = primaryColor;
+            const textEl = pinObj.content.querySelector('text');
+            if (textEl) {
+              textEl.textContent = icon;
+              textEl.setAttribute('fill', primaryColor);
+              textEl.setAttribute('font-size', fontSize);
+            }
+            pinObj.content.style.cursor = isA_Blocked ? 'not-allowed' : 'pointer';
+            pinObj.content.dataset.blocked = isA_Blocked ? 'true' : 'false';
+            
+            if (pinObj.ring3D && pinObj.ring3D.material) {
+              pinObj.ring3D.material.color.setHex(isA_Blocked ? 0xef4444 : 0x1ca745);
+            }
+          }
+
+          if (isA_Blocked) {
+            infoHTML += `
+              <div class="info-row" style="margin-bottom: 12px;">
+                <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <span>${pin.name}</span>
+                  <span class="highlight" style="color: #ef4444;">Indisponível</span>
+                </p>
+              </div>
+            `;
           } else {
             let color = '#1ca745';
             if (totalSpots > 0) {
@@ -692,13 +1130,55 @@
               const l = Math.round(60 - (60 - 38) * ratio);
               color = `hsl(${h}, ${s}%, ${l}%)`;
             }
-            const text = totalSpots > 0 ? `${freeSpots} vagas` : '...';
-            infoHTML += `<p>${pin.name}: <span class="highlight" style="color: ${color};">${text}</span></p>`;
+            
+            let freePCD = 0;
+            let freeElderly = 0;
+            let freeStandard = 0;
+            
+            Object.values(spotsMeshes).forEach(spotObj => {
+              if (spotObj.status !== 'occupied' && spotObj.status !== 'reserved') {
+                if (spotObj.data.id === 'A-01' || spotObj.data.id === 'A-02') {
+                  freePCD++;
+                } else if (spotObj.data.id === 'A-03' || spotObj.data.id === 'A-04') {
+                  freeElderly++;
+                } else {
+                  freeStandard++;
+                }
+              }
+            });
+            
+            infoHTML += `
+              <div class="info-row" style="margin-bottom: 12px;">
+                <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <span>${pin.name}</span>
+                  <span class="highlight" style="color: ${color};">${freeSpots} vagas</span>
+                </p>
+                <div class="detailed-vagas" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 0.72rem; font-weight: 600;">
+                  <span style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; border-radius: 4px; padding: 2px 6px;">${freeStandard} padrão</span>
+                  <span style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; padding: 2px 6px;">${freePCD} PCD</span>
+                  <span style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); color: #c084fc; border-radius: 4px; padding: 2px 6px;">${freeElderly} Idoso</span>
+                </div>
+              </div>
+            `;
           }
         } else if (pin.blocked) {
-          infoHTML += `<p>${pin.name}: <span class="highlight" style="color: #ef4444;">Indisponível</span></p>`;
+          infoHTML += `
+            <div class="info-row" style="margin-bottom: 12px;">
+              <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>${pin.name}</span>
+                <span class="highlight" style="color: #ef4444;">Indisponível</span>
+              </p>
+            </div>
+          `;
         } else {
-          infoHTML += `<p>${pin.name}: <span class="highlight">0 vagas</span></p>`;
+          infoHTML += `
+            <div class="info-row" style="margin-bottom: 12px;">
+              <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>${pin.name}</span>
+                <span class="highlight" style="color: #ef4444;">Indisponível</span>
+              </p>
+            </div>
+          `;
         }
       });
       document.getElementById('infoPanelContent').innerHTML = infoHTML;
@@ -746,18 +1226,52 @@
       return g;
     }
 
+    const globalRaycaster = new THREE.Raycaster();
+    const rayOrigin = new THREE.Vector3();
+    const rayDirection = new THREE.Vector3(0, -1, 0);
+
     function getTerrainY(x, z, defaultY) {
       if (!loadedModel) return defaultY;
-      const raycaster = new THREE.Raycaster();
-      raycaster.set(new THREE.Vector3(x, 50, z), new THREE.Vector3(0, -1, 0));
-      const intersects = raycaster.intersectObject(loadedModel, true);
+      rayOrigin.set(x, 50, z);
+      globalRaycaster.set(rayOrigin, rayDirection);
+      const intersects = globalRaycaster.intersectObject(loadedModel, true);
       return intersects.length > 0 ? intersects[0].point.y : defaultY;
     }
+
+    let pathLine = null;
+
+    function createStaticPathLine(path) {
+      clearStaticPathLine();
+      if (!path || path.length < 2) return;
+      
+      const points = path.map(p => new THREE.Vector3(p.x, p.y + 0.03, p.z));
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.8,
+        linewidth: 2
+      });
+      pathLine = new THREE.Line(geometry, material);
+      scene.add(pathLine);
+    }
+
+    function clearStaticPathLine() {
+      if (pathLine) {
+        scene.remove(pathLine);
+        pathLine.geometry.dispose();
+        if (pathLine.material) pathLine.material.dispose();
+        pathLine = null;
+      }
+    }
+
+
 
     function loadSpots() {
       fetch('data/spots_3d.json?v=' + Date.now())
         .then(res => res.json())
         .then(data => {
+          data.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
           parkingSpotsData = data;
           totalSpots = data.length;
           freeSpots = data.length;
@@ -766,43 +1280,29 @@
           
           const defaultGroundY = configData && configData[0] ? configData[0].position.y : -6.0;
 
-          // Calcular a moda estatística das alturas detectadas para filtrar outliers (tetos de carros e falhas de raycast)
-          const yValues = [];
-          data.forEach(spot => {
-            const y = getTerrainY(spot.center3D.x, spot.center3D.z, defaultGroundY);
-            yValues.push(y);
-          });
-
-          // Agrupa em bins de 0.1
-          const bins = {};
-          yValues.forEach(y => {
-            const bin = Math.round(y * 10) / 10;
-            bins[bin] = (bins[bin] || 0) + 1;
-          });
-
-          // Encontra o bin mais frequente (moda)
-          let modeBin = null;
-          let maxCount = -1;
-          for (const bin in bins) {
-            if (bins[bin] > maxCount) {
-              maxCount = bins[bin];
-              modeBin = parseFloat(bin);
-            }
-          }
-
-          // Obtém a média dos valores reais no bin da moda para precisão exata do asfalto
-          const valuesInMode = yValues.filter(y => Math.round(y * 10) / 10 === modeBin);
-          const groundY = valuesInMode.length > 0 
-            ? valuesInMode.reduce((a, b) => a + b, 0) / valuesInMode.length 
-            : defaultGroundY;
+          // Vagas com carros fixos/estáticos no modelo 3D (para evitar que flutuem no teto/capô dos carros)
+          const spotsWithStaticCars = ['A-07', 'A-08', 'A-09', 'A-28', 'A-44'];
 
           let i = 0;
-          const chunkSize = 5;
+          const chunkSize = 10;
           function processChunk() {
             const end = Math.min(i + chunkSize, data.length);
             for (; i < end; i++) {
               const spot = data[i];
-              const actualY = groundY;
+              let actualY = getTerrainY(spot.center3D.x, spot.center3D.z, defaultGroundY);
+              spot.raycastY = actualY;
+              
+              if (spotsWithStaticCars.includes(spot.id)) {
+                actualY = defaultGroundY;
+              } else {
+                const diff = actualY - defaultGroundY;
+                if (diff > 0.15) {
+                  actualY = defaultGroundY;
+                } else if (diff > 0.05) {
+                  console.warn(`[Spot Height Warning] Vaga ${spot.id} com elevação suspeita (${diff.toFixed(4)} unidades acima do chão). Se houver um carro fixo nela, adicione-a em 'spotsWithStaticCars'.`);
+                }
+              }
+              
               spot.terrainY = actualY;
 
               const shape = new THREE.Shape();
@@ -810,11 +1310,18 @@
                 if (idx === 0) shape.moveTo(pt.x, -pt.z);
                 else shape.lineTo(pt.x, -pt.z);
               });
+              let colorHex = 0x1ca745;
+              if (spot.id === 'A-01' || spot.id === 'A-02') {
+                colorHex = 0x2563eb;
+              } else if (spot.id === 'A-03' || spot.id === 'A-04') {
+                colorHex = 0x8b5cf6;
+              }
+
               const geo = new THREE.ShapeGeometry(shape);
               const mat = new THREE.MeshBasicMaterial({ 
-                color: 0x1ca745, 
+                color: colorHex, 
                 transparent: true, 
-                opacity: 0.3,
+                opacity: 0.45,
                 depthTest: true,
                 depthWrite: false, 
                 side: THREE.DoubleSide,
@@ -830,9 +1337,9 @@
               
               const edges = new THREE.EdgesGeometry(geo);
               const lineMat = new THREE.LineBasicMaterial({ 
-                color: 0x1ca745, 
+                color: colorHex, 
                 transparent: true,
-                opacity: 0.6,
+                opacity: 0.85,
                 linewidth: 1, 
                 depthTest: true,
                 depthWrite: false,
@@ -856,7 +1363,7 @@
               loadingOverlay.classList.add('hidden');
               setTimeout(() => {
                 loadingOverlay.style.display = 'none';
-                document.getElementById('infoPanel').style.display = 'block';
+                document.getElementById('infoPanel').classList.add('visible');
                 if (typeof connectAppWebSocket === 'function') {
                   connectAppWebSocket();
                 }
@@ -868,83 +1375,122 @@
         .catch(err => console.error("Erro ao carregar spots_3d.json:", err));
     }
 
-    window.toggleSpot = function(id, forceStatus = null, isAuto = false) {
+    window.toggleSpot = function(id, status = null, isAuto = false) {
       const spotObj = spotsMeshes[id];
       if (!spotObj) return;
-      
-      const newStatus = forceStatus !== null ? forceStatus : !spotObj.isOccupied;
-      if (spotObj.isOccupied === newStatus) return; 
 
-      spotObj.isOccupied = newStatus;
-      
-      if (newStatus && isAuto) {
+      let targetStatus = status;
+      if (typeof status === 'boolean') {
+        targetStatus = status ? 'occupied' : 'free';
+      } else if (status === null) {
+        targetStatus = spotObj.status === 'occupied' ? 'free' : 'occupied';
+      }
+
+      if (spotObj.status === targetStatus) return;
+      spotObj.status = targetStatus;
+
+
+
+      if (targetStatus === 'occupied' && isAuto) {
         spotObj.autoOccupied = true;
       } else if (!isAuto) {
-        spotObj.autoOccupied = false; 
+        spotObj.autoOccupied = false;
       }
 
       const btn = document.getElementById(`btn-spot-${id}`);
       const actualY = spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
 
-      if (spotObj.isOccupied) {
+      if (spotsCars[id]) {
+        scene.remove(spotsCars[id]);
+        delete spotsCars[id];
+      }
+
+      if (targetStatus === 'occupied') {
         freeSpots--;
         spotObj.mesh.material.color.setHex(0xef4444);
         spotObj.line.material.color.setHex(0xef4444);
-        if(btn) { btn.textContent = "Liberar"; btn.className = "occupied"; }
+        if (btn) { btn.className = "spot-pill occupied"; }
 
         const car = createStaticCar(id);
         const p1 = spotObj.data.polygon3D[0];
         const p2 = spotObj.data.polygon3D[1];
-        let angle = Math.atan2(p2.x - p1.x, p2.z - p1.z); 
-
-        const invertedSpots = [];
-        if (invertedSpots.includes(id)) {
-          angle += Math.PI / 2;
-        }
-
+        let angle = Math.atan2(p2.x - p1.x, p2.z - p1.z);
         car.rotation.y = angle;
-        
         car.position.set(spotObj.data.center3D.x, actualY + 0.05, spotObj.data.center3D.z);
         scene.add(car);
         spotsCars[id] = car;
+
+        if (currentReservation && id === currentReservation.spot_id) {
+          carGroup.visible = false;
+        }
+      } else if (targetStatus === 'reserved') {
+        spotObj.mesh.material.color.setHex(0xeab308);
+        spotObj.line.material.color.setHex(0xeab308);
+        if (btn) { btn.className = "spot-pill reserved"; }
       } else {
         freeSpots++;
-        spotObj.mesh.material.color.setHex(0x1ca745);
-        spotObj.line.material.color.setHex(0x1ca745);
-        if(btn) { btn.textContent = "Ocupar"; btn.className = "free"; }
-
-        if (spotsCars[id]) {
-          scene.remove(spotsCars[id]);
-          delete spotsCars[id];
+        let colorHex = 0x1ca745;
+        let baseClass = "spot-pill free-standard";
+        if (id === 'A-01' || id === 'A-02') {
+          colorHex = 0x2563eb;
+          baseClass = "spot-pill free-pcd";
+        } else if (id === 'A-03' || id === 'A-04') {
+          colorHex = 0x8b5cf6;
+          baseClass = "spot-pill free-elderly";
         }
+        spotObj.mesh.material.color.setHex(colorHex);
+        spotObj.line.material.color.setHex(colorHex);
+        if (btn) { btn.className = baseClass; }
       }
+
+      freeSpots = Object.values(spotsMeshes).filter(obj => obj.status !== 'occupied' && obj.status !== 'reserved').length;
       updateInfoPanel();
+    };
+
+    window.testPanelToggleSpot = function(id) {
+      const spotObj = spotsMeshes[id];
+      if (!spotObj) return;
+      const currentStatus = spotObj.status;
+      const targetStatus = currentStatus === 'occupied' ? 'free' : 'occupied';
+      
+      fetch(`${apiUrl}/spots/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: targetStatus })
+      })
+      .catch(err => console.error(err));
     };
 
     window.toggleTestPanel = function() {
       const panel = document.getElementById('testPanel');
-      const btn = document.getElementById('toggleTestPanelBtn');
-      panel.classList.toggle('collapsed');
-      if (panel.classList.contains('collapsed')) {
-        btn.textContent = "Expandir";
-      } else {
-        btn.textContent = "Minimizar";
-      }
+      panel.classList.toggle('open');
     };
 
     function buildTestPanel() {
       const container = document.getElementById('testSpotsContainer');
       let html = '';
       parkingSpotsData.forEach(spot => {
+        const spotObj = spotsMeshes[spot.id];
+        let statusClass = 'free-standard';
+        if (spot.id === 'A-01' || spot.id === 'A-02') statusClass = 'free-pcd';
+        else if (spot.id === 'A-03' || spot.id === 'A-04') statusClass = 'free-elderly';
+        
+        if (spotObj && spotObj.status === 'occupied') {
+          statusClass = 'occupied';
+        } else if (spotObj && spotObj.status === 'reserved') {
+          statusClass = 'reserved';
+        }
+        
         html += `
-          <div class="test-spot">
-            <span>${spot.id}</span>
-            <button id="btn-spot-${spot.id}" class="free" onclick="window.toggleSpot('${spot.id}')">Ocupar</button>
-          </div>
+          <button id="btn-spot-${spot.id}" class="spot-pill ${statusClass}" onclick="window.testPanelToggleSpot('${spot.id}'); event.stopPropagation();">
+            ${spot.id}
+          </button>
         `;
       });
       container.innerHTML = html;
-      document.getElementById('testPanel').style.display = 'block';
+      document.getElementById('testPanel').style.display = 'flex';
     }
 
     function buildCar() {
@@ -1015,12 +1561,13 @@
       wrapper.appendChild(content);
       markersLayer.appendChild(wrapper);
 
-      const ringGeo = new THREE.RingGeometry(0.15, 0.45, 32);
+      const ringGeo = new THREE.RingGeometry(0.15, 0.45, 16);
       const ringMat = new THREE.MeshBasicMaterial({
         color: isBlocked ? 0xef4444 : 0x1ca745,
         transparent: true,
         opacity: 0.5,
         side: THREE.DoubleSide,
+        depthWrite: false,
       });
       const ring3D = new THREE.Mesh(ringGeo, ringMat);
       ring3D.rotation.x = -Math.PI / 2;
@@ -1029,15 +1576,12 @@
 
       content.addEventListener('click', () => {
         if (isBlocked) return;
+        if (content.dataset.blocked === 'true') return;
         if (camData) {
           currentFocusCamData = camData;
           
           if (pathData && pathData.length > 0) {
-            activeCarPath = pathData;
-            currentPathIndex = 0;
-            carFinishedRoute = false;
-            carGroup.position.set(pathData[0].x, pathData[0].y, pathData[0].z);
-            carGroup.visible = true;
+            requestRecommendationAndReserve(pathData);
           }
           
           updateCameraPosition();
@@ -1047,7 +1591,9 @@
       });
 
       pinpoints.push({
+        name: name,
         element: wrapper,
+        content: content,
         ring3D: ring3D,
         pos3D: new THREE.Vector3(pos.x, pos.y, pos.z)
       });
@@ -1056,73 +1602,51 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      if (activeCarPath) {
-        if (currentPathIndex < activeCarPath.length - 1) {
-          carFinishedRoute = false;
-          const p1 = new THREE.Vector3(activeCarPath[currentPathIndex].x, activeCarPath[currentPathIndex].y, activeCarPath[currentPathIndex].z);
+      if (activeCarPath && activeCarPath.length > 1) {
+        carFinishedRoute = false;
+        const p1 = new THREE.Vector3(activeCarPath[currentPathIndex].x, activeCarPath[currentPathIndex].y, activeCarPath[currentPathIndex].z);
         const p2 = new THREE.Vector3(activeCarPath[currentPathIndex + 1].x, activeCarPath[currentPathIndex + 1].y, activeCarPath[currentPathIndex + 1].z);
         
         const dist = p1.distanceTo(p2);
-        const speed = 0.015;
+        const speed = 0.026;
         
         const currentDist = carGroup.position.distanceTo(p1);
         const nextDist = currentDist + speed;
         
         if (nextDist >= dist) {
           currentPathIndex++;
-          carGroup.position.copy(p2);
+          if (currentPathIndex >= activeCarPath.length - 1) {
+            currentPathIndex = 0;
+            carGroup.position.set(activeCarPath[0].x, activeCarPath[0].y, activeCarPath[0].z);
+          } else {
+            carGroup.position.copy(p2);
+          }
         } else {
           const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
           carGroup.position.add(dir.multiplyScalar(speed));
           carGroup.lookAt(p2);
         }
-
-        if (parkingSpotsData.length > 0) {
-          let closestSpot = null;
-          let minDistance = Infinity;
-
-          parkingSpotsData.forEach(spot => {
-            const dx = carGroup.position.x - spot.center3D.x;
-            const dz = carGroup.position.z - spot.center3D.z;
-            const distanceToSpot = Math.sqrt(dx*dx + dz*dz);
-            
-            if (distanceToSpot < minDistance) {
-              minDistance = distanceToSpot;
-              closestSpot = spot;
-            }
-
-            if (distanceToSpot > 0.3) {
-              if (spotsMeshes[spot.id] && spotsMeshes[spot.id].isOccupied && spotsMeshes[spot.id].autoOccupied) {
-                window.toggleSpot(spot.id, false, true);
-              }
-            }
-          });
-
-          if (closestSpot && minDistance < 0.2) {
-            if (spotsMeshes[closestSpot.id] && !spotsMeshes[closestSpot.id].isOccupied) {
-              window.toggleSpot(closestSpot.id, true, true);
-            }
-          }
-        }
-        } else {
-          carGroup.visible = false;
-          carFinishedRoute = true;
-          activeCarPath = null;
-        }
       }
 
-      if (currentFocusCamData && (carGroup.visible || carFinishedRoute)) {
+      if (!activeCarPath) {
+        clearStaticPathLine();
+      }
+
+      if (currentFocusCamData && carGroup.visible) {
         const aspect = viewport.clientWidth / viewport.clientHeight;
-        const mobileZoomMult = aspect < 1 ? Math.max(1, (1 / aspect) * 1.1) : 1;
+        const mobileScale = aspect < 1 ? Math.min(1.5, Math.max(1.0, 1 / aspect)) : 1.0;
         
         const tPos = new THREE.Vector3(currentFocusCamData.target.x, currentFocusCamData.target.y, currentFocusCamData.target.z);
         const cPos = new THREE.Vector3(currentFocusCamData.position.x, currentFocusCamData.position.y, currentFocusCamData.position.z);
         
-        const offset = new THREE.Vector3().subVectors(cPos, tPos).multiplyScalar(mobileZoomMult * 0.35);
+        const offset = new THREE.Vector3().subVectors(cPos, tPos).normalize();
         
-        offset.y += 4.5;
-        offset.x *= 0.5;
-        offset.z *= 0.5;
+        const height = 7.5 * mobileScale;
+        const horizontalOffset = 0.9 * mobileScale;
+        
+        offset.y = 0;
+        offset.normalize().multiplyScalar(horizontalOffset);
+        offset.y = height;
         
         const dynamicTarget = carGroup.position.clone();
         targetCameraPos.copy(dynamicTarget).add(offset);
@@ -1218,10 +1742,18 @@
     function connectAppWebSocket() {
       try {
         const host = window.location.hostname || 'localhost';
-        const isLocal = host === 'localhost' || host === '127.0.0.1';
-        
+        const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
+        const isLocal = host === 'localhost' || 
+                        host === '127.0.0.1' || 
+                        host.includes('ngrok') || 
+                        host.startsWith('192.168.') || 
+                        host.startsWith('10.') || 
+                        host.startsWith('172.') || 
+                        host.endsWith('.local') || 
+                        isIP;
+        const apiHost = host.includes('ngrok') ? 'localhost' : host;
         const wsUrl = isLocal 
-            ? 'ws://104.210.14.223:8000/ws/dashboard'
+            ? `ws://${apiHost}:8000/ws/dashboard`
             : 'wss://api.estaciona.tech/ws/dashboard';
         
         const ws = new WebSocket(wsUrl);
@@ -1229,9 +1761,18 @@
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
+            console.log("WebSocket received:", data);
             if (data.type === 'SPOT_UPDATE') {
-              const isOccupied = data.status === 'occupied' || data.status === 'reserved';
-              window.toggleSpot(data.spot_id, isOccupied, false);
+              window.toggleSpot(data.spot_id, data.status, false);
+              console.log("Current reservation:", currentReservation);
+              if (currentReservation && data.spot_id === currentReservation.spot_id && data.status === 'occupied') {
+                activeCarPath = null;
+                carGroup.visible = false;
+                carFinishedRoute = true;
+                document.getElementById('infoPanel').classList.add('visible');
+                document.getElementById('popupText').textContent = `Detectamos um veículo na vaga reservada (${currentReservation.spot_id}). Foi você quem estacionou?`;
+                document.getElementById('confirmationPopup').classList.add('active');
+              }
             } else if (data.type === 'NAVIGATION_START') {
             }
           } catch (e) {
@@ -1264,6 +1805,44 @@
       window.location.href = 'index.html';
     };
 
+    window.handlePopupResponse = function(response) {
+      document.getElementById('confirmationPopup').classList.remove('active');
+      
+      if (!currentReservation) return;
+      
+      const reservationToHandle = currentReservation;
+      currentReservation = null;
+      
+      if (response) {
+        fetch(`${apiUrl}/reservations/${reservationToHandle.id}/confirm`, {
+          method: 'POST'
+        })
+        .catch(err => console.error(err));
+      } else {
+        const intruderSpotId = reservationToHandle.spot_id;
+        window.toggleSpot(intruderSpotId, 'occupied', false);
+
+        fetch(`${apiUrl}/reservations/${reservationToHandle.id}/cancel`, {
+          method: 'PUT'
+        })
+        .then(() => {
+          return fetch(`${apiUrl}/spots/${intruderSpotId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'occupied' })
+          });
+        })
+        .then(() => {
+          if (activePinpointPath) {
+            requestRecommendationAndReserve(activePinpointPath);
+          }
+        })
+        .catch(err => console.error(err));
+      }
+    };
+
     window.resetCamera = function() {
       currentFocusCamData = null;
       activeCarPath = null;
@@ -1271,6 +1850,7 @@
       carGroup.visible = false;
       updateCameraPosition();
       document.getElementById('backBtn').classList.remove('visible');
+      document.getElementById('infoPanel').classList.add('visible');
     };
   </script>
 </body>
