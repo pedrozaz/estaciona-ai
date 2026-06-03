@@ -1041,56 +1041,60 @@
         .catch(err => console.error("Erro ao carregar spots_3d.json:", err));
     }
 
-    window.toggleSpot = function(id, forceStatus = null, isAuto = false) {
+    window.toggleSpot = function(id, status = null, isAuto = false) {
       const spotObj = spotsMeshes[id];
       if (!spotObj) return;
-      
-      const newStatus = forceStatus !== null ? forceStatus : !spotObj.isOccupied;
-      if (spotObj.isOccupied === newStatus) return; 
 
-      spotObj.isOccupied = newStatus;
-      
-      if (newStatus && isAuto) {
+      let targetStatus = status;
+      if (typeof status === 'boolean') {
+        targetStatus = status ? 'occupied' : 'free';
+      } else if (status === null) {
+        targetStatus = spotObj.status === 'occupied' ? 'free' : 'occupied';
+      }
+
+      if (spotObj.status === targetStatus) return;
+      spotObj.status = targetStatus;
+
+      if (targetStatus === 'occupied' && isAuto) {
         spotObj.autoOccupied = true;
       } else if (!isAuto) {
-        spotObj.autoOccupied = false; 
+        spotObj.autoOccupied = false;
       }
 
       const btn = document.getElementById(`btn-spot-${id}`);
       const actualY = spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
 
-      if (spotObj.isOccupied) {
+      if (spotsCars[id]) {
+        scene.remove(spotsCars[id]);
+        delete spotsCars[id];
+      }
+
+      if (targetStatus === 'occupied') {
         freeSpots--;
         spotObj.mesh.material.color.setHex(0xef4444);
         spotObj.line.material.color.setHex(0xef4444);
-        if(btn) { btn.textContent = "Liberar"; btn.className = "occupied"; }
+        if (btn) { btn.textContent = "Liberar"; btn.className = "occupied"; }
 
         const car = createStaticCar(id);
         const p1 = spotObj.data.polygon3D[0];
         const p2 = spotObj.data.polygon3D[1];
-        let angle = Math.atan2(p2.x - p1.x, p2.z - p1.z); 
-
-        const invertedSpots = [];
-        if (invertedSpots.includes(id)) {
-          angle += Math.PI / 2;
-        }
-
+        let angle = Math.atan2(p2.x - p1.x, p2.z - p1.z);
         car.rotation.y = angle;
-        
         car.position.set(spotObj.data.center3D.x, actualY + 0.05, spotObj.data.center3D.z);
         scene.add(car);
         spotsCars[id] = car;
+      } else if (targetStatus === 'reserved') {
+        spotObj.mesh.material.color.setHex(0xeab308);
+        spotObj.line.material.color.setHex(0xeab308);
+        if (btn) { btn.textContent = "Reservado"; btn.className = "reserved"; }
       } else {
         freeSpots++;
         spotObj.mesh.material.color.setHex(0x1ca745);
         spotObj.line.material.color.setHex(0x1ca745);
-        if(btn) { btn.textContent = "Ocupar"; btn.className = "free"; }
-
-        if (spotsCars[id]) {
-          scene.remove(spotsCars[id]);
-          delete spotsCars[id];
-        }
+        if (btn) { btn.textContent = "Ocupar"; btn.className = "free"; }
       }
+
+      freeSpots = Object.values(spotsMeshes).filter(obj => obj.status !== 'occupied' && obj.status !== 'reserved').length;
       updateInfoPanel();
     };
 
@@ -1246,7 +1250,7 @@
           carGroup.lookAt(p2);
         }
 
-        if (parkingSpotsData.length > 0) {
+        if (!currentReservation && parkingSpotsData.length > 0) {
           let closestSpot = null;
           let minDistance = Infinity;
 
@@ -1405,8 +1409,7 @@
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'SPOT_UPDATE') {
-              const isOccupied = data.status === 'occupied' || data.status === 'reserved';
-              window.toggleSpot(data.spot_id, isOccupied, false);
+              window.toggleSpot(data.spot_id, data.status, false);
             } else if (data.type === 'NAVIGATION_START') {
             }
           } catch (e) {
@@ -1455,10 +1458,19 @@
         .catch(err => console.error(err));
       } else {
         const intruderSpotId = currentReservation.spot_id;
-        window.toggleSpot(intruderSpotId, true, false);
-        
+        window.toggleSpot(intruderSpotId, 'occupied', false);
+
         fetch(`${apiUrl}/reservations/${currentReservation.id}/cancel`, {
           method: 'PUT'
+        })
+        .then(() => {
+          return fetch(`${apiUrl}/spots/${intruderSpotId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'occupied' })
+          });
         })
         .then(() => {
           currentReservation = null;
