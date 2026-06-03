@@ -442,11 +442,12 @@
       pins.push({
         id: id,
         name: `Estacionamento ${pins.length + 1}`,
-        position: null, // will be the LAST point of the path
+        position: null, // will be the FIRST point of the path
         camera: null,
         path: [],
         lineMesh: null,
-        markerMeshes: []
+        markerMeshes: [],
+        blocked: false
       });
       activeRouteId = id;
       renderPinList();
@@ -714,7 +715,9 @@
         const pin = pins.find(p => p.id === activeRouteId);
         if (pin) {
           pin.path.push({ x: point.x, y: point.y, z: point.z });
-          pin.position = { x: point.x, y: point.y, z: point.z }; // update final pos
+          if (pin.path.length === 1) {
+            pin.position = { x: point.x, y: point.y, z: point.z };
+          }
           
           updatePathMeshes(pin);
           renderPinList();
@@ -814,7 +817,7 @@
           const pin = pins.find(p => p.id === id);
           if (pin && pin.path.length > 0) {
             pin.path.pop();
-            pin.position = pin.path.length > 0 ? { ...pin.path[pin.path.length - 1] } : null;
+            pin.position = pin.path.length > 0 ? { ...pin.path[0] } : null;
             updatePathMeshes(pin);
             renderPinList();
           }
@@ -850,8 +853,8 @@
                 const val = parseFloat(e.target.value);
                 if (!isNaN(val)) {
                   activePin.path[idx][coord] = val;
-                  if (idx === activePin.path.length - 1) {
-                    activePin.position = { ...activePin.path[idx] };
+                  if (idx === 0) {
+                    activePin.position = { ...activePin.path[0] };
                   }
                   updatePathMeshes(activePin);
                 }
@@ -863,7 +866,7 @@
               const idx = Number(e.target.dataset.idx);
               activePin.path.splice(idx, 1);
               if (activePin.path.length > 0) {
-                activePin.position = { ...activePin.path[activePin.path.length - 1] };
+                activePin.position = { ...activePin.path[0] };
               } else {
                 activePin.position = null;
               }
@@ -920,6 +923,9 @@
               }
             };
           }
+          if (p.blocked) {
+            out.blocked = true;
+          }
           return out;
         });
 
@@ -956,7 +962,8 @@
             camera: item.camera || null,
             path: item.path || (item.position ? [item.position] : []),
             lineMesh: null,
-            markerMeshes: []
+            markerMeshes: [],
+            blocked: item.blocked || false
           };
           pins.push(pin);
           updatePathMeshes(pin);
@@ -1043,7 +1050,8 @@
               camera: item.camera || null,
               path: item.path || (item.position ? [item.position] : []),
               lineMesh: null,
-              markerMeshes: []
+              markerMeshes: [],
+              blocked: item.blocked || false
             };
             pins.push(pin);
             updatePathMeshes(pin);
