@@ -715,7 +715,7 @@
         const pin = pins.find(p => p.id === activeRouteId);
         if (pin) {
           pin.path.push({ x: point.x, y: point.y, z: point.z });
-          if (pin.path.length === 1) {
+          if (!pin.position && pin.path.length === 1) {
             pin.position = { x: point.x, y: point.y, z: point.z };
           }
           
@@ -817,7 +817,9 @@
           const pin = pins.find(p => p.id === id);
           if (pin && pin.path.length > 0) {
             pin.path.pop();
-            pin.position = pin.path.length > 0 ? { ...pin.path[0] } : null;
+            if (pin.path.length === 0) {
+              pin.position = null;
+            }
             updatePathMeshes(pin);
             renderPinList();
           }
@@ -853,9 +855,6 @@
                 const val = parseFloat(e.target.value);
                 if (!isNaN(val)) {
                   activePin.path[idx][coord] = val;
-                  if (idx === 0) {
-                    activePin.position = { ...activePin.path[0] };
-                  }
                   updatePathMeshes(activePin);
                 }
               });
@@ -865,9 +864,7 @@
               e.stopPropagation();
               const idx = Number(e.target.dataset.idx);
               activePin.path.splice(idx, 1);
-              if (activePin.path.length > 0) {
-                activePin.position = { ...activePin.path[0] };
-              } else {
+              if (activePin.path.length === 0) {
                 activePin.position = null;
               }
               updatePathMeshes(activePin);

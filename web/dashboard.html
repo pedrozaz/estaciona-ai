@@ -1501,6 +1501,7 @@
         transparent: true,
         opacity: 0.5,
         side: THREE.DoubleSide,
+        depthWrite: false,
       });
       const ring3D = new THREE.Mesh(ringGeo, ringMat);
       ring3D.rotation.x = -Math.PI / 2;
