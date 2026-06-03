@@ -193,6 +193,16 @@
       padding: 1rem 1.25rem;
       z-index: 60;
       pointer-events: none;
+      width: 320px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .info-panel.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
     }
 
     .info-panel h4 {
@@ -247,76 +257,215 @@
       background: #158a36;
     }
 
-    .test-panel {
+    .btn-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid rgba(28, 167, 69, 0.3);
+      border-radius: 8px;
+      background: rgba(28, 167, 69, 0.08);
+      color: #1ca745;
+      font-family: var(--font-main);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    
+    .btn-control:hover {
+      background: rgba(28, 167, 69, 0.15);
+      border-color: rgba(28, 167, 69, 0.5);
+      color: #2ee566;
+      box-shadow: 0 0 10px rgba(28, 167, 69, 0.15);
+    }
+
+    .test-panel-drawer {
       position: fixed;
-      top: 5rem;
-      right: 1.25rem;
+      top: 48px;
+      right: -340px;
+      width: 340px;
+      height: calc(100vh - 48px);
       background: rgba(15, 17, 23, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px;
-      padding: 1rem;
-      z-index: 60;
-      width: 250px;
-      max-height: calc(100vh - 7rem);
-      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.5rem;
+      z-index: 120;
+      transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      color: #e2e8f0;
       pointer-events: auto;
     }
+    
+    .test-panel-drawer.open {
+      right: 0;
+    }
+
     .test-panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.8rem;
+      margin-bottom: 0.5rem;
     }
-    .test-panel h4 {
-      font-size: 0.85rem;
+
+    .test-panel-header h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64748b;
+      letter-spacing: 0.5px;
+      color: #e2e8f0;
       margin: 0;
     }
-    #toggleTestPanelBtn {
+
+    .btn-close-drawer {
       background: none;
       border: none;
-      color: #1ca745;
-      font-size: 0.75rem;
-      font-weight: bold;
+      color: #94a3b8;
+      font-size: 1.2rem;
       cursor: pointer;
-      text-transform: uppercase;
-    }
-    #toggleTestPanelBtn:hover {
-      text-decoration: underline;
-    }
-    .test-panel.collapsed #testSpotsContainer {
-      display: none;
-    }
-    .test-panel.collapsed .test-panel-header {
-      margin-bottom: 0;
-    }
-    .test-spot {
+      padding: 4px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      justify-content: center;
+      transition: color 0.2s;
     }
-    .test-spot:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .test-spot span { font-size: 0.9rem; font-weight: 600; color: #e2e8f0; }
-    .test-spot button {
-      background: rgba(255,255,255,0.1);
-      border: none;
-      color: #fff;
-      padding: 0.3rem 0.6rem;
+
+    .btn-close-drawer:hover {
+      color: #f87171;
+    }
+
+    .test-panel-instruction {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .test-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .legend-color {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .legend-color.std { background: #1ca745; }
+    .legend-color.pcd { background: #2563eb; }
+    .legend-color.eld { background: #8b5cf6; }
+    .legend-color.occ { background: #ef4444; }
+    .legend-color.res { background: #eab308; }
+
+    .test-spots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+      gap: 6px;
+      overflow-y: auto;
+      flex-grow: 1;
+      padding-right: 4px;
+    }
+
+    .test-spots-grid::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .test-spots-grid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .test-spots-grid::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    .test-spots-grid::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .spot-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
       border-radius: 6px;
       font-family: var(--font-main);
       font-size: 0.75rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.03);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      user-select: none;
     }
-    .test-spot button.occupied { background: #ef4444; }
-    .test-spot button.free { background: #1ca745; }
+    
+    .spot-pill.free-standard {
+      background: rgba(28, 167, 69, 0.12);
+      color: #4ade80;
+      border-color: rgba(28, 167, 69, 0.25);
+    }
+    .spot-pill.free-standard:hover {
+      background: rgba(28, 167, 69, 0.2);
+      border-color: rgba(28, 167, 69, 0.45);
+      box-shadow: 0 0 8px rgba(28, 167, 69, 0.2);
+    }
+    .spot-pill.free-pcd {
+      background: rgba(37, 99, 235, 0.12);
+      color: #60a5fa;
+      border-color: rgba(37, 99, 235, 0.25);
+    }
+    .spot-pill.free-pcd:hover {
+      background: rgba(37, 99, 235, 0.2);
+      border-color: rgba(37, 99, 235, 0.45);
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+    }
+    .spot-pill.free-elderly {
+      background: rgba(139, 92, 246, 0.12);
+      color: #c084fc;
+      border-color: rgba(139, 92, 246, 0.25);
+    }
+    .spot-pill.free-elderly:hover {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.45);
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+    }
+    .spot-pill.occupied {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+    .spot-pill.occupied:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.45);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+    }
+    .spot-pill.reserved {
+      background: rgba(234, 179, 8, 0.12);
+      color: #fde047;
+      border-color: rgba(234, 179, 8, 0.25);
+    }
+    .spot-pill.reserved:hover {
+      background: rgba(234, 179, 8, 0.2);
+      border-color: rgba(234, 179, 8, 0.45);
+      box-shadow: 0 0 8px rgba(234, 179, 8, 0.2);
+    }
 
         #markersLayer {
       position: absolute;
@@ -388,23 +537,49 @@
     }
 
         @media (max-width: 600px) {
+      .user-badge span {
+        display: none;
+      }
+      .btn-control .text {
+        display: none;
+      }
+      .btn-control {
+        padding: 0.4rem 0.6rem;
+      }
+      .dashboard-nav .logo-text {
+        font-size: 1.1rem;
+      }
+      .dashboard-nav .logo-pin {
+        height: 24px;
+        width: 24px;
+        font-size: 0.65rem;
+      }
       .info-panel {
         bottom: 1rem;
         left: 1rem;
         right: 1rem;
-        padding: 1rem;
+        width: auto;
+        padding: 0.8rem 1rem;
       }
       .info-panel p {
         display: flex;
         justify-content: space-between;
       }
-      .test-panel {
+      .test-panel-drawer {
+        width: 100%;
+        right: 0;
+        left: 0;
+        bottom: -60vh;
+        height: 60vh;
         top: auto;
-        bottom: 110px;
-        left: 1rem;
-        right: 1rem;
-        width: auto;
-        max-height: 40vh;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+        transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .test-panel-drawer.open {
+        bottom: 0;
       }
     }
 
@@ -487,12 +662,15 @@
 </head>
 
 <body>
-    <nav class="dashboard-nav">
+  <nav class="dashboard-nav">
     <a href="index.html" class="logo">
       <span class="logo-text">Estaciona</span>
       <div class="logo-pin"><span>AI</span></div>
     </a>
     <div class="nav-right">
+      <button class="btn-control" id="testPanelToggleBtn" onclick="window.toggleTestPanel()">
+        <span>🧪</span> <span class="text">Simulação</span>
+      </button>
       <div class="user-badge">
         <div class="user-avatar" id="userAvatar">A</div>
         <span id="userName">admin</span>
@@ -511,17 +689,25 @@
     <div class="loading-progress" id="loadingProgress">0%</div>
   </div>
 
-    <div class="info-panel" id="infoPanel" style="display: none;">
+  <div class="info-panel" id="infoPanel" onclick="event.stopPropagation();">
     <h4>VAGAS LIVRES</h4>
     <div id="infoPanelContent"></div>
   </div>
 
-  <div class="test-panel collapsed" id="testPanel" style="display: none;">
+  <div class="test-panel-drawer" id="testPanel" style="display: none;" onclick="event.stopPropagation();">
     <div class="test-panel-header">
-      <h4>PAINEL DE TESTE</h4>
-      <button id="toggleTestPanelBtn" onclick="window.toggleTestPanel()">Expandir</button>
+      <h4>Simulação de Vagas</h4>
+      <button class="btn-close-drawer" onclick="window.toggleTestPanel()">✕</button>
     </div>
-    <div id="testSpotsContainer"></div>
+    <p class="test-panel-instruction">Clique em uma vaga para alternar sua ocupação.</p>
+    <div class="test-legend">
+      <div class="legend-item"><span class="legend-color std"></span>Padrão</div>
+      <div class="legend-item"><span class="legend-color pcd"></span>PCD</div>
+      <div class="legend-item"><span class="legend-color eld"></span>Idoso</div>
+      <div class="legend-item"><span class="legend-color occ"></span>Ocupada</div>
+      <div class="legend-item"><span class="legend-color res"></span>Reservada</div>
+    </div>
+    <div id="testSpotsContainer" class="test-spots-grid"></div>
   </div>
 
   <div class="popup-overlay" id="confirmationPopup">
@@ -678,6 +864,7 @@
         carFinishedRoute = false;
         carGroup.position.set(pathData[0].x, pathData[0].y, pathData[0].z);
         carGroup.visible = true;
+        document.getElementById('infoPanel').classList.remove('visible');
       })
       .catch(err => {
         console.error(err);
@@ -892,8 +1079,38 @@
       let infoHTML = '';
       configData.forEach(pin => {
         if (pin.name === "Estacionamento A") {
-          if (totalSpots > 0 && freeSpots === 0) {
-            infoHTML += `<p>${pin.name}: <span class="highlight" style="color: #ef4444;">Indisponível</span></p>`;
+          const isA_Blocked = totalSpots > 0 && freeSpots === 0;
+          
+          const pinObj = pinpoints.find(p => p.name === pin.name);
+          if (pinObj) {
+            const primaryColor = isA_Blocked ? '#ef4444' : '#1ca745';
+            const icon = isA_Blocked ? '🔒' : pin.name.split(' ').pop();
+            const fontSize = isA_Blocked ? 10 : 13;
+            
+            pinObj.content.querySelector('svg').style.fill = primaryColor;
+            const textEl = pinObj.content.querySelector('text');
+            if (textEl) {
+              textEl.textContent = icon;
+              textEl.setAttribute('fill', primaryColor);
+              textEl.setAttribute('font-size', fontSize);
+            }
+            pinObj.content.style.cursor = isA_Blocked ? 'not-allowed' : 'pointer';
+            pinObj.content.dataset.blocked = isA_Blocked ? 'true' : 'false';
+            
+            if (pinObj.ring3D && pinObj.ring3D.material) {
+              pinObj.ring3D.material.color.setHex(isA_Blocked ? 0xef4444 : 0x1ca745);
+            }
+          }
+
+          if (isA_Blocked) {
+            infoHTML += `
+              <div class="info-row" style="margin-bottom: 12px;">
+                <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <span>${pin.name}</span>
+                  <span class="highlight" style="color: #ef4444;">Indisponível</span>
+                </p>
+              </div>
+            `;
           } else {
             let color = '#1ca745';
             if (totalSpots > 0) {
@@ -903,13 +1120,55 @@
               const l = Math.round(60 - (60 - 38) * ratio);
               color = `hsl(${h}, ${s}%, ${l}%)`;
             }
-            const text = totalSpots > 0 ? `${freeSpots} vagas` : '...';
-            infoHTML += `<p>${pin.name}: <span class="highlight" style="color: ${color};">${text}</span></p>`;
+            
+            let freePCD = 0;
+            let freeElderly = 0;
+            let freeStandard = 0;
+            
+            Object.values(spotsMeshes).forEach(spotObj => {
+              if (spotObj.status !== 'occupied' && spotObj.status !== 'reserved') {
+                if (spotObj.data.id === 'A-01' || spotObj.data.id === 'A-02') {
+                  freePCD++;
+                } else if (spotObj.data.id === 'A-03' || spotObj.data.id === 'A-04') {
+                  freeElderly++;
+                } else {
+                  freeStandard++;
+                }
+              }
+            });
+            
+            infoHTML += `
+              <div class="info-row" style="margin-bottom: 12px;">
+                <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <span>${pin.name}</span>
+                  <span class="highlight" style="color: ${color};">${freeSpots} vagas</span>
+                </p>
+                <div class="detailed-vagas" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 0.72rem; font-weight: 600;">
+                  <span style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; border-radius: 4px; padding: 2px 6px;">${freeStandard} padrão</span>
+                  <span style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; padding: 2px 6px;">${freePCD} PCD</span>
+                  <span style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); color: #c084fc; border-radius: 4px; padding: 2px 6px;">${freeElderly} Idoso</span>
+                </div>
+              </div>
+            `;
           }
         } else if (pin.blocked) {
-          infoHTML += `<p>${pin.name}: <span class="highlight" style="color: #ef4444;">Indisponível</span></p>`;
+          infoHTML += `
+            <div class="info-row" style="margin-bottom: 12px;">
+              <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>${pin.name}</span>
+                <span class="highlight" style="color: #ef4444;">Indisponível</span>
+              </p>
+            </div>
+          `;
         } else {
-          infoHTML += `<p>${pin.name}: <span class="highlight">0 vagas</span></p>`;
+          infoHTML += `
+            <div class="info-row" style="margin-bottom: 12px;">
+              <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>${pin.name}</span>
+                <span class="highlight" style="color: #ef4444;">Indisponível</span>
+              </p>
+            </div>
+          `;
         }
       });
       document.getElementById('infoPanelContent').innerHTML = infoHTML;
@@ -965,38 +1224,7 @@
       return intersects.length > 0 ? intersects[0].point.y : defaultY;
     }
 
-    function createSpecialSpotSprite(label, colorStr) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 128;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, 128, 64);
-      
-      ctx.fillStyle = colorStr;
-      ctx.beginPath();
-      if (typeof ctx.roundRect === 'function') {
-        ctx.roundRect(4, 4, 120, 56, 12);
-      } else {
-        ctx.rect(4, 4, 120, 56);
-      }
-      ctx.fill();
-      
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 28px Outfit, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, 64, 32);
 
-      const texture = new THREE.CanvasTexture(canvas);
-      const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-      const sprite = new THREE.Sprite(mat);
-      sprite.scale.set(0.24, 0.12, 1);
-      return sprite;
-    }
 
     function loadSpots() {
       fetch('data/spots_3d.json?v=' + Date.now())
@@ -1049,6 +1277,8 @@
               const spot = data[i];
               const actualY = groundY;
               spot.terrainY = actualY;
+              const spotY = getTerrainY(spot.center3D.x, spot.center3D.z, groundY);
+              spot.raycastY = spotY;
 
               const shape = new THREE.Shape();
               spot.polygon3D.forEach((pt, idx) => {
@@ -1056,13 +1286,10 @@
                 else shape.lineTo(pt.x, -pt.z);
               });
               let colorHex = 0x1ca745;
-              let labelSprite = null;
               if (spot.id === 'A-01' || spot.id === 'A-02') {
                 colorHex = 0x2563eb;
-                labelSprite = createSpecialSpotSprite('PCD', '#2563eb');
               } else if (spot.id === 'A-03' || spot.id === 'A-04') {
                 colorHex = 0x8b5cf6;
-                labelSprite = createSpecialSpotSprite('60+', '#8b5cf6');
               }
 
               const geo = new THREE.ShapeGeometry(shape);
@@ -1100,12 +1327,7 @@
               line.position.y = actualY + 0.02;
               scene.add(line);
 
-              if (labelSprite) {
-                labelSprite.position.set(spot.center3D.x, actualY + 0.15, spot.center3D.z);
-                scene.add(labelSprite);
-              }
-
-              spotsMeshes[spot.id] = { mesh, line, labelSprite, isOccupied: false, autoOccupied: false, data: spot };
+              spotsMeshes[spot.id] = { mesh, line, isOccupied: false, autoOccupied: false, data: spot };
             }
             
             if (i < data.length) {
@@ -1116,7 +1338,7 @@
               loadingOverlay.classList.add('hidden');
               setTimeout(() => {
                 loadingOverlay.style.display = 'none';
-                document.getElementById('infoPanel').style.display = 'block';
+                document.getElementById('infoPanel').classList.add('visible');
                 if (typeof connectAppWebSocket === 'function') {
                   connectAppWebSocket();
                 }
@@ -1142,9 +1364,7 @@
       if (spotObj.status === targetStatus) return;
       spotObj.status = targetStatus;
 
-      if (spotObj.labelSprite) {
-        spotObj.labelSprite.visible = (targetStatus !== 'occupied');
-      }
+
 
       if (targetStatus === 'occupied' && isAuto) {
         spotObj.autoOccupied = true;
@@ -1164,7 +1384,7 @@
         freeSpots--;
         spotObj.mesh.material.color.setHex(0xef4444);
         spotObj.line.material.color.setHex(0xef4444);
-        if (btn) { btn.textContent = "Liberar"; btn.className = "occupied"; }
+        if (btn) { btn.className = "spot-pill occupied"; }
 
         const car = createStaticCar(id);
         const p1 = spotObj.data.polygon3D[0];
@@ -1177,18 +1397,21 @@
       } else if (targetStatus === 'reserved') {
         spotObj.mesh.material.color.setHex(0xeab308);
         spotObj.line.material.color.setHex(0xeab308);
-        if (btn) { btn.textContent = "Reservado"; btn.className = "reserved"; }
+        if (btn) { btn.className = "spot-pill reserved"; }
       } else {
         freeSpots++;
         let colorHex = 0x1ca745;
+        let baseClass = "spot-pill free-standard";
         if (id === 'A-01' || id === 'A-02') {
           colorHex = 0x2563eb;
+          baseClass = "spot-pill free-pcd";
         } else if (id === 'A-03' || id === 'A-04') {
           colorHex = 0x8b5cf6;
+          baseClass = "spot-pill free-elderly";
         }
         spotObj.mesh.material.color.setHex(colorHex);
         spotObj.line.material.color.setHex(colorHex);
-        if (btn) { btn.textContent = "Ocupar"; btn.className = "free"; }
+        if (btn) { btn.className = baseClass; }
       }
 
       freeSpots = Object.values(spotsMeshes).filter(obj => obj.status !== 'occupied' && obj.status !== 'reserved').length;
@@ -1197,28 +1420,25 @@
 
     window.toggleTestPanel = function() {
       const panel = document.getElementById('testPanel');
-      const btn = document.getElementById('toggleTestPanelBtn');
-      panel.classList.toggle('collapsed');
-      if (panel.classList.contains('collapsed')) {
-        btn.textContent = "Expandir";
-      } else {
-        btn.textContent = "Minimizar";
-      }
+      panel.classList.toggle('open');
     };
 
     function buildTestPanel() {
       const container = document.getElementById('testSpotsContainer');
       let html = '';
       parkingSpotsData.forEach(spot => {
+        let statusClass = 'free-standard';
+        if (spot.id === 'A-01' || spot.id === 'A-02') statusClass = 'free-pcd';
+        else if (spot.id === 'A-03' || spot.id === 'A-04') statusClass = 'free-elderly';
+        
         html += `
-          <div class="test-spot">
-            <span>${spot.id}</span>
-            <button id="btn-spot-${spot.id}" class="free" onclick="window.toggleSpot('${spot.id}')">Ocupar</button>
-          </div>
+          <button id="btn-spot-${spot.id}" class="spot-pill ${statusClass}" onclick="window.toggleSpot('${spot.id}'); event.stopPropagation();">
+            ${spot.id}
+          </button>
         `;
       });
       container.innerHTML = html;
-      document.getElementById('testPanel').style.display = 'block';
+      document.getElementById('testPanel').style.display = 'flex';
     }
 
     function buildCar() {
@@ -1303,6 +1523,7 @@
 
       content.addEventListener('click', () => {
         if (isBlocked) return;
+        if (content.dataset.blocked === 'true') return;
         if (camData) {
           currentFocusCamData = camData;
           
@@ -1317,7 +1538,9 @@
       });
 
       pinpoints.push({
+        name: name,
         element: wrapper,
+        content: content,
         ring3D: ring3D,
         pos3D: new THREE.Vector3(pos.x, pos.y, pos.z)
       });
@@ -1378,6 +1601,7 @@
           carGroup.visible = false;
           carFinishedRoute = true;
           activeCarPath = null;
+          document.getElementById('infoPanel').classList.add('visible');
 
           if (currentReservation && currentReservation.spot_id) {
             window.toggleSpot(currentReservation.spot_id, true, true);
@@ -1389,16 +1613,19 @@
 
       if (currentFocusCamData && (carGroup.visible || carFinishedRoute)) {
         const aspect = viewport.clientWidth / viewport.clientHeight;
-        const mobileZoomMult = aspect < 1 ? Math.max(1, (1 / aspect) * 1.1) : 1;
+        const mobileScale = aspect < 1 ? Math.min(1.5, Math.max(1.0, 1 / aspect)) : 1.0;
         
         const tPos = new THREE.Vector3(currentFocusCamData.target.x, currentFocusCamData.target.y, currentFocusCamData.target.z);
         const cPos = new THREE.Vector3(currentFocusCamData.position.x, currentFocusCamData.position.y, currentFocusCamData.position.z);
         
-        const offset = new THREE.Vector3().subVectors(cPos, tPos).multiplyScalar(mobileZoomMult * 0.35);
+        const offset = new THREE.Vector3().subVectors(cPos, tPos).normalize();
         
-        offset.y += 4.5;
-        offset.x *= 0.5;
-        offset.z *= 0.5;
+        const height = 7.5 * mobileScale;
+        const horizontalOffset = 0.9 * mobileScale;
+        
+        offset.y = 0;
+        offset.normalize().multiplyScalar(horizontalOffset);
+        offset.y = height;
         
         const dynamicTarget = carGroup.position.clone();
         targetCameraPos.copy(dynamicTarget).add(offset);
@@ -1586,6 +1813,7 @@
       carGroup.visible = false;
       updateCameraPosition();
       document.getElementById('backBtn').classList.remove('visible');
+      document.getElementById('infoPanel').classList.add('visible');
     };
   </script>
 </body>
