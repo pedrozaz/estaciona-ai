@@ -1274,14 +1274,12 @@
               }
               
               spotHeights.sort((a, b) => a - b);
-              let groundLimitIndex = spotHeights.length - 1;
-              for (let j = 0; j < spotHeights.length - 1; j++) {
-                if (spotHeights[j+1] - spotHeights[j] > 0.08) {
-                  groundLimitIndex = j;
-                  break;
-                }
+              let actualY = spotHeights[0];
+              
+              if (actualY - globalGroundY > 0.15) {
+                actualY = globalGroundY;
               }
-              const actualY = spotHeights[groundLimitIndex];
+              
               spot.terrainY = actualY;
 
               const shape = new THREE.Shape();
@@ -1575,11 +1573,15 @@
           carGroup.lookAt(p2);
         }
 
-        if (!currentReservation && parkingSpotsData.length > 0) {
+        if (parkingSpotsData.length > 0) {
           let closestSpot = null;
           let minDistance = Infinity;
 
           parkingSpotsData.forEach(spot => {
+            if (currentReservation && spot.id !== currentReservation.spot_id) {
+              return;
+            }
+
             const dx = carGroup.position.x - spot.center3D.x;
             const dz = carGroup.position.z - spot.center3D.z;
             const distanceToSpot = Math.sqrt(dx*dx + dz*dz);
@@ -1599,6 +1601,15 @@
           if (closestSpot && minDistance < 0.2) {
             if (spotsMeshes[closestSpot.id] && !spotsMeshes[closestSpot.id].isOccupied) {
               window.toggleSpot(closestSpot.id, true, true);
+              
+              if (currentReservation && closestSpot.id === currentReservation.spot_id) {
+                carGroup.visible = false;
+                carFinishedRoute = true;
+                activeCarPath = null;
+                document.getElementById('infoPanel').classList.add('visible');
+                document.getElementById('popupText').textContent = `Detectamos um veículo na vaga reservada (${currentReservation.spot_id}). Foi você quem estacionou?`;
+                document.getElementById('confirmationPopup').classList.add('active');
+              }
             }
           }
         }
