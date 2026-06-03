@@ -728,9 +728,9 @@
     <script type="importmap">
     {
       "imports": {
-        "three": "./lib/three/three.module.js",
-        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js",
-        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js"
+        "three": "./lib/three/three.module.js?v=2",
+        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js?v=2",
+        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js?v=2"
       }
     }
   </script>
@@ -1039,7 +1039,7 @@
 
         loadCarModel();
 
-        fetch('data/config.json')
+        fetch('data/config.json?v=' + Date.now())
           .then(res => res.json())
           .then(data => {
             configData = data;
@@ -1226,7 +1226,7 @@
 
 
     function loadSpots() {
-      fetch('data/spots_3d.json')
+      fetch('data/spots_3d.json?v=' + Date.now())
         .then(res => res.json())
         .then(data => {
           data.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
@@ -1237,6 +1237,25 @@
           buildTestPanel();
           
           const defaultGroundY = configData && configData[0] ? configData[0].position.y : -6.0;
+
+          const yValues = data.map(spot => getTerrainY(spot.center3D.x, spot.center3D.z, defaultGroundY));
+          const bins = {};
+          yValues.forEach(y => {
+            const bin = Math.round(y * 10) / 10;
+            bins[bin] = (bins[bin] || 0) + 1;
+          });
+          let modeBin = defaultGroundY;
+          let maxCount = -1;
+          for (const bin in bins) {
+            if (bins[bin] > maxCount) {
+              maxCount = bins[bin];
+              modeBin = parseFloat(bin);
+            }
+          }
+          const valuesInMode = yValues.filter(y => Math.round(y * 10) / 10 === modeBin);
+          const globalGroundY = valuesInMode.length > 0
+            ? valuesInMode.reduce((a, b) => a + b, 0) / valuesInMode.length
+            : defaultGroundY;
 
           let i = 0;
           const chunkSize = 5;
