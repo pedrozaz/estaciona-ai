@@ -7,7 +7,6 @@ use uuid::Uuid;
 
 use crate::pathfinding::ParkingGraph;
 
-
 pub struct AppState {
     pub pool: PgPool,
     pub tx: broadcast::Sender<String>,

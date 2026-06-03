@@ -102,7 +102,7 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
             }
         }
     }
-    
+
     tracing::info!("[WS EDGE] Camera disconnected.");
 }
 

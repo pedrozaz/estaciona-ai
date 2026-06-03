@@ -59,7 +59,10 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
 
     let mut broadcast_rx = state.tx.subscribe();
 
-    let db_spots = sqlx::query!("SELECT id, status FROM spots").fetch_all(&state.pool).await.unwrap_or_default();
+    let db_spots = sqlx::query!("SELECT id, status FROM spots")
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
     for row in db_spots {
         let msg = ServerToAppMsg::SpotUpdate {
             spot_id: row.id,
@@ -102,7 +105,7 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                         .fetch_optional(&state_clone.pool)
                         .await
                         .unwrap_or(None);
-                        
+
                         let reserved = reserved_spot.is_some();
 
                         if reserved {
@@ -205,7 +208,10 @@ pub async fn ws_dashboard_handler(
 async fn handle_dashboard_socket(mut socket: WebSocket, state: SharedState) {
     let mut broadcast_rx = state.tx.subscribe();
 
-    let db_spots = sqlx::query!("SELECT id, status FROM spots").fetch_all(&state.pool).await.unwrap_or_default();
+    let db_spots = sqlx::query!("SELECT id, status FROM spots")
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
     for row in db_spots {
         let msg = ServerToAppMsg::SpotUpdate {
             spot_id: row.id,
@@ -217,7 +223,11 @@ async fn handle_dashboard_socket(mut socket: WebSocket, state: SharedState) {
     }
 
     while let Ok(broadcast_msg) = broadcast_rx.recv().await {
-        if socket.send(Message::Text(broadcast_msg.into())).await.is_err() {
+        if socket
+            .send(Message::Text(broadcast_msg.into()))
+            .await
+            .is_err()
+        {
             break;
         }
     }
