@@ -1,16 +1,16 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT spot_id FROM reservations WHERE status = 'active' AND expires_at > NOW()",
+  "query": "SELECT id FROM spots WHERE status = 'free' LIMIT 1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "spot_id",
+        "name": "id",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "reservations",
-            "name": "spot_id"
+            "table": "spots",
+            "name": "id"
           }
         }
       }
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "3504d517dfce55e12aa4a80381ac54236ed74f8038919f3efb7c7774090eaa1b"
+  "hash": "bc823a8437fba8ad5583433f737f77e70915d9dee0eec058a789f96f71a52583"
 }

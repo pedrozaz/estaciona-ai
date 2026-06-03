@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::state::{SharedState, SpotStatus};
+use crate::state::SharedState;
 use crate::ws::messages::ServerToAppMsg;
 
 #[derive(Deserialize)]
@@ -33,18 +33,21 @@ pub async fn create_reservation(
     State(state): State<SharedState>,
     Json(payload): Json<CreateReservation>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let reserved = if let Some(mut status) = state.spots.get_mut(&payload.spot_id) {
-        if *status == SpotStatus::Free {
-            *status = SpotStatus::Reserved;
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
+    let updated_spot = sqlx::query!(
+        "UPDATE spots SET status = 'reserved', last_updated = NOW()
+        WHERE id = $1 AND status = 'free' RETURNING id",
+        payload.spot_id
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error".to_string(),
+        )
+    })?;
 
-    if !reserved {
+    if updated_spot.is_none() {
         return Err((StatusCode::CONFLICT, "Spot is not free".to_string()));
     }
 
@@ -54,14 +57,8 @@ pub async fn create_reservation(
         r#"
         INSERT INTO reservations (id, user_id, spot_id, status, expires_at)
         VALUES ($1, $2, $3, 'active', $4)
-        RETURNING 
-            id, 
-            user_id as "user_id!", 
-            spot_id, 
-            status, 
-            created_at as "created_at?", 
-            expires_at as "expires_at?", 
-            completed_at as "completed_at?"
+        RETURNING id, user_id as "user_id!", spot_id, status, created_at as
+        "created_at?", expires_at as "expires_at?", completed_at as "completed_at?"
         "#,
         new_id,
         payload.user_id,
@@ -70,11 +67,7 @@ pub async fn create_reservation(
     )
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| {
-        state
-            .spots
-            .insert(payload.spot_id.clone(), SpotStatus::Free);
-        tracing::error!("Database error: {}", e);
+    .map_err(|_| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed to create reservation".to_string(),
@@ -85,12 +78,11 @@ pub async fn create_reservation(
         spot_id: payload.spot_id.clone(),
         status: "reserved".to_string(),
     };
-
     if let Ok(json_str) = serde_json::to_string(&update_msg) {
         let _ = state.tx.send(json_str);
     }
 
-    let response = ReservationResponse {
+    Ok(Json(ReservationResponse {
         id: record.id,
         user_id: record.user_id,
         spot_id: record.spot_id,
@@ -98,9 +90,7 @@ pub async fn create_reservation(
         created_at: record.created_at,
         expires_at: record.expires_at,
         completed_at: record.completed_at,
-    };
-
-    Ok((StatusCode::CREATED, Json(response)))
+    }))
 }
 
 pub async fn get_reservations(
@@ -159,7 +149,12 @@ pub async fn cancel_reservation(
 
     match result {
         Some(record) => {
-            state.spots.insert(record.spot_id.clone(), SpotStatus::Free);
+            let _ = sqlx::query!(
+                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
+                record.spot_id
+            )
+            .execute(&state.pool)
+            .await;
 
             let update_msg = ServerToAppMsg::SpotUpdate {
                 spot_id: record.spot_id,
@@ -176,5 +171,103 @@ pub async fn cancel_reservation(
             StatusCode::NOT_FOUND,
             "Active reservation not found.".to_string(),
         )),
+    }
+}
+
+pub async fn confirm_occupancy(
+    State(state): State<SharedState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let reservation = sqlx::query!(
+    "UPDATE reservations SET completed_at = NOW() WHERE id = $1 AND status = 'active' RETURNING user_id, spot_id",
+        id
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))?;
+
+    match reservation {
+        Some(res) => {
+            let _ = sqlx::query!(
+                "INSERT INTO user_occupancy_history (user_id, spot_id) VALUES ($1, $2)",
+                res.user_id,
+                res.spot_id
+            )
+            .execute(&state.pool)
+            .await;
+
+            let _ = sqlx::query!(
+                r#"
+            DELETE FROM user_occupancy_history
+            WHERE id IN (
+                SELECT id FROM user_occupancy_history
+                WHERE user_id = $1
+                ORDER BY occupied_at DESC
+                OFFSET 30
+            )
+            "#,
+                res.user_id
+            )
+            .execute(&state.pool)
+            .await;
+
+            Ok((
+                StatusCode::OK,
+                "Occupancy confirmed and history saved.".to_string(),
+            ))
+        }
+        None => Err((
+            StatusCode::NOT_FOUND,
+            "Active reservation not found".to_string(),
+        )),
+    }
+}
+
+use axum::extract::Query;
+
+#[derive(Deserialize)]
+pub struct RecommendQuery {
+    pub user_id: Uuid,
+}
+
+pub async fn recommend_spot(
+    State(state): State<SharedState>,
+    Query(query): Query<RecommendQuery>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let favorite_spot = sqlx::query!(
+        r#"
+        SELECT h.spot_id, COUNT(*) as uses 
+        FROM user_occupancy_history h 
+        JOIN spots s ON s.id = h.spot_id
+        WHERE h.user_id = $1 AND s.status = 'free'
+        GROUP BY h.spot_id
+        ORDER BY uses DESC
+        LIMIT 1
+        "#,
+        query.user_id
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
+
+    if let Some(fav) = favorite_spot {
+        return Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({ "recommended_spot": fav.spot_id })),
+        ));
+    }
+
+    let fallback = sqlx::query!("SELECT id FROM spots WHERE status = 'free' LIMIT 1")
+        .fetch_optional(&state.pool)
+        .await
+        .unwrap_or(None);
+
+    match fallback {
+        Some(spot) => Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({
+            "recommended_spot": spot.id })),
+        )),
+        None => Err((StatusCode::NOT_FOUND, "Estacionamento Lotado".to_string())),
     }
 }
