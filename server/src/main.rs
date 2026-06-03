@@ -37,6 +37,11 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("Failed to run database migrations");
+
     let args: Vec<String> = std::env::args().collect();
     if args.len() >= 4 && args[1] == "--create-admin" {
         let username = &args[2];
