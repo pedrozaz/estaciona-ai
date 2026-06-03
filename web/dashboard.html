@@ -1239,46 +1239,32 @@
           
           const defaultGroundY = configData && configData[0] ? configData[0].position.y : -6.0;
 
-          // Calcular a moda estatística das alturas detectadas para filtrar outliers (tetos de carros e falhas de raycast)
-          const yValues = [];
-          data.forEach(spot => {
-            const y = getTerrainY(spot.center3D.x, spot.center3D.z, defaultGroundY);
-            yValues.push(y);
-          });
-
-          // Agrupa em bins de 0.1
-          const bins = {};
-          yValues.forEach(y => {
-            const bin = Math.round(y * 10) / 10;
-            bins[bin] = (bins[bin] || 0) + 1;
-          });
-
-          // Encontra o bin mais frequente (moda)
-          let modeBin = null;
-          let maxCount = -1;
-          for (const bin in bins) {
-            if (bins[bin] > maxCount) {
-              maxCount = bins[bin];
-              modeBin = parseFloat(bin);
-            }
-          }
-
-          // Obtém a média dos valores reais no bin da moda para precisão exata do asfalto
-          const valuesInMode = yValues.filter(y => Math.round(y * 10) / 10 === modeBin);
-          const groundY = valuesInMode.length > 0 
-            ? valuesInMode.reduce((a, b) => a + b, 0) / valuesInMode.length 
-            : defaultGroundY;
-
           let i = 0;
           const chunkSize = 5;
           function processChunk() {
             const end = Math.min(i + chunkSize, data.length);
             for (; i < end; i++) {
               const spot = data[i];
-              const actualY = groundY;
+              const yCenter = getTerrainY(spot.center3D.x, spot.center3D.z, defaultGroundY);
+              spot.raycastY = yCenter;
+              
+              const spotHeights = [yCenter];
+              if (spot.polygon3D && spot.polygon3D.length >= 4) {
+                for (let j = 0; j < 4; j++) {
+                  spotHeights.push(getTerrainY(spot.polygon3D[j].x, spot.polygon3D[j].z, defaultGroundY));
+                }
+              }
+              
+              spotHeights.sort((a, b) => a - b);
+              let groundLimitIndex = spotHeights.length - 1;
+              for (let j = 0; j < spotHeights.length - 1; j++) {
+                if (spotHeights[j+1] - spotHeights[j] > 0.08) {
+                  groundLimitIndex = j;
+                  break;
+                }
+              }
+              const actualY = spotHeights[groundLimitIndex];
               spot.terrainY = actualY;
-              const spotY = getTerrainY(spot.center3D.x, spot.center3D.z, groundY);
-              spot.raycastY = spotY;
 
               const shape = new THREE.Shape();
               spot.polygon3D.forEach((pt, idx) => {
