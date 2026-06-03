@@ -155,12 +155,12 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
             .unwrap_or_default();
 
         for row in free_spots {
-            if let Some(route) = graph.calculate_route(&camera_id, &row.id) {
-                if route.len() < min_route_length {
-                    min_route_length = route.len();
-                    best_spot = Some(row.id);
-                    best_route = Some(route);
-                }
+            if let Some(route) = graph.calculate_route(&camera_id, &row.id)
+                && route.len() < min_route_length
+            {
+                min_route_length = route.len();
+                best_spot = Some(row.id);
+                best_route = Some(route);
             }
         }
 
