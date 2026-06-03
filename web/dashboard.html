@@ -755,8 +755,17 @@
     let currentReservation = null;
 
     const host = window.location.hostname || 'localhost';
-    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
-    const apiUrl = isLocal ? 'http://localhost:8000' : 'https://api.estaciona.tech';
+    const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
+    const isLocal = host === 'localhost' || 
+                    host === '127.0.0.1' || 
+                    host.includes('ngrok') || 
+                    host.startsWith('192.168.') || 
+                    host.startsWith('10.') || 
+                    host.startsWith('172.') || 
+                    host.endsWith('.local') || 
+                    isIP;
+    const apiHost = host.includes('ngrok') ? 'localhost' : host;
+    const apiUrl = isLocal ? `http://${apiHost}:8000` : 'https://api.estaciona.tech';
 
     fetch(`${apiUrl}/users`, {
       method: 'POST',
@@ -811,6 +820,7 @@
 
         const spotObj = spotsMeshes[reservation.spot_id];
         if (spotObj) {
+          spotObj.status = 'reserved';
           spotObj.mesh.material.color.setHex(0xeab308);
           spotObj.line.material.color.setHex(0xeab308);
 
@@ -862,6 +872,7 @@
           activeCarPath = pathData;
         }
 
+        createStaticPathLine(activeCarPath);
         currentPathIndex = 0;
         carFinishedRoute = false;
         carGroup.position.set(pathData[0].x, pathData[0].y, pathData[0].z);
@@ -1227,6 +1238,33 @@
       return intersects.length > 0 ? intersects[0].point.y : defaultY;
     }
 
+    let pathLine = null;
+
+    function createStaticPathLine(path) {
+      clearStaticPathLine();
+      if (!path || path.length < 2) return;
+      
+      const points = path.map(p => new THREE.Vector3(p.x, p.y + 0.03, p.z));
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.8,
+        linewidth: 2
+      });
+      pathLine = new THREE.Line(geometry, material);
+      scene.add(pathLine);
+    }
+
+    function clearStaticPathLine() {
+      if (pathLine) {
+        scene.remove(pathLine);
+        pathLine.geometry.dispose();
+        if (pathLine.material) pathLine.material.dispose();
+        pathLine = null;
+      }
+    }
+
 
 
     function loadSpots() {
@@ -1381,6 +1419,10 @@
         car.position.set(spotObj.data.center3D.x, actualY + 0.05, spotObj.data.center3D.z);
         scene.add(car);
         spotsCars[id] = car;
+
+        if (currentReservation && id === currentReservation.spot_id) {
+          carGroup.visible = false;
+        }
       } else if (targetStatus === 'reserved') {
         spotObj.mesh.material.color.setHex(0xeab308);
         spotObj.line.material.color.setHex(0xeab308);
@@ -1405,6 +1447,22 @@
       updateInfoPanel();
     };
 
+    window.testPanelToggleSpot = function(id) {
+      const spotObj = spotsMeshes[id];
+      if (!spotObj) return;
+      const currentStatus = spotObj.status;
+      const targetStatus = currentStatus === 'occupied' ? 'free' : 'occupied';
+      
+      fetch(`${apiUrl}/spots/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: targetStatus })
+      })
+      .catch(err => console.error(err));
+    };
+
     window.toggleTestPanel = function() {
       const panel = document.getElementById('testPanel');
       panel.classList.toggle('open');
@@ -1414,12 +1472,19 @@
       const container = document.getElementById('testSpotsContainer');
       let html = '';
       parkingSpotsData.forEach(spot => {
+        const spotObj = spotsMeshes[spot.id];
         let statusClass = 'free-standard';
         if (spot.id === 'A-01' || spot.id === 'A-02') statusClass = 'free-pcd';
         else if (spot.id === 'A-03' || spot.id === 'A-04') statusClass = 'free-elderly';
         
+        if (spotObj && spotObj.status === 'occupied') {
+          statusClass = 'occupied';
+        } else if (spotObj && spotObj.status === 'reserved') {
+          statusClass = 'reserved';
+        }
+        
         html += `
-          <button id="btn-spot-${spot.id}" class="spot-pill ${statusClass}" onclick="window.toggleSpot('${spot.id}'); event.stopPropagation();">
+          <button id="btn-spot-${spot.id}" class="spot-pill ${statusClass}" onclick="window.testPanelToggleSpot('${spot.id}'); event.stopPropagation();">
             ${spot.id}
           </button>
         `;
@@ -1537,82 +1602,37 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      if (activeCarPath) {
-        if (currentPathIndex < activeCarPath.length - 1) {
-          carFinishedRoute = false;
-          const p1 = new THREE.Vector3(activeCarPath[currentPathIndex].x, activeCarPath[currentPathIndex].y, activeCarPath[currentPathIndex].z);
+      if (activeCarPath && activeCarPath.length > 1) {
+        carFinishedRoute = false;
+        const p1 = new THREE.Vector3(activeCarPath[currentPathIndex].x, activeCarPath[currentPathIndex].y, activeCarPath[currentPathIndex].z);
         const p2 = new THREE.Vector3(activeCarPath[currentPathIndex + 1].x, activeCarPath[currentPathIndex + 1].y, activeCarPath[currentPathIndex + 1].z);
         
         const dist = p1.distanceTo(p2);
-        const speed = 0.015;
+        const speed = 0.026;
         
         const currentDist = carGroup.position.distanceTo(p1);
         const nextDist = currentDist + speed;
         
         if (nextDist >= dist) {
           currentPathIndex++;
-          carGroup.position.copy(p2);
+          if (currentPathIndex >= activeCarPath.length - 1) {
+            currentPathIndex = 0;
+            carGroup.position.set(activeCarPath[0].x, activeCarPath[0].y, activeCarPath[0].z);
+          } else {
+            carGroup.position.copy(p2);
+          }
         } else {
           const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
           carGroup.position.add(dir.multiplyScalar(speed));
           carGroup.lookAt(p2);
         }
-
-        if (parkingSpotsData.length > 0) {
-          let closestSpot = null;
-          let minDistance = Infinity;
-
-          parkingSpotsData.forEach(spot => {
-            if (currentReservation && spot.id !== currentReservation.spot_id) {
-              return;
-            }
-
-            const dx = carGroup.position.x - spot.center3D.x;
-            const dz = carGroup.position.z - spot.center3D.z;
-            const distanceToSpot = Math.sqrt(dx*dx + dz*dz);
-            
-            if (distanceToSpot < minDistance) {
-              minDistance = distanceToSpot;
-              closestSpot = spot;
-            }
-
-            if (distanceToSpot > 0.3) {
-              if (spotsMeshes[spot.id] && spotsMeshes[spot.id].isOccupied && spotsMeshes[spot.id].autoOccupied) {
-                window.toggleSpot(spot.id, false, true);
-              }
-            }
-          });
-
-          if (closestSpot && minDistance < 0.2) {
-            if (spotsMeshes[closestSpot.id] && !spotsMeshes[closestSpot.id].isOccupied) {
-              window.toggleSpot(closestSpot.id, true, true);
-              
-              if (currentReservation && closestSpot.id === currentReservation.spot_id) {
-                carGroup.visible = false;
-                carFinishedRoute = true;
-                activeCarPath = null;
-                document.getElementById('infoPanel').classList.add('visible');
-                document.getElementById('popupText').textContent = `Detectamos um veículo na vaga reservada (${currentReservation.spot_id}). Foi você quem estacionou?`;
-                document.getElementById('confirmationPopup').classList.add('active');
-              }
-            }
-          }
-        }
-        } else {
-          carGroup.visible = false;
-          carFinishedRoute = true;
-          activeCarPath = null;
-          document.getElementById('infoPanel').classList.add('visible');
-
-          if (currentReservation && currentReservation.spot_id) {
-            window.toggleSpot(currentReservation.spot_id, true, true);
-            document.getElementById('popupText').textContent = `Detectamos um veículo na vaga reservada (${currentReservation.spot_id}). Foi você quem estacionou?`;
-            document.getElementById('confirmationPopup').classList.add('active');
-          }
-        }
       }
 
-      if (currentFocusCamData && (carGroup.visible || carFinishedRoute)) {
+      if (!activeCarPath) {
+        clearStaticPathLine();
+      }
+
+      if (currentFocusCamData && carGroup.visible) {
         const aspect = viewport.clientWidth / viewport.clientHeight;
         const mobileScale = aspect < 1 ? Math.min(1.5, Math.max(1.0, 1 / aspect)) : 1.0;
         
@@ -1722,10 +1742,18 @@
     function connectAppWebSocket() {
       try {
         const host = window.location.hostname || 'localhost';
-        const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
-        
+        const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
+        const isLocal = host === 'localhost' || 
+                        host === '127.0.0.1' || 
+                        host.includes('ngrok') || 
+                        host.startsWith('192.168.') || 
+                        host.startsWith('10.') || 
+                        host.startsWith('172.') || 
+                        host.endsWith('.local') || 
+                        isIP;
+        const apiHost = host.includes('ngrok') ? 'localhost' : host;
         const wsUrl = isLocal 
-            ? `ws://${host === 'localhost' || host === '127.0.0.1' ? host : 'localhost'}:8000/ws/dashboard`
+            ? `ws://${apiHost}:8000/ws/dashboard`
             : 'wss://api.estaciona.tech/ws/dashboard';
         
         const ws = new WebSocket(wsUrl);
@@ -1733,8 +1761,18 @@
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
+            console.log("WebSocket received:", data);
             if (data.type === 'SPOT_UPDATE') {
               window.toggleSpot(data.spot_id, data.status, false);
+              console.log("Current reservation:", currentReservation);
+              if (currentReservation && data.spot_id === currentReservation.spot_id && data.status === 'occupied') {
+                activeCarPath = null;
+                carGroup.visible = false;
+                carFinishedRoute = true;
+                document.getElementById('infoPanel').classList.add('visible');
+                document.getElementById('popupText').textContent = `Detectamos um veículo na vaga reservada (${currentReservation.spot_id}). Foi você quem estacionou?`;
+                document.getElementById('confirmationPopup').classList.add('active');
+              }
             } else if (data.type === 'NAVIGATION_START') {
             }
           } catch (e) {
@@ -1772,20 +1810,19 @@
       
       if (!currentReservation) return;
       
+      const reservationToHandle = currentReservation;
+      currentReservation = null;
+      
       if (response) {
-        fetch(`${apiUrl}/reservations/${currentReservation.id}/confirm`, {
+        fetch(`${apiUrl}/reservations/${reservationToHandle.id}/confirm`, {
           method: 'POST'
-        })
-        .then(res => {
-          if (!res.ok) throw new Error("Erro ao confirmar ocupacao");
-          currentReservation = null;
         })
         .catch(err => console.error(err));
       } else {
-        const intruderSpotId = currentReservation.spot_id;
+        const intruderSpotId = reservationToHandle.spot_id;
         window.toggleSpot(intruderSpotId, 'occupied', false);
 
-        fetch(`${apiUrl}/reservations/${currentReservation.id}/cancel`, {
+        fetch(`${apiUrl}/reservations/${reservationToHandle.id}/cancel`, {
           method: 'PUT'
         })
         .then(() => {
@@ -1798,7 +1835,6 @@
           });
         })
         .then(() => {
-          currentReservation = null;
           if (activePinpointPath) {
             requestRecommendationAndReserve(activePinpointPath);
           }
