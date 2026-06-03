@@ -627,11 +627,49 @@
           spotObj.line.material.color.setHex(0xeab308);
 
           const actualY = spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
-          activeCarPath = [...pathData, {
-            x: spotObj.data.center3D.x,
-            y: actualY,
-            z: spotObj.data.center3D.z
-          }];
+
+          const spotPos = new THREE.Vector3(spotObj.data.center3D.x, actualY, spotObj.data.center3D.z);
+          
+          if (pathData.length > 1) {
+            let closestSegmentIndex = 0;
+            let minDistance = Infinity;
+            let bestProjectedPoint = null;
+
+            for (let i = 0; i < pathData.length - 1; i++) {
+              const A = new THREE.Vector3(pathData[i].x, pathData[i].y, pathData[i].z);
+              const B = new THREE.Vector3(pathData[i+1].x, pathData[i+1].y, pathData[i+1].z);
+              
+              const ab = new THREE.Vector3().subVectors(B, A);
+              const as = new THREE.Vector3().subVectors(spotPos, A);
+              
+              const abLenSq = ab.lengthSq();
+              let t = abLenSq > 0 ? as.dot(ab) / abLenSq : 0;
+              t = Math.max(0, Math.min(1, t));
+              
+              const P = new THREE.Vector3().copy(A).add(ab.multiplyScalar(t));
+              const dist = P.distanceTo(spotPos);
+              
+              if (dist < minDistance) {
+                minDistance = dist;
+                closestSegmentIndex = i;
+                bestProjectedPoint = P;
+              }
+            }
+
+            const truncatedPath = pathData.slice(0, closestSegmentIndex + 1);
+            activeCarPath = [
+              ...truncatedPath,
+              { x: bestProjectedPoint.x, y: bestProjectedPoint.y, z: bestProjectedPoint.z },
+              { x: spotPos.x, y: spotPos.y, z: spotPos.z }
+            ];
+          } else if (pathData.length === 1) {
+            activeCarPath = [
+              { x: pathData[0].x, y: pathData[0].y, z: pathData[0].z },
+              { x: spotPos.x, y: spotPos.y, z: spotPos.z }
+            ];
+          } else {
+            activeCarPath = [];
+          }
         } else {
           activeCarPath = pathData;
         }
@@ -927,10 +965,44 @@
       return intersects.length > 0 ? intersects[0].point.y : defaultY;
     }
 
+    function createSpecialSpotSprite(label, colorStr) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 128, 64);
+      
+      ctx.fillStyle = colorStr;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(4, 4, 120, 56, 12);
+      } else {
+        ctx.rect(4, 4, 120, 56);
+      }
+      ctx.fill();
+      
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, 64, 32);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.24, 0.12, 1);
+      return sprite;
+    }
+
     function loadSpots() {
       fetch('data/spots_3d.json?v=' + Date.now())
         .then(res => res.json())
         .then(data => {
+          data.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
           parkingSpotsData = data;
           totalSpots = data.length;
           freeSpots = data.length;
@@ -983,11 +1055,21 @@
                 if (idx === 0) shape.moveTo(pt.x, -pt.z);
                 else shape.lineTo(pt.x, -pt.z);
               });
+              let colorHex = 0x1ca745;
+              let labelSprite = null;
+              if (spot.id === 'A-01' || spot.id === 'A-02') {
+                colorHex = 0x2563eb;
+                labelSprite = createSpecialSpotSprite('PCD', '#2563eb');
+              } else if (spot.id === 'A-03' || spot.id === 'A-04') {
+                colorHex = 0x8b5cf6;
+                labelSprite = createSpecialSpotSprite('60+', '#8b5cf6');
+              }
+
               const geo = new THREE.ShapeGeometry(shape);
               const mat = new THREE.MeshBasicMaterial({ 
-                color: 0x1ca745, 
+                color: colorHex, 
                 transparent: true, 
-                opacity: 0.3,
+                opacity: 0.45,
                 depthTest: true,
                 depthWrite: false, 
                 side: THREE.DoubleSide,
@@ -1003,9 +1085,9 @@
               
               const edges = new THREE.EdgesGeometry(geo);
               const lineMat = new THREE.LineBasicMaterial({ 
-                color: 0x1ca745, 
+                color: colorHex, 
                 transparent: true,
-                opacity: 0.6,
+                opacity: 0.85,
                 linewidth: 1, 
                 depthTest: true,
                 depthWrite: false,
@@ -1018,7 +1100,12 @@
               line.position.y = actualY + 0.02;
               scene.add(line);
 
-              spotsMeshes[spot.id] = { mesh, line, isOccupied: false, autoOccupied: false, data: spot };
+              if (labelSprite) {
+                labelSprite.position.set(spot.center3D.x, actualY + 0.15, spot.center3D.z);
+                scene.add(labelSprite);
+              }
+
+              spotsMeshes[spot.id] = { mesh, line, labelSprite, isOccupied: false, autoOccupied: false, data: spot };
             }
             
             if (i < data.length) {
@@ -1055,6 +1142,10 @@
       if (spotObj.status === targetStatus) return;
       spotObj.status = targetStatus;
 
+      if (spotObj.labelSprite) {
+        spotObj.labelSprite.visible = (targetStatus !== 'occupied');
+      }
+
       if (targetStatus === 'occupied' && isAuto) {
         spotObj.autoOccupied = true;
       } else if (!isAuto) {
@@ -1089,8 +1180,14 @@
         if (btn) { btn.textContent = "Reservado"; btn.className = "reserved"; }
       } else {
         freeSpots++;
-        spotObj.mesh.material.color.setHex(0x1ca745);
-        spotObj.line.material.color.setHex(0x1ca745);
+        let colorHex = 0x1ca745;
+        if (id === 'A-01' || id === 'A-02') {
+          colorHex = 0x2563eb;
+        } else if (id === 'A-03' || id === 'A-04') {
+          colorHex = 0x8b5cf6;
+        }
+        spotObj.mesh.material.color.setHex(colorHex);
+        spotObj.line.material.color.setHex(colorHex);
         if (btn) { btn.textContent = "Ocupar"; btn.className = "free"; }
       }
 
