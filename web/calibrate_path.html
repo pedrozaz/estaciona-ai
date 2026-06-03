@@ -399,10 +399,10 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "./lib/three/three.module.js",
-        "three/addons/controls/OrbitControls.js": "./lib/three/OrbitControls.js",
-        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js",
-        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js"
+        "three": "./lib/three/three.module.js?v=2",
+        "three/addons/controls/OrbitControls.js": "./lib/three/OrbitControls.js?v=2",
+        "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js?v=2",
+        "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js?v=2"
       }
     }
   </script>
@@ -1033,7 +1033,7 @@
     };
 
     function loadConfig() {
-      fetch('data/config.json')
+      fetch('data/config.json?v=' + Date.now())
         .then(res => {
           if (!res.ok) throw new Error('config.json not found');
           return res.json();
