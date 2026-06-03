@@ -30,6 +30,8 @@ services:
     environment:
       - RUST_LOG=info
 
+    volumes:
+      - ../web:/web
     depends_on:
       db:
         condition: service_healthy

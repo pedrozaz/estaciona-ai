@@ -18,7 +18,6 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::state::SpotStatus;
 use crate::ws::messages::ServerToAppMsg;
 
 #[tokio::main]
@@ -86,9 +85,16 @@ async fn main() {
             "/reservations/{id}/cancel",
             put(reservations::cancel_reservation),
         )
+        .route(
+            "/reservations/{id}/confirm",
+            post(reservations::confirm_occupancy),
+        )
+        .route("/reservations/recommend", get(reservations::recommend_spot))
+        .route("/spots/{id}/status", put(reservations::update_spot_status))
         .route("/users", post(users::create_user))
         .route("/users/{id}", get(users::get_user))
         .route("/login", post(auth::login_dashboard))
+        .route("/config", post(save_config))
         .with_state(parking_state.clone())
         .layer(cors)
         .layer(TraceLayer::new_for_http());
@@ -115,9 +121,12 @@ async fn main() {
 
             if let Ok(records) = expired_records {
                 for record in records {
-                    state_for_bg_task
-                        .spots
-                        .insert(record.spot_id.clone(), SpotStatus::Free);
+                    let _ = sqlx::query!(
+                        "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
+                        record.spot_id
+                    )
+                    .execute(&state_for_bg_task.pool)
+                    .await;
 
                     let expired_msg = ServerToAppMsg::ReservationExpired {
                         spot_id: record.spot_id.clone(),
@@ -145,4 +154,17 @@ async fn main() {
 
 async fn health_check() -> &'static str {
     r#"{"status": "ok"}"#
+}
+
+async fn save_config(
+    axum::Json(payload): axum::Json<serde_json::Value>,
+) -> Result<&'static str, (axum::http::StatusCode, String)> {
+    let path = std::path::Path::new("../web/data/config.json");
+    let content = serde_json::to_string_pretty(&payload)
+        .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, e.to_string()))?;
+
+    std::fs::write(path, content)
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(r#"{"status": "ok"}"#)
 }

@@ -8,7 +8,7 @@
   <meta name="description" content="Acesse o painel do Estaciona AI">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <style>
@@ -239,10 +239,6 @@
   </main>
 
   <script>
-    // Mock credentials
-    const MOCK_EMAIL = 'admin@estaciona.ai';
-    const MOCK_PASSWORD = 'admin';
-
     function handleLogin(event) {
       event.preventDefault();
 
@@ -250,43 +246,59 @@
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
 
-      // Remove previous error
       const oldError = document.querySelector('.login-error');
       if (oldError) oldError.remove();
 
-      // Trigger Loading Animation
       btn.classList.add('loading');
 
-      // Simulate API call delay
-      setTimeout(() => {
-        btn.classList.remove('loading');
+      const host = window.location.hostname || 'localhost';
+      const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
+      const apiUrl = isLocal ? 'http://localhost:8000' : 'https://api.estaciona.tech';
 
-        if (email === MOCK_EMAIL && password === MOCK_PASSWORD) {
-          // Store session flag and redirect
-          sessionStorage.setItem('estaciona_logged_in', 'true');
-          sessionStorage.setItem('estaciona_user', email);
-          window.location.href = 'dashboard.html';
-        } else {
-          // Show error message
-          const errorDiv = document.createElement('div');
-          errorDiv.className = 'login-error';
-          errorDiv.textContent = 'E-mail ou senha incorretos.';
-          errorDiv.style.cssText = `
-            background: rgba(220, 38, 38, 0.08);
-            color: #dc2626;
-            border: 1px solid rgba(220, 38, 38, 0.2);
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-align: center;
-            animation: slideUp 0.3s ease;
-          `;
-          const form = document.getElementById('loginForm');
-          form.insertBefore(errorDiv, form.firstChild);
+      fetch(`${apiUrl}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: email,
+          password: password
+        })
+      })
+      .then(async response => {
+        if (!response.ok) {
+          const errMsg = await response.text().catch(() => 'E-mail ou senha incorretos.');
+          throw new Error(errMsg || 'E-mail ou senha incorretos.');
         }
-      }, 1200);
+        return response.json();
+      })
+      .then(data => {
+        btn.classList.remove('loading');
+        sessionStorage.setItem('estaciona_logged_in', 'true');
+        sessionStorage.setItem('estaciona_user', email);
+        sessionStorage.setItem('estaciona_token', data.token);
+        window.location.href = 'dashboard.html';
+      })
+      .catch(err => {
+        btn.classList.remove('loading');
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'login-error';
+        errorDiv.textContent = err.message || 'Erro ao conectar ao servidor.';
+        errorDiv.style.cssText = `
+          background: rgba(220, 38, 38, 0.08);
+          color: #dc2626;
+          border: 1px solid rgba(220, 38, 38, 0.2);
+          border-radius: 10px;
+          padding: 0.75rem 1rem;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
+          font-weight: 500;
+          text-align: center;
+          animation: slideUp 0.3s ease;
+        `;
+        const form = document.getElementById('loginForm');
+        form.insertBefore(errorDiv, form.firstChild);
+      });
     }
   </script>
 </body>

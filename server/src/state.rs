@@ -7,16 +7,8 @@ use uuid::Uuid;
 
 use crate::pathfinding::ParkingGraph;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SpotStatus {
-    Free,
-    Occupied,
-    Reserved,
-}
-
 pub struct AppState {
     pub pool: PgPool,
-    pub spots: DashMap<String, SpotStatus>,
     pub tx: broadcast::Sender<String>,
     pub user_sessions: DashMap<Uuid, mpsc::UnboundedSender<String>>,
     pub graph: RwLock<ParkingGraph>,
@@ -30,7 +22,6 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
     let (tx, _) = broadcast::channel(100);
 
     let mut graph = ParkingGraph::new();
-    let spots = DashMap::new();
 
     #[derive(Deserialize)]
     struct NodeDef {
@@ -58,10 +49,43 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
 
     let mut node_map = std::collections::HashMap::new();
 
+    #[derive(Deserialize)]
+    struct Coords3D {
+        x: f64,
+        y: f64,
+        z: f64,
+    }
+
+    #[derive(Deserialize)]
+    struct Spot3DDef {
+        id: String,
+        #[serde(rename = "center3D")]
+        center_3d: Coords3D,
+    }
+
+    let spots_3d_content =
+        std::fs::read_to_string("../web/data/spots_3d.json").expect("Falha ao ler spots_3d.json");
+    let spots_3d: Vec<Spot3DDef> =
+        serde_json::from_str(&spots_3d_content).expect("Falha no parse do spots_3d.json");
+
+    for spot in spots_3d {
+        sqlx::query!(
+            r#"
+            INSERT INTO spots (id, parking_lot, status, x, y, z, last_updated) 
+            VALUES ($1, 'Main', 'free', $2, $3, $4, NOW()) 
+            ON CONFLICT (id) DO NOTHING
+            "#,
+            spot.id,
+            spot.center_3d.x,
+            spot.center_3d.y,
+            spot.center_3d.z
+        )
+        .execute(&pool)
+        .await
+        .expect("Falha ao sincronizar vaga com o banco de dados");
+    }
+
     for n in config.nodes {
-        if n.id.starts_with("A-") {
-            spots.insert(n.id.clone(), SpotStatus::Free);
-        }
         let graph_node = graph.add_node(&n.id, n.x, n.y);
         node_map.insert(n.id, graph_node);
     }
@@ -72,20 +96,8 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
         }
     }
 
-    let active_reservations = sqlx::query!(
-        "SELECT spot_id FROM reservations WHERE status = 'active' AND expires_at > NOW()"
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap_or_default();
-
-    for record in active_reservations {
-        spots.insert(record.spot_id, SpotStatus::Reserved);
-    }
-
     Arc::new(AppState {
         pool,
-        spots,
         tx,
         user_sessions: DashMap::new(),
         graph: RwLock::new(graph),
