@@ -488,11 +488,15 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
 
+    const globalRaycaster = new THREE.Raycaster();
+    const rayOrigin = new THREE.Vector3();
+    const rayDirection = new THREE.Vector3(0, -1, 0);
+
     function getTerrainY(x, z, defaultY) {
       if (!loadedModel) return defaultY;
-      const r = new THREE.Raycaster();
-      r.set(new THREE.Vector3(x, 50, z), new THREE.Vector3(0, -1, 0));
-      const intersects = r.intersectObject(loadedModel, true);
+      rayOrigin.set(x, 50, z);
+      globalRaycaster.set(rayOrigin, rayDirection);
+      const intersects = globalRaycaster.intersectObject(loadedModel, true);
       return intersects.length > 0 ? intersects[0].point.y : defaultY;
     }
 
