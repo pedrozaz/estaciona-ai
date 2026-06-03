@@ -407,6 +407,82 @@
         max-height: 40vh;
       }
     }
+
+    .popup-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 17, 23, 0.7);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .popup-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .popup-card {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .popup-overlay.active .popup-card {
+      transform: scale(1);
+    }
+    .popup-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    .popup-card p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .popup-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .popup-btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-main);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .popup-btn-yes {
+      background: #1ca745;
+      color: #fff;
+    }
+    .popup-btn-yes:hover {
+      background: #15803d;
+      box-shadow: 0 0 12px rgba(28, 167, 69, 0.4);
+    }
+    .popup-btn-no {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .popup-btn-no:hover {
+      background: rgba(220, 38, 38, 0.2);
+      border-color: rgba(220, 38, 38, 0.4);
+      color: #f87171;
+    }
   </style>
 </head>
 
@@ -448,6 +524,17 @@
     <div id="testSpotsContainer"></div>
   </div>
 
+  <div class="popup-overlay" id="confirmationPopup">
+    <div class="popup-card">
+      <h3>Confirmação de Ocupação</h3>
+      <p id="popupText">Detectamos um veículo na vaga reservada. Foi você quem estacionou?</p>
+      <div class="popup-buttons">
+        <button class="popup-btn popup-btn-no" onclick="window.handlePopupResponse(false)">Não</button>
+        <button class="popup-btn popup-btn-yes" onclick="window.handlePopupResponse(true)">Sim</button>
+      </div>
+    </div>
+  </div>
+
     <button class="btn-back" id="backBtn" onclick="resetCamera()">← Voltar à Visão Geral</button>
 
     <script type="importmap">
@@ -473,6 +560,92 @@
     const initial = userEmail.charAt(0).toUpperCase();
     document.getElementById('userAvatar').textContent = initial;
     document.getElementById('userName').textContent = userEmail.split('@')[0];
+
+    let simulatedUserId = null;
+    const simulatedUserPlate = "DEV-9999";
+    let activePinpointPath = null;
+    let currentReservation = null;
+
+    const host = window.location.hostname || 'localhost';
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
+    const apiUrl = isLocal ? 'http://localhost:8000' : 'https://api.estaciona.tech';
+
+    fetch(`${apiUrl}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ plate: simulatedUserPlate })
+    })
+    .then(res => res.json())
+    .then(data => {
+      simulatedUserId = data.id;
+    })
+    .catch(err => console.error(err));
+
+    function requestRecommendationAndReserve(pathData) {
+      if (!simulatedUserId) {
+        console.warn("User not loaded.");
+        return;
+      }
+      activePinpointPath = pathData;
+
+      fetch(`${apiUrl}/reservations/recommend?user_id=${simulatedUserId}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Estacionamento Lotado");
+        return res.json();
+      })
+      .then(data => {
+        const spotId = data.recommended_spot;
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+        return fetch(`${apiUrl}/reservations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: simulatedUserId,
+            spot_id: spotId,
+            expires_at: expiresAt
+          })
+        });
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Falha ao reservar vaga");
+        return res.json();
+      })
+      .then(reservation => {
+        currentReservation = {
+          id: reservation.id,
+          spot_id: reservation.spot_id
+        };
+
+        const spotObj = spotsMeshes[reservation.spot_id];
+        if (spotObj) {
+          spotObj.mesh.material.color.setHex(0xeab308);
+          spotObj.line.material.color.setHex(0xeab308);
+
+          const actualY = spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
+          activeCarPath = [...pathData, {
+            x: spotObj.data.center3D.x,
+            y: actualY,
+            z: spotObj.data.center3D.z
+          }];
+        } else {
+          activeCarPath = pathData;
+        }
+
+        currentPathIndex = 0;
+        carFinishedRoute = false;
+        carGroup.position.set(pathData[0].x, pathData[0].y, pathData[0].z);
+        carGroup.visible = true;
+      })
+      .catch(err => {
+        console.error(err);
+        alert(err.message || "Erro na recomendação");
+      });
+    }
 
     const viewport = document.getElementById('viewport');
     const scene = new THREE.Scene();
@@ -1033,11 +1206,7 @@
           currentFocusCamData = camData;
           
           if (pathData && pathData.length > 0) {
-            activeCarPath = pathData;
-            currentPathIndex = 0;
-            carFinishedRoute = false;
-            carGroup.position.set(pathData[0].x, pathData[0].y, pathData[0].z);
-            carGroup.visible = true;
+            requestRecommendationAndReserve(pathData);
           }
           
           updateCameraPosition();
@@ -1108,6 +1277,12 @@
           carGroup.visible = false;
           carFinishedRoute = true;
           activeCarPath = null;
+
+          if (currentReservation && currentReservation.spot_id) {
+            window.toggleSpot(currentReservation.spot_id, true, true);
+            document.getElementById('popupText').textContent = `Detectamos um veículo na vaga reservada (${currentReservation.spot_id}). Foi você quem estacionou?`;
+            document.getElementById('confirmationPopup').classList.add('active');
+          }
         }
       }
 
@@ -1218,10 +1393,10 @@
     function connectAppWebSocket() {
       try {
         const host = window.location.hostname || 'localhost';
-        const isLocal = host === 'localhost' || host === '127.0.0.1';
+        const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
         
         const wsUrl = isLocal 
-            ? 'ws://104.210.14.223:8000/ws/dashboard'
+            ? `ws://${host === 'localhost' || host === '127.0.0.1' ? host : 'localhost'}:8000/ws/dashboard`
             : 'wss://api.estaciona.tech/ws/dashboard';
         
         const ws = new WebSocket(wsUrl);
@@ -1262,6 +1437,37 @@
       sessionStorage.removeItem('estaciona_logged_in');
       sessionStorage.removeItem('estaciona_user');
       window.location.href = 'index.html';
+    };
+
+    window.handlePopupResponse = function(response) {
+      document.getElementById('confirmationPopup').classList.remove('active');
+      
+      if (!currentReservation) return;
+      
+      if (response) {
+        fetch(`${apiUrl}/reservations/${currentReservation.id}/confirm`, {
+          method: 'POST'
+        })
+        .then(res => {
+          if (!res.ok) throw new Error("Erro ao confirmar ocupacao");
+          currentReservation = null;
+        })
+        .catch(err => console.error(err));
+      } else {
+        const intruderSpotId = currentReservation.spot_id;
+        window.toggleSpot(intruderSpotId, true, false);
+        
+        fetch(`${apiUrl}/reservations/${currentReservation.id}/cancel`, {
+          method: 'PUT'
+        })
+        .then(() => {
+          currentReservation = null;
+          if (activePinpointPath) {
+            requestRecommendationAndReserve(activePinpointPath);
+          }
+        })
+        .catch(err => console.error(err));
+      }
     };
 
     window.resetCamera = function() {
