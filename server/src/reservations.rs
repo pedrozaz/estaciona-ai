@@ -29,6 +29,46 @@ pub struct ReservationResponse {
     pub completed_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Deserialize)]
+pub struct UpdateSpotStatus {
+    pub status: String,
+}
+
+pub async fn update_spot_status(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+    Json(payload): Json<UpdateSpotStatus>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    if payload.status != "occupied" && payload.status != "free" && payload.status != "reserved" {
+        return Err((StatusCode::BAD_REQUEST, "Invalid status".to_string()));
+    }
+
+    sqlx::query!(
+        "UPDATE spots SET status = $1, last_updated = NOW() WHERE id = $2",
+        payload.status,
+        id
+    )
+    .execute(&state.pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Error while update spot status: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error".to_string(),
+        )
+    })?;
+
+    let update_msg = ServerToAppMsg::SpotUpdate {
+        spot_id: id,
+        status: payload.status,
+    };
+    if let Ok(json_str) = serde_json::to_string(&update_msg) {
+        let _ = state.tx.send(json_str);
+    }
+
+    Ok(StatusCode::OK)
+}
+
 pub async fn create_reservation(
     State(state): State<SharedState>,
     Json(payload): Json<CreateReservation>,

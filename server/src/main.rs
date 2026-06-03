@@ -85,6 +85,7 @@ async fn main() {
             post(reservations::confirm_occupancy),
         )
         .route("/reservations/recommend", get(reservations::recommend_spot))
+        .route("/spots/{id}/status", put(reservations::update_spot_status))
         .route("/users", post(users::create_user))
         .route("/users/{id}", get(users::get_user))
         .route("/login", post(auth::login_dashboard))
