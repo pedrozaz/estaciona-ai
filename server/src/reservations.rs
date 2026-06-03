@@ -279,7 +279,9 @@ pub async fn recommend_spot(
         SELECT h.spot_id, COUNT(*) as uses 
         FROM user_occupancy_history h 
         JOIN spots s ON s.id = h.spot_id
-        WHERE h.user_id = $1 AND s.status = 'free'
+        WHERE h.user_id = $1 
+          AND s.status = 'free' 
+          AND s.id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
         GROUP BY h.spot_id
         ORDER BY uses DESC
         LIMIT 1
@@ -297,16 +299,47 @@ pub async fn recommend_spot(
         ));
     }
 
-    let fallback = sqlx::query!("SELECT id FROM spots WHERE status = 'free' LIMIT 1")
-        .fetch_optional(&state.pool)
-        .await
-        .unwrap_or(None);
+    let popular_spot = sqlx::query!(
+        r#"
+        SELECT h.spot_id, COUNT(*) as uses 
+        FROM user_occupancy_history h 
+        JOIN spots s ON s.id = h.spot_id
+        WHERE s.status = 'free' 
+          AND s.id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
+        GROUP BY h.spot_id
+        ORDER BY uses DESC
+        LIMIT 1
+        "#
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
 
-    match fallback {
+    if let Some(pop) = popular_spot {
+        return Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({ "recommended_spot": pop.spot_id })),
+        ));
+    }
+
+    let closest_spot = sqlx::query!(
+        r#"
+        SELECT id 
+        FROM spots 
+        WHERE status = 'free' 
+          AND id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
+        ORDER BY ((x - 5.778) * (x - 5.778) + (COALESCE(z, 0) - 4.3207) * (COALESCE(z, 0) - 4.3207)) ASC
+        LIMIT 1
+        "#
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
+
+    match closest_spot {
         Some(spot) => Ok((
             StatusCode::OK,
-            Json(serde_json::json!({
-            "recommended_spot": spot.id })),
+            Json(serde_json::json!({ "recommended_spot": spot.id })),
         )),
         None => Err((StatusCode::NOT_FOUND, "Estacionamento Lotado".to_string())),
     }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id FROM spots WHERE status = 'free' LIMIT 1",
+  "query": "\n        SELECT id \n        FROM spots \n        WHERE status = 'free' \n          AND id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')\n        ORDER BY ((x - 5.778) * (x - 5.778) + (COALESCE(z, 0) - 4.3207) * (COALESCE(z, 0) - 4.3207)) ASC\n        LIMIT 1\n        ",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "bc823a8437fba8ad5583433f737f77e70915d9dee0eec058a789f96f71a52583"
+  "hash": "135c3d34841b2a54d5f3743685b0798be383ca12a0a6d2511cd1199aa1de195c"
 }

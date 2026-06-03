@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT h.spot_id, COUNT(*) as uses \n        FROM user_occupancy_history h \n        JOIN spots s ON s.id = h.spot_id\n        WHERE h.user_id = $1 AND s.status = 'free'\n        GROUP BY h.spot_id\n        ORDER BY uses DESC\n        LIMIT 1\n        ",
+  "query": "\n        SELECT h.spot_id, COUNT(*) as uses \n        FROM user_occupancy_history h \n        JOIN spots s ON s.id = h.spot_id\n        WHERE h.user_id = $1 \n          AND s.status = 'free' \n          AND s.id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')\n        GROUP BY h.spot_id\n        ORDER BY uses DESC\n        LIMIT 1\n        ",
   "describe": {
     "columns": [
       {
@@ -31,5 +31,5 @@
       null
     ]
   },
-  "hash": "8db7886f6dd45baca8c7447a6d23a3fa2483c5aad00256f9a6a645e305c6539c"
+  "hash": "fe0c6cea076e162e0c9bc5aeeada7a00799b1fc32b18bc8586ab2f83b9ff7322"
 }
