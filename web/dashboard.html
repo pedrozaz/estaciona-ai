@@ -7,11 +7,13 @@
   <title>Dashboard - Estaciona AI</title>
   <meta name="description" content="Painel de controle 3D do Estaciona AI">
   <link rel="icon" href="data:,">
-  <link rel="preconnect" href="https:
-  <link rel="preconnect" href="https:
-  <link href="https:
-    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="preload" href="assets/reconstruction/melhorresultado_web.glb" as="fetch" crossorigin>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -891,7 +893,8 @@
       alpha: false,
     });
     renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -956,7 +959,7 @@
     dracoLoader.setDecoderPath('./lib/draco/');
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
-    const modelPath = 'assets/reconstruction/melhorresultado_otimizado.glb';
+    const modelPath = 'assets/reconstruction/melhorresultado_web.glb';
     const loadingOverlay = document.getElementById('loadingOverlay');
     const loadingProgress = document.getElementById('loadingProgress');
 
@@ -965,47 +968,41 @@
     let lancerModel = null;
     let pendingCars = [];
 
-    loader.load(
-      'assets/car/mitsubishi_lancer_evolution_viii_low_poly.glb',
-      function (gltf) {
-        const model = gltf.scene;
-        
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        
-        const scale = 1.1 / maxDim; 
-        model.scale.setScalar(scale);
-
-        const center = box.getCenter(new THREE.Vector3());
-        model.position.sub(center).multiplyScalar(scale);
-        
-        const newBox = new THREE.Box3().setFromObject(model);
-        model.position.y -= newBox.min.y;
-        
-        model.traverse(child => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
+    function loadCarModel() {
+      loader.load(
+        'assets/car/mitsubishi_lancer_evolution_viii_low_poly.glb',
+        function (gltf) {
+          const model = gltf.scene;
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 1.1 / maxDim;
+          model.scale.setScalar(scale);
+          const center = box.getCenter(new THREE.Vector3());
+          model.position.sub(center).multiplyScalar(scale);
+          const newBox = new THREE.Box3().setFromObject(model);
+          model.position.y -= newBox.min.y;
+          model.traverse(child => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          lancerModel = model;
+          pendingCars.forEach(data => {
+            const { group } = data;
+            group.clear();
+            group.add(lancerModel.clone());
+          });
+          if (typeof carGroup !== 'undefined' && carGroup) {
+            carGroup.clear();
+            carGroup.add(lancerModel.clone());
           }
-        });
-        
-        lancerModel = model;
-        
-        pendingCars.forEach(data => {
-          const { group } = data;
-          group.clear();
-          group.add(lancerModel.clone());
-        });
-        
-        if (typeof carGroup !== 'undefined' && carGroup) {
-          carGroup.clear();
-          carGroup.add(lancerModel.clone());
-        }
-      },
-      undefined,
-      (err) => console.error("Erro ao carregar o Lancer:", err)
-    );
+        },
+        undefined,
+        (err) => console.error("Erro ao carregar o Lancer:", err)
+      );
+    }
 
     loader.load(
       modelPath,
@@ -1040,7 +1037,9 @@
         currentCameraTarget.copy(globalCameraTarget);
         camera.lookAt(currentCameraTarget);
 
-        fetch('data/config.json?v=' + Date.now())
+        loadCarModel();
+
+        fetch('data/config.json')
           .then(res => res.json())
           .then(data => {
             configData = data;
@@ -1227,7 +1226,7 @@
 
 
     function loadSpots() {
-      fetch('data/spots_3d.json?v=' + Date.now())
+      fetch('data/spots_3d.json')
         .then(res => res.json())
         .then(data => {
           data.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
@@ -1495,7 +1494,7 @@
       wrapper.appendChild(content);
       markersLayer.appendChild(wrapper);
 
-      const ringGeo = new THREE.RingGeometry(0.15, 0.45, 32);
+      const ringGeo = new THREE.RingGeometry(0.15, 0.45, 16);
       const ringMat = new THREE.MeshBasicMaterial({
         color: isBlocked ? 0xef4444 : 0x1ca745,
         transparent: true,
