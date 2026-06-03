@@ -35,6 +35,7 @@ pub async fn create_user(
         r#"
         INSERT INTO users (id, plate)
         VALUES ($1, $2)
+        ON CONFLICT (plate) DO UPDATE SET plate = EXCLUDED.plate
         RETURNING id, plate, created_at as "created_at?"
         "#,
         new_id,
