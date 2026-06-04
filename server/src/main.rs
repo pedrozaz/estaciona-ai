@@ -89,6 +89,10 @@ async fn main() {
             "/reservations/{id}/confirm",
             post(reservations::confirm_occupancy),
         )
+        .route(
+            "/reservations/{id}/extend",
+            put(reservations::extend_reservation),
+        )
         .route("/reservations/recommend", get(reservations::recommend_spot))
         .route("/spots/{id}/status", put(reservations::update_spot_status))
         .route("/users", post(users::create_user))
@@ -105,7 +109,7 @@ async fn main() {
     let state_for_bg_task = parking_state;
 
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
 
         loop {
             interval.tick().await;

@@ -79,10 +79,62 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                         confidence
                     );
 
-                    let update_msg = ServerToAppMsg::SpotUpdate { spot_id, status };
+                    let update_msg = ServerToAppMsg::SpotUpdate {
+                        spot_id: spot_id.clone(),
+                        status: status.clone(),
+                    };
 
                     if let Ok(json_str) = serde_json::to_string(&update_msg) {
                         let _ = state.tx.send(json_str);
+                    }
+
+                    if status == "occupied" {
+                        let state_clone = state.clone();
+                        let spot_id_clone = spot_id.clone();
+                        tokio::spawn(async move {
+                            let active_res = sqlx::query!(
+                                "SELECT id FROM reservations WHERE spot_id = $1 AND status = 'active'",
+                                spot_id_clone
+                            )
+                            .fetch_optional(&state_clone.pool)
+                            .await
+                            .unwrap_or(None);
+
+                            if let Some(res) = active_res {
+                                tokio::time::sleep(std::time::Duration::from_secs(15)).await;
+                                
+                                let still_active = sqlx::query!(
+                                    "SELECT status FROM reservations WHERE id = $1",
+                                    res.id
+                                )
+                                .fetch_one(&state_clone.pool)
+                                .await;
+                                
+                                if let Ok(record) = still_active && record.status == "active" {
+                                    let _ = sqlx::query!(
+                                        "UPDATE reservations SET status = 'cancelled' WHERE id = $1",
+                                        res.id
+                                    )
+                                    .execute(&state_clone.pool)
+                                    .await;
+                                    
+                                    let _ = sqlx::query!(
+                                        "UPDATE spots SET status = 'occupied', last_updated = NOW() WHERE id = $1",
+                                        spot_id_clone
+                                    )
+                                    .execute(&state_clone.pool)
+                                    .await;
+                                    
+                                    let update_msg = ServerToAppMsg::SpotUpdate {
+                                        spot_id: spot_id_clone,
+                                        status: "occupied".to_string(),
+                                    };
+                                    if let Ok(json_str) = serde_json::to_string(&update_msg) {
+                                        let _ = state_clone.tx.send(json_str);
+                                    }
+                                }
+                            }
+                        });
                     }
                 }
                 EdgeToServerMsg::PathUpdate {

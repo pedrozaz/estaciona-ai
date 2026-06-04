@@ -219,7 +219,7 @@ pub async fn confirm_occupancy(
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let reservation = sqlx::query!(
-    "UPDATE reservations SET completed_at = NOW() WHERE id = $1 AND status = 'active' RETURNING user_id, spot_id",
+        "UPDATE reservations SET status = 'completed', completed_at = NOW() WHERE id = $1 AND status = 'active' RETURNING user_id, spot_id",
         id
     )
     .fetch_optional(&state.pool)
@@ -262,6 +262,37 @@ pub async fn confirm_occupancy(
         )),
     }
 }
+
+pub async fn extend_reservation(
+    State(state): State<SharedState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let result = sqlx::query!(
+        "UPDATE reservations SET expires_at = NOW() + INTERVAL '30 seconds' WHERE id = $1 AND status = 'active' RETURNING spot_id",
+        id
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    match result {
+        Some(record) => {
+            let update_msg = ServerToAppMsg::SpotUpdate {
+                spot_id: record.spot_id,
+                status: "reserved".to_string(),
+            };
+            if let Ok(json_str) = serde_json::to_string(&update_msg) {
+                let _ = state.tx.send(json_str);
+            }
+            Ok((StatusCode::OK, "Reservation extended.".to_string()))
+        }
+        None => Err((
+            StatusCode::NOT_FOUND,
+            "Active reservation not found".to_string(),
+        )),
+    }
+}
+
 
 use axum::extract::Query;
 

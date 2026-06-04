@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE reservations SET expires_at = NOW() + INTERVAL '30 seconds' WHERE id = $1 AND status = 'active' RETURNING spot_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "spot_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "reservations",
+            "name": "spot_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cbfa9acf3ab6243088e82212b4e635fddb7c6f020f5bf1645ed04063413cc852"
+}

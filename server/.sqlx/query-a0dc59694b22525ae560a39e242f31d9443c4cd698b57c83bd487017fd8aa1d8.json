@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE reservations SET completed_at = NOW() WHERE id = $1 AND status = 'active' RETURNING user_id, spot_id",
+  "query": "UPDATE reservations SET status = 'completed', completed_at = NOW() WHERE id = $1 AND status = 'active' RETURNING user_id, spot_id",
   "describe": {
     "columns": [
       {
@@ -36,5 +36,5 @@
       false
     ]
   },
-  "hash": "51164a4564a8dd2449a2f30886145e62c9c952f665b08bc4ec7dc41a7e4ceb31"
+  "hash": "a0dc59694b22525ae560a39e242f31d9443c4cd698b57c83bd487017fd8aa1d8"
 }
