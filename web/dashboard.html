@@ -1703,41 +1703,7 @@
       });
     }
 
-    const clickRaycaster = new THREE.Raycaster();
-    const clickMouse = new THREE.Vector2();
-    let isDragging = false;
-    let mouseDownTime = 0;
 
-    viewport.addEventListener('mousedown', () => {
-      isDragging = false;
-      mouseDownTime = Date.now();
-    });
-
-    viewport.addEventListener('mousemove', () => {
-      isDragging = true;
-    });
-
-    viewport.addEventListener('click', (event) => {
-      if (isDragging && (Date.now() - mouseDownTime > 200)) return;
-      if (loadingOverlay && loadingOverlay.style.display !== 'none') return;
-
-      const rect = renderer.domElement.getBoundingClientRect();
-      clickMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      clickMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      clickRaycaster.setFromCamera(clickMouse, camera);
-
-      const meshesToIntersect = Object.values(spotsMeshes).map(obj => obj.mesh);
-      const intersects = clickRaycaster.intersectObjects(meshesToIntersect);
-
-      if (intersects.length > 0) {
-        const clickedMesh = intersects[0].object;
-        const spotId = clickedMesh.userData.spotId;
-        if (spotId) {
-          window.toggleSpot(spotId);
-        }
-      }
-    });
 
     function connectAppWebSocket() {
       try {
