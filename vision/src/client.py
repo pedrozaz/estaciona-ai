@@ -15,8 +15,8 @@ import numpy as np
 from ultralytics import YOLO
 import torch
 
-WS_URL = os.environ.get("SERVER_WS_URL", "ws://localhost:8000/ws/edge")
-WS_URL = WS_URL.replace("ws://server:", "ws://localhost:")
+WS_URL = os.environ.get("SERVER_WS_URL", "wss://api.estaciona.tech/ws/edge")
+LOCAL_WS_URL = os.environ.get("LOCAL_WS_URL", "ws://localhost:8001/ws/edge")
 EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or "secret_edge_key"
 
 MODEL_PATH = "yolo26x-seg.pt"
@@ -94,11 +94,42 @@ def compute_occupancy(
     return overlap_area / spot_area
 
 
+async def connect_ws(headers):
+    try:
+        ws = await websockets.connect(WS_URL, additional_headers=headers, open_timeout=3)
+        print(f"[CONN] Conectado na nuvem: {WS_URL}")
+        return ws
+    except Exception as e:
+        print(f"[CONN] Nuvem inacessivel ({e}), tentando gateway local...")
+    try:
+        ws = await websockets.connect(LOCAL_WS_URL, additional_headers=headers, open_timeout=3)
+        print(f"[CONN] Conectado ao gateway local: {LOCAL_WS_URL}")
+        return ws
+    except Exception as e:
+        print(f"[CONN] Gateway local tambem falhou ({e})")
+        raise
+
+
+async def safe_send(ws, payload_str, headers):
+    try:
+        await ws.send(payload_str)
+        return ws
+    except Exception:
+        print("[CONN] Conexao perdida, reconectando...")
+        try:
+            ws = await connect_ws(headers)
+            await ws.send(payload_str)
+            return ws
+        except Exception as e:
+            print(f"[CONN] Falha ao reenviar ({e})")
+            return None
+
+
 async def main():
     spots_path = sys.argv[1] if len(sys.argv) > 1 else SPOTS_PATH
 
     headers = {"Authorization": f"Bearer {EDGE_API_KEY}"}
-    websocket = await websockets.connect(WS_URL, additional_headers=headers)
+    websocket = await connect_ws(headers)
 
     spots = load_spots(spots_path)
 
@@ -106,7 +137,7 @@ async def main():
     print(f"\n[VISION DEVICE] Rodando em: {device.upper()}")
     if device == "cpu":
         print(
-            "[AVISO] CUDA não está disponível. O modelo rodará no processador (CPU), o que causará engasgos!"
+            "[AVISO] CUDA nao esta disponivel. O modelo rodara no processador (CPU), o que causara engasgos!"
         )
 
     model = YOLO(MODEL_PATH)
@@ -201,7 +232,7 @@ async def main():
                     "confidence": float(ratio) if raw_status == "occupied" else 1.0,
                     "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 }
-                await websocket.send(json.dumps(payload))
+                websocket = await safe_send(websocket, json.dumps(payload), headers)
 
             state = debounce_map[spot_id]
 
@@ -237,7 +268,7 @@ async def main():
                                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
                             ),
                         }
-                        await websocket.send(json.dumps(payload))
+                        websocket = await safe_send(websocket, json.dumps(payload), headers)
 
                 else:
                     state["candidate"] = raw_status
@@ -287,7 +318,8 @@ async def main():
 
     cap.release()
     cv2.destroyAllWindows()
-    await websocket.close()
+    if websocket:
+        await websocket.close()
 
 
 if __name__ == "__main__":
