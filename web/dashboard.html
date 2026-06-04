@@ -1926,6 +1926,10 @@
     }
 
     window.resetCamera = function() {
+      if (currentReservation) {
+        expireReservation();
+        return;
+      }
       currentFocusCamData = null;
       activeCarPath = null;
       carFinishedRoute = false;
