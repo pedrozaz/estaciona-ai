@@ -808,7 +808,7 @@
       })
       .then(data => {
         const spotId = data.recommended_spot;
-        const expiresAt = new Date(Date.now() + 90 * 1000).toISOString();
+        const expiresAt = new Date(Date.now() + 120 * 1000).toISOString();
 
         return fetch(`${apiUrl}/reservations`, {
           method: 'POST',

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE reservations SET expires_at = NOW() + INTERVAL '30 seconds' WHERE id = $1 AND status = 'active' RETURNING spot_id",
+  "query": "UPDATE reservations SET expires_at = NOW() + INTERVAL '45 seconds' WHERE id = $1 AND status = 'active' RETURNING spot_id",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "cbfa9acf3ab6243088e82212b4e635fddb7c6f020f5bf1645ed04063413cc852"
+  "hash": "ed5a8150c5206c81e32cc68614c0513de4bb7ed0af4208cc5b804ab42627664a"
 }

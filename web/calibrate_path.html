@@ -704,6 +704,9 @@
     viewport.addEventListener('click', (event) => {
       if (!loadedModel || !activeRouteId) return;
 
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist > 5) return;
 
       const rect = viewport.getBoundingClientRect();
@@ -998,6 +1001,9 @@
             z: parseFloat(pt.z.toFixed(4)),
           }))
         };
+        if (p.blocked) {
+          out.blocked = true;
+        }
         if (p.camera) {
           out.camera = {
             position: {

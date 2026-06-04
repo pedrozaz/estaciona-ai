@@ -268,7 +268,7 @@ pub async fn extend_reservation(
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let result = sqlx::query!(
-        "UPDATE reservations SET expires_at = NOW() + INTERVAL '30 seconds' WHERE id = $1 AND status = 'active' RETURNING spot_id",
+        "UPDATE reservations SET expires_at = NOW() + INTERVAL '45 seconds' WHERE id = $1 AND status = 'active' RETURNING spot_id",
         id
     )
     .fetch_optional(&state.pool)
