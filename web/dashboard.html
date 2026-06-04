@@ -898,6 +898,7 @@
       .catch(err => {
         console.error(err);
         alert(err.message || "Erro na recomendação");
+        window.resetCamera();
       });
     }
 
@@ -1830,6 +1831,9 @@
         fetch(`${apiUrl}/reservations/${reservationToHandle.id}/confirm`, {
           method: 'POST'
         })
+        .then(() => {
+          window.resetCamera();
+        })
         .catch(err => console.error(err));
       } else {
         const intruderSpotId = reservationToHandle.spot_id;
@@ -1937,6 +1941,7 @@
       updateCameraPosition();
       document.getElementById('backBtn').classList.remove('visible');
       document.getElementById('infoPanel').classList.add('visible');
+      updateInfoPanel();
     };
   </script>
 </body>
