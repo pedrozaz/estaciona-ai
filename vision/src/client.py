@@ -213,7 +213,14 @@ async def main():
                     state["consecutive_frames"] += 1
                     elapsed_time = time.time() - state["last_change_time"]
 
-                    if state["consecutive_frames"] >= 3 or elapsed_time >= 2.0:
+                    if raw_status == "occupied":
+                        threshold_frames = 2
+                        threshold_time = 0.5
+                    else:
+                        threshold_frames = 5
+                        threshold_time = 3.0
+
+                    if state["consecutive_frames"] >= threshold_frames and elapsed_time >= threshold_time:
                         state["confirmed"] = raw_status
                         state["consecutive_frames"] = 0
                         state["last_change_time"] = time.time()

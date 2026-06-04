@@ -50,7 +50,7 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                     confidence,
                     ..
                 } => {
-                    if confidence < 0.60 {
+                    if confidence < 0.20 {
                         tracing::debug!(
                             "Ignorando SpotUpdate para {} devido a baixa confiança ({})",
                             spot_id,
@@ -102,29 +102,31 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
 
                             if let Some(res) = active_res {
                                 tokio::time::sleep(std::time::Duration::from_secs(15)).await;
-                                
+
                                 let still_active = sqlx::query!(
                                     "SELECT status FROM reservations WHERE id = $1",
                                     res.id
                                 )
                                 .fetch_one(&state_clone.pool)
                                 .await;
-                                
-                                if let Ok(record) = still_active && record.status == "active" {
+
+                                if let Ok(record) = still_active
+                                    && record.status == "active"
+                                {
                                     let _ = sqlx::query!(
                                         "UPDATE reservations SET status = 'cancelled' WHERE id = $1",
                                         res.id
                                     )
                                     .execute(&state_clone.pool)
                                     .await;
-                                    
+
                                     let _ = sqlx::query!(
                                         "UPDATE spots SET status = 'occupied', last_updated = NOW() WHERE id = $1",
                                         spot_id_clone
                                     )
                                     .execute(&state_clone.pool)
                                     .await;
-                                    
+
                                     let update_msg = ServerToAppMsg::SpotUpdate {
                                         spot_id: spot_id_clone,
                                         status: "occupied".to_string(),
