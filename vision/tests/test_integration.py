@@ -1,0 +1,82 @@
+import asyncio
+from unittest.mock import patch, AsyncMock
+import pytest
+import client
+
+
+def test_connect_ws_cloud_success():
+    async def run():
+        with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
+            mock_ws = AsyncMock()
+            mock_connect.return_value = mock_ws
+            ws = await client.connect_ws({"Auth": "Bearer token"})
+            assert ws == mock_ws
+            mock_connect.assert_called_once_with(
+                client.WS_URL,
+                additional_headers={"Auth": "Bearer token"},
+                open_timeout=3,
+            )
+
+    asyncio.run(run())
+
+
+def test_connect_ws_fallback_success():
+    async def run():
+        with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
+            mock_ws = AsyncMock()
+            mock_connect.side_effect = [Exception("Cloud fail"), mock_ws]
+            ws = await client.connect_ws({"Auth": "Bearer token"})
+            assert ws == mock_ws
+            assert mock_connect.call_count == 2
+
+    asyncio.run(run())
+
+
+def test_connect_ws_all_fail():
+    async def run():
+        with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
+            mock_connect.side_effect = [
+                Exception("Cloud fail"),
+                Exception("Local fail"),
+            ]
+            with pytest.raises(Exception):
+                await client.connect_ws({"Auth": "Bearer token"})
+            assert mock_connect.call_count == 2
+
+    asyncio.run(run())
+
+
+def test_safe_send_success():
+    async def run():
+        mock_ws = AsyncMock()
+        ret = await client.safe_send(mock_ws, "payload", {"Auth": "Bearer"})
+        assert ret == mock_ws
+        mock_ws.send.assert_called_once_with("payload")
+
+    asyncio.run(run())
+
+
+def test_safe_send_reconnect_success():
+    async def run():
+        mock_ws1 = AsyncMock()
+        mock_ws1.send.side_effect = Exception("Closed")
+        mock_ws2 = AsyncMock()
+        with patch("client.connect_ws", new_callable=AsyncMock) as mock_connect:
+            mock_connect.return_value = mock_ws2
+            ret = await client.safe_send(mock_ws1, "payload", {"Auth": "Bearer"})
+            assert ret == mock_ws2
+            mock_ws2.send.assert_called_once_with("payload")
+
+    asyncio.run(run())
+
+
+def test_safe_send_reconnect_fail():
+    async def run():
+        mock_ws = AsyncMock()
+        mock_ws.send.side_effect = Exception("Closed")
+        with patch("client.connect_ws", new_callable=AsyncMock) as mock_connect:
+            mock_connect.side_effect = Exception("Reconnect fail")
+            ret = await client.safe_send(mock_ws, "payload", {"Auth": "Bearer"})
+            assert ret is None
+
+    asyncio.run(run())

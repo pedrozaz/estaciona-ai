@@ -96,13 +96,17 @@ def compute_occupancy(
 
 async def connect_ws(headers):
     try:
-        ws = await websockets.connect(WS_URL, additional_headers=headers, open_timeout=3)
+        ws = await websockets.connect(
+            WS_URL, additional_headers=headers, open_timeout=3
+        )
         print(f"[CONN] Conectado na nuvem: {WS_URL}")
         return ws
     except Exception as e:
         print(f"[CONN] Nuvem inacessivel ({e}), tentando gateway local...")
     try:
-        ws = await websockets.connect(LOCAL_WS_URL, additional_headers=headers, open_timeout=3)
+        ws = await websockets.connect(
+            LOCAL_WS_URL, additional_headers=headers, open_timeout=3
+        )
         print(f"[CONN] Conectado ao gateway local: {LOCAL_WS_URL}")
         return ws
     except Exception as e:
@@ -251,7 +255,10 @@ async def main():
                         threshold_frames = 5
                         threshold_time = 3.0
 
-                    if state["consecutive_frames"] >= threshold_frames and elapsed_time >= threshold_time:
+                    if (
+                        state["consecutive_frames"] >= threshold_frames
+                        and elapsed_time >= threshold_time
+                    ):
                         state["confirmed"] = raw_status
                         state["consecutive_frames"] = 0
                         state["last_change_time"] = time.time()
@@ -268,7 +275,9 @@ async def main():
                                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
                             ),
                         }
-                        websocket = await safe_send(websocket, json.dumps(payload), headers)
+                        websocket = await safe_send(
+                            websocket, json.dumps(payload), headers
+                        )
 
                 else:
                     state["candidate"] = raw_status
