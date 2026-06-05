@@ -78,3 +78,22 @@ Users and distributors of this software must comply with all applicable licenses
    Used for:  Secure hashing of dashboard administrator passwords.
 
 ---
+
+7. websockets (Aymeric Augustin & Contributors)
+   Project:   https://github.com/python-websockets/websockets
+   License:   BSD 3-Clause License
+              https://opensource.org/licenses/BSD-3-Clause
+   Used for:  High-performance asynchronous WebSocket communication in the
+              Python gateway and computer vision client.
+
+---
+
+8. python-dotenv (Saurabh Kumar & Contributors)
+   Project:   https://github.com/theskumar/python-dotenv
+   License:   BSD 3-Clause License
+              https://opensource.org/licenses/BSD-3-Clause
+   Used for:  Reading key-value pairs from .env files for local environment
+              configuration across Python modules.
+
+---
+
