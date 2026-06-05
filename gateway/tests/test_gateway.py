@@ -1,5 +1,4 @@
 import sqlite3
-import pytest
 import os
 from gateway import (
     init_db,
@@ -19,8 +18,22 @@ def test_init_db(tmp_path):
     assert os.path.exists(db_path)
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("
-    SELECT name FROM sqlite_master WHERE type='table' AND name='fallback_events'")
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='fallback_events'"
+    )
+    assert cursor.fetchone() is not None
+    conn.close()
+
+
+def test_init_metrics_db(tmp_path):
+    db_path = str(tmp_path / "test_metrics.db")
+    init_metrics_db(db_path)
+    assert os.path.exists(db_path)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'"
+    )
     assert cursor.fetchone() is not None
     conn.close()
 
@@ -51,7 +64,8 @@ def test_save_and_update_metrics(tmp_path):
     db_path = str(tmp_path / "test_metrics.db")
     init_metrics_db(db_path)
     save_metric(
-        "cam-01",
+        db_path,
+        "cam_01",
         "A-01",
         "occupied",
         "2026-06-05T12:00:00Z",
@@ -65,10 +79,12 @@ def test_save_and_update_metrics(tmp_path):
     assert row == ("cam_01", "A-01", "occupied", 0)
     conn.close()
 
-    update_metric_forwarded(db_path, "cam-01", "2026-06-05T12:00:03Z")
+    update_metric_forwarded(db_path, "A-01", "2026-06-05T12:00:03Z")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT gateway_forwarded_ts, cloud_ack FROM metrics WHERE spot_id='A-01'")
+    cursor.execute(
+        "SELECT gateway_forwarded_ts, cloud_ack FROM metrics WHERE spot_id='A-01'"
+    )
     row = cursor.fetchone()
     assert row == ("2026-06-05T12:00:03Z", 1)
     conn.close()
@@ -76,18 +92,8 @@ def test_save_and_update_metrics(tmp_path):
 
 def test_is_authorized():
     expected_key = "secret_key"
-    assert (
-        is_authorized({"Authorization": "Bearer secret_key"}, expected_key)
-        is True
-    )
-    assert (
-            is_authorized({"authorization": "Bearer secret_key"}, expected_key)
-        is True
-    )
-    assert (
-        is_authorized({"Authorization": "secret_key"}, expected_key) is False
-    )
-    assert (
-            is_authorized({"Authorization": "Bearer wrong_key"}, expected_key) is False
-    )
-    assert is_authorized({}) is False
+    assert is_authorized({"Authorization": "Bearer secret_key"}, expected_key) is True
+    assert is_authorized({"authorization": "Bearer secret_key"}, expected_key) is True
+    assert is_authorized({"Authorization": "secret_key"}, expected_key) is False
+    assert is_authorized({"Authorization": "Bearer wrong_key"}, expected_key) is False
+    assert is_authorized({}, expected_key) is False
