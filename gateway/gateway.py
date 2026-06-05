@@ -223,3 +223,36 @@ async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
                     pass
                 cloud_conn = None
             await asyncio.sleep(5)
+
+
+async def main():
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
+
+    db_path = "local_fallback.db"
+    metrics_path = "metrics.db"
+
+    init_db(db_path)
+    init_metrics_db(metrics_path)
+
+    cloud_url = os.environ.get("SERVER_WS_URL", "wss://api.estaciona.tech/ws/edge")
+    api_key = os.environ.get("EDGE_API_KEY", "secret_edge_key")
+    port = int(os.environ.get("GATEWAY_PORT", "8001"))
+
+    sync_event = asyncio.Event()
+
+    asyncio.create_task(
+        sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event)
+    )
+
+    async def ws_handler(websocket, *args, **kwargs):
+        await handler(websocket, db_path, metrics_path, api_key, sync_event)
+
+    async with websockets.serve(ws_handler, "0.0.0.0", port):
+        await asyncio.Future()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -14,6 +14,7 @@ from gateway import (
     is_authorized,
     handler,
     sync_loop,
+    main,
 )
 
 
@@ -220,5 +221,34 @@ def test_sync_loop_sends_to_cloud(tmp_path):
             assert row[0] is not None
             assert row[1] == 1
             conn.close()
+
+    asyncio.run(run())
+
+
+def test_main_startup():
+    async def run():
+        with (
+            patch("websockets.serve") as mock_serve,
+            patch("asyncio.Future", new_callable=AsyncMock) as mock_future,
+            patch("gateway.init_db") as mock_init_db,
+            patch("gateway.init_metrics_db") as mock_init_metrics,
+            patch("gateway.sync_loop", new_callable=AsyncMock) as mock_sync_loop,
+        ):
+            mock_future.return_value = AsyncMock()
+            mock_serve.return_value.__aenter__ = AsyncMock()
+            mock_serve.return_value.__aexit__ = AsyncMock()
+
+            task = asyncio.create_task(main())
+            await asyncio.sleep(0.01)
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+            assert mock_init_db.called
+            assert mock_init_metrics.called
+            assert mock_serve.called
+            assert mock_sync_loop.called
 
     asyncio.run(run())
