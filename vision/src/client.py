@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import sys
@@ -15,8 +16,7 @@ import numpy as np
 from ultralytics import YOLO
 import torch
 
-WS_URL = os.environ.get("SERVER_WS_URL", "wss://api.estaciona.tech/ws/edge")
-LOCAL_WS_URL = os.environ.get("LOCAL_WS_URL", "ws://localhost:8001/ws/edge")
+WS_URL = os.environ.get("LOCAL_WS_URL", "ws://localhost:8001/ws/edge")
 EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or "secret_edge_key"
 
 MODEL_PATH = "yolo26x-seg.pt"
@@ -99,18 +99,10 @@ async def connect_ws(headers):
         ws = await websockets.connect(
             WS_URL, additional_headers=headers, open_timeout=3
         )
-        print(f"[CONN] Conectado na nuvem: {WS_URL}")
+        print(f"[CONN] Conectado ao gateway: {WS_URL}")
         return ws
     except Exception as e:
-        print(f"[CONN] Nuvem inacessivel ({e}), tentando gateway local...")
-    try:
-        ws = await websockets.connect(
-            LOCAL_WS_URL, additional_headers=headers, open_timeout=3
-        )
-        print(f"[CONN] Conectado ao gateway local: {LOCAL_WS_URL}")
-        return ws
-    except Exception as e:
-        print(f"[CONN] Gateway local tambem falhou ({e})")
+        print(f"[CONN] Falha ao conectar ao gateway: {e}")
         raise
 
 
@@ -235,6 +227,9 @@ async def main():
                     "camera_id": "cam_01",
                     "confidence": float(ratio) if raw_status == "occupied" else 1.0,
                     "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "edge_sent_at": datetime.datetime.now(datetime.UTC)
+                    .isoformat(timespec="milliseconds")
+                    .replace("+00:00", "Z"),
                 }
                 websocket = await safe_send(websocket, json.dumps(payload), headers)
 
@@ -274,6 +269,9 @@ async def main():
                             "timestamp": time.strftime(
                                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
                             ),
+                            "edge_sent_at": datetime.datetime.now(datetime.UTC)
+                            .isoformat(timespec="milliseconds")
+                            .replace("+00:00", "Z"),
                         }
                         websocket = await safe_send(
                             websocket, json.dumps(payload), headers

@@ -20,28 +20,17 @@ def test_connect_ws_cloud_success():
     asyncio.run(run())
 
 
-def test_connect_ws_fallback_success():
+def test_connect_ws_failure():
     async def run():
         with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
-            mock_ws = AsyncMock()
-            mock_connect.side_effect = [Exception("Cloud fail"), mock_ws]
-            ws = await client.connect_ws({"Auth": "Bearer token"})
-            assert ws == mock_ws
-            assert mock_connect.call_count == 2
-
-    asyncio.run(run())
-
-
-def test_connect_ws_all_fail():
-    async def run():
-        with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
-            mock_connect.side_effect = [
-                Exception("Cloud fail"),
-                Exception("Local fail"),
-            ]
+            mock_connect.side_effect = Exception("Connect fail")
             with pytest.raises(Exception):
                 await client.connect_ws({"Auth": "Bearer token"})
-            assert mock_connect.call_count == 2
+            mock_connect.assert_called_once_with(
+                client.WS_URL,
+                additional_headers={"Auth": "Bearer token"},
+                open_timeout=3,
+            )
 
     asyncio.run(run())
 
