@@ -210,6 +210,71 @@ mod tests {
     }
 
     #[test]
+    fn new_graph_is_empty() {
+        let graph = ParkingGraph::new();
+        assert!(graph.nodes.is_empty());
+        assert!(graph.edges.is_empty());
+        assert!(graph.name_to_id.is_empty());
+        assert_eq!(graph.next_id, 0);
+    }
+
+    #[test]
+    fn add_node_increments_id() {
+        let mut graph = ParkingGraph::new();
+        let n1 = graph.add_node("a", 0.0, 0.0);
+        let n2 = graph.add_node("b", 1.0, 1.0);
+        assert_eq!(n1, NodeId(0));
+        assert_eq!(n2, NodeId(1));
+    }
+
+    #[test]
+    fn add_node_stores_name_and_coords() {
+        let mut graph = ParkingGraph::new();
+        let id = graph.add_node("test-node", 3.5, 7.2);
+        let node = graph.nodes.get(&id).unwrap();
+        assert_eq!(node.name, "test-node");
+        assert_eq!(node.x, 3.5);
+        assert_eq!(node.y, 7.2);
+    }
+
+    #[test]
+    fn add_edge_bidirectional_creates_both_directions() {
+        let mut graph = ParkingGraph::new();
+        let a = graph.add_node("a", 0.0, 0.0);
+        let b = graph.add_node("b", 1.0, 0.0);
+        graph.add_edge(a, b, 10, true);
+
+        let a_neighbors = graph.edges.get(&a).unwrap();
+        assert_eq!(a_neighbors.len(), 1);
+        assert_eq!(a_neighbors[0].target, b);
+
+        let b_neighbors = graph.edges.get(&b).unwrap();
+        assert_eq!(b_neighbors.len(), 1);
+        assert_eq!(b_neighbors[0].target, a);
+    }
+
+    #[test]
+    fn add_edge_unidirectional_creates_one_direction() {
+        let mut graph = ParkingGraph::new();
+        let a = graph.add_node("a", 0.0, 0.0);
+        let b = graph.add_node("b", 1.0, 0.0);
+        graph.add_edge(a, b, 10, false);
+
+        let a_neighbors = graph.edges.get(&a).unwrap();
+        assert_eq!(a_neighbors.len(), 1);
+
+        let b_neighbors = graph.edges.get(&b).unwrap();
+        assert_eq!(b_neighbors.len(), 0);
+    }
+
+    #[test]
+    fn route_chooses_shortest_path() {
+        let graph = build_test_graph();
+        let route = graph.calculate_route("entrada", "vaga-1").unwrap();
+        assert_eq!(route, vec!["entrada", "meio-1", "vaga-1"]);
+    }
+
+    #[test]
     fn route_avoids_blocked_edge() {
         let mut graph = build_test_graph();
 
@@ -231,5 +296,96 @@ mod tests {
 
         let route = graph.calculate_route("entrada", "vaga-1");
         assert!(route.is_none());
+    }
+
+    #[test]
+    fn route_nonexistent_start_returns_none() {
+        let graph = build_test_graph();
+        let route = graph.calculate_route("fantasma", "vaga-1");
+        assert!(route.is_none());
+    }
+
+    #[test]
+    fn route_nonexistent_end_returns_none() {
+        let graph = build_test_graph();
+        let route = graph.calculate_route("entrada", "fantasma");
+        assert!(route.is_none());
+    }
+
+    #[test]
+    fn route_same_start_and_end() {
+        let graph = build_test_graph();
+        let route = graph.calculate_route("entrada", "entrada").unwrap();
+        assert_eq!(route, vec!["entrada"]);
+    }
+
+    #[test]
+    fn set_edge_status_reactivates_edge() {
+        let mut graph = build_test_graph();
+
+        graph.set_edge_status("entrada", "meio-1", false);
+        assert!(
+            graph
+                .calculate_route("entrada", "vaga-1")
+                .unwrap()
+                .contains(&"meio-2".to_string())
+        );
+
+        graph.set_edge_status("entrada", "meio-1", true);
+        let route = graph.calculate_route("entrada", "vaga-1").unwrap();
+        assert_eq!(route, vec!["entrada", "meio-1", "vaga-1"]);
+    }
+
+    #[test]
+    fn set_edge_status_nonexistent_nodes_does_nothing() {
+        let mut graph = build_test_graph();
+        graph.set_edge_status("fantasma", "outro-fantasma", false);
+        let route = graph.calculate_route("entrada", "vaga-1").unwrap();
+        assert_eq!(route, vec!["entrada", "meio-1", "vaga-1"]);
+    }
+
+    #[test]
+    fn route_through_longer_chain() {
+        let mut graph = ParkingGraph::new();
+        let a = graph.add_node("a", 0.0, 0.0);
+        let b = graph.add_node("b", 1.0, 0.0);
+        let c = graph.add_node("c", 2.0, 0.0);
+        let d = graph.add_node("d", 3.0, 0.0);
+        let e = graph.add_node("e", 4.0, 0.0);
+
+        graph.add_edge(a, b, 1, true);
+        graph.add_edge(b, c, 1, true);
+        graph.add_edge(c, d, 1, true);
+        graph.add_edge(d, e, 1, true);
+
+        let route = graph.calculate_route("a", "e").unwrap();
+        assert_eq!(route, vec!["a", "b", "c", "d", "e"]);
+    }
+
+    #[test]
+    fn isolated_node_has_no_route_to_others() {
+        let mut graph = ParkingGraph::new();
+        graph.add_node("island", 0.0, 0.0);
+        let a = graph.add_node("a", 1.0, 0.0);
+        let b = graph.add_node("b", 2.0, 0.0);
+        graph.add_edge(a, b, 10, true);
+
+        assert!(graph.calculate_route("island", "a").is_none());
+        assert!(graph.calculate_route("island", "b").is_none());
+    }
+
+    #[test]
+    fn route_prefers_lower_cost_path() {
+        let mut graph = ParkingGraph::new();
+        let a = graph.add_node("a", 0.0, 0.0);
+        let b = graph.add_node("b", 0.0, 0.0);
+        let c = graph.add_node("c", 0.0, 0.0);
+
+        graph.add_edge(a, b, 100, false);
+        graph.add_edge(a, c, 1, false);
+        graph.add_edge(c, b, 1, false);
+
+        let route = graph.calculate_route("a", "b").unwrap();
+        assert_eq!(route, vec!["a", "c", "b"]);
     }
 }

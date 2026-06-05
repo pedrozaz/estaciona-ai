@@ -94,3 +94,155 @@ pub fn verify_jwt(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::err
 
     Ok(token_data.claims)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hash_plate_is_deterministic() {
+        let hash1 = hash_plate("ABC1234", "pepper");
+        let hash2 = hash_plate("ABC1234", "pepper");
+        assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn hash_plate_normalizes_dashes() {
+        let with_dash = hash_plate("ABC-1D23", "pepper");
+        let without_dash = hash_plate("ABC1D23", "pepper");
+        assert_eq!(with_dash, without_dash);
+    }
+
+    #[test]
+    fn hash_plate_normalizes_spaces() {
+        let with_space = hash_plate("ABC 1D23", "pepper");
+        let without_space = hash_plate("ABC1D23", "pepper");
+        assert_eq!(with_space, without_space);
+    }
+
+    #[test]
+    fn hash_plate_normalizes_case() {
+        let lower = hash_plate("abc1d23", "pepper");
+        let upper = hash_plate("ABC1D23", "pepper");
+        assert_eq!(lower, upper);
+    }
+
+    #[test]
+    fn hash_plate_different_pepper_produces_different_hash() {
+        let hash1 = hash_plate("ABC1234", "pepper1");
+        let hash2 = hash_plate("ABC1234", "pepper2");
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn hash_plate_different_plates_produce_different_hashes() {
+        let hash1 = hash_plate("ABC1234", "pepper");
+        let hash2 = hash_plate("XYZ9876", "pepper");
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn hash_plate_returns_hex_string() {
+        let hash = hash_plate("ABC1234", "pepper");
+        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+        assert_eq!(hash.len(), 64);
+    }
+
+    #[test]
+    fn hash_password_returns_valid_hash() {
+        let hash = hash_password("my_secure_password").unwrap();
+        assert!(hash.starts_with("$argon2"));
+    }
+
+    #[test]
+    fn hash_password_produces_unique_salts() {
+        let hash1 = hash_password("same_password").unwrap();
+        let hash2 = hash_password("same_password").unwrap();
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn verify_password_correct() {
+        let password = "test_password_123";
+        let hash = hash_password(password).unwrap();
+        assert!(verify_password(password, &hash));
+    }
+
+    #[test]
+    fn verify_password_wrong() {
+        let hash = hash_password("correct_password").unwrap();
+        assert!(!verify_password("wrong_password", &hash));
+    }
+
+    #[test]
+    fn verify_password_invalid_hash() {
+        assert!(!verify_password("any_password", "not_a_valid_hash"));
+    }
+
+    #[test]
+    fn verify_password_empty_hash() {
+        assert!(!verify_password("any_password", ""));
+    }
+
+    #[test]
+    fn create_jwt_returns_token() {
+        let token = create_jwt("user-123", "admin", "secret").unwrap();
+        assert!(!token.is_empty());
+        assert_eq!(token.matches('.').count(), 2);
+    }
+
+    #[test]
+    fn verify_jwt_roundtrip() {
+        let secret = "test_secret_key";
+        let token = create_jwt("user-456", "viewer", secret).unwrap();
+        let claims = verify_jwt(&token, secret).unwrap();
+        assert_eq!(claims.sub, "user-456");
+        assert_eq!(claims.role, "viewer");
+    }
+
+    #[test]
+    fn verify_jwt_wrong_secret_fails() {
+        let token = create_jwt("user-789", "admin", "correct_secret").unwrap();
+        let result = verify_jwt(&token, "wrong_secret");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn verify_jwt_garbage_token_fails() {
+        let result = verify_jwt("not.a.jwt", "secret");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn verify_jwt_empty_token_fails() {
+        let result = verify_jwt("", "secret");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn create_jwt_expiration_is_in_the_future() {
+        let secret = "test_secret";
+        let token = create_jwt("user", "role", secret).unwrap();
+        let claims = verify_jwt(&token, secret).unwrap();
+        let now = Utc::now().timestamp() as usize;
+        assert!(claims.exp > now);
+    }
+
+    #[test]
+    fn verify_jwt_expired_token_fails() {
+        let secret = "test_secret";
+        let claims = Claims {
+            sub: "user".to_owned(),
+            role: "admin".to_owned(),
+            exp: 0,
+        };
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+        .unwrap();
+        let result = verify_jwt(&token, secret);
+        assert!(result.is_err());
+    }
+}

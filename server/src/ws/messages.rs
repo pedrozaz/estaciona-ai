@@ -58,3 +58,212 @@ pub enum ServerToAppMsg {
     #[serde(rename = "SPOT_UPDATE")]
     SpotUpdate { spot_id: String, status: String },
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn edge_spot_update_deserializes() {
+        let json = r#"{
+            "type": "SPOT_UPDATE",
+            "spot_id": "A-01",
+            "status": "occupied",
+            "camera_id": "cam_01",
+            "confidence": 0.85,
+            "timestamp": "2026-06-04T17:30:00Z"
+        }"#;
+        let msg: EdgeToServerMsg = serde_json::from_str(json).unwrap();
+        match msg {
+            EdgeToServerMsg::SpotUpdate {
+                spot_id,
+                status,
+                camera_id,
+                confidence,
+                ..
+            } => {
+                assert_eq!(spot_id, "A-01");
+                assert_eq!(status, "occupied");
+                assert_eq!(camera_id, "cam_01");
+                assert!((confidence - 0.85).abs() < f64::EPSILON);
+            }
+            _ => panic!("wrong variant"),
+        }
+    }
+
+    #[test]
+    fn edge_spot_update_serializes_with_type_tag() {
+        let msg = EdgeToServerMsg::SpotUpdate {
+            spot_id: "B-05".to_string(),
+            status: "free".to_string(),
+            camera_id: "cam_02".to_string(),
+            confidence: 1.0,
+            timestamp: "2026-06-04T18:00:00Z".parse().unwrap(),
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(r#""type":"SPOT_UPDATE""#));
+        assert!(json.contains(r#""spot_id":"B-05""#));
+    }
+
+    #[test]
+    fn edge_car_detected_roundtrip() {
+        let msg = EdgeToServerMsg::CarDetected {
+            plate: "ABC1D23".to_string(),
+            camera_id: "cam_01".to_string(),
+            timestamp: "2026-06-04T18:00:00Z".parse().unwrap(),
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        let deserialized: EdgeToServerMsg = serde_json::from_str(&json).unwrap();
+        match deserialized {
+            EdgeToServerMsg::CarDetected {
+                plate, camera_id, ..
+            } => {
+                assert_eq!(plate, "ABC1D23");
+                assert_eq!(camera_id, "cam_01");
+            }
+            _ => panic!("wrong variant"),
+        }
+    }
+
+    #[test]
+    fn edge_path_update_roundtrip() {
+        let msg = EdgeToServerMsg::PathUpdate {
+            from_node: "entrada".to_string(),
+            to_node: "meio-1".to_string(),
+            is_active: false,
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(r#""type":"PATH_UPDATE""#));
+        let deserialized: EdgeToServerMsg = serde_json::from_str(&json).unwrap();
+        match deserialized {
+            EdgeToServerMsg::PathUpdate {
+                from_node,
+                to_node,
+                is_active,
+            } => {
+                assert_eq!(from_node, "entrada");
+                assert_eq!(to_node, "meio-1");
+                assert!(!is_active);
+            }
+            _ => panic!("wrong variant"),
+        }
+    }
+
+    #[test]
+    fn app_reserve_spot_deserializes() {
+        let json = r#"{
+            "type": "RESERVE_SPOT",
+            "spot_id": "C-10",
+            "user_id": "550e8400-e29b-41d4-a716-446655440000",
+            "plate": "XYZ9876"
+        }"#;
+        let msg: AppToServerMsg = serde_json::from_str(json).unwrap();
+        match msg {
+            AppToServerMsg::ReserveSpot { spot_id, plate, .. } => {
+                assert_eq!(spot_id, "C-10");
+                assert_eq!(plate, "XYZ9876");
+            }
+            _ => panic!("wrong variant"),
+        }
+    }
+
+    #[test]
+    fn app_cancel_reservation_roundtrip() {
+        let id = Uuid::new_v4();
+        let msg = AppToServerMsg::CancelReservation { reservation_id: id };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(r#""type":"CANCEL_RESERVATION""#));
+        let deserialized: AppToServerMsg = serde_json::from_str(&json).unwrap();
+        match deserialized {
+            AppToServerMsg::CancelReservation { reservation_id } => {
+                assert_eq!(reservation_id, id);
+            }
+            _ => panic!("wrong variant"),
+        }
+    }
+
+    #[test]
+    fn server_spot_update_serializes() {
+        let msg = ServerToAppMsg::SpotUpdate {
+            spot_id: "A-01".to_string(),
+            status: "reserved".to_string(),
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(r#""type":"SPOT_UPDATE""#));
+        assert!(json.contains(r#""status":"reserved""#));
+    }
+
+    #[test]
+    fn server_navigation_start_serializes() {
+        let msg = ServerToAppMsg::NavigationStart {
+            spot_id: "B-03".to_string(),
+            route: vec![
+                "entrada".to_string(),
+                "meio-1".to_string(),
+                "B-03".to_string(),
+            ],
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(r#""type":"NAVIGATION_START""#));
+        assert!(json.contains(r#""route""#));
+    }
+
+    #[test]
+    fn server_reservation_confirmed_roundtrip() {
+        let id = Uuid::new_v4();
+        let expires: DateTime<Utc> = "2026-06-04T20:00:00Z".parse().unwrap();
+        let msg = ServerToAppMsg::ReservationConfirmed {
+            reservation_id: id,
+            spot_id: "D-01".to_string(),
+            expires_at: expires,
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        let deserialized: ServerToAppMsg = serde_json::from_str(&json).unwrap();
+        match deserialized {
+            ServerToAppMsg::ReservationConfirmed {
+                reservation_id,
+                spot_id,
+                expires_at,
+            } => {
+                assert_eq!(reservation_id, id);
+                assert_eq!(spot_id, "D-01");
+                assert_eq!(expires_at, expires);
+            }
+            _ => panic!("wrong variant"),
+        }
+    }
+
+    #[test]
+    fn server_reservation_expired_serializes() {
+        let msg = ServerToAppMsg::ReservationExpired {
+            spot_id: "E-05".to_string(),
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(r#""type":"RESERVATION_EXPIRED""#));
+    }
+
+    #[test]
+    fn server_reservation_rejected_serializes() {
+        let msg = ServerToAppMsg::ReservationRejected {
+            spot_id: "F-01".to_string(),
+            reason: "Spot already taken".to_string(),
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(r#""type":"RESERVATION_REJECTED""#));
+        assert!(json.contains("already taken"));
+    }
+
+    #[test]
+    fn edge_unknown_type_fails() {
+        let json = r#"{"type": "UNKNOWN_TYPE", "data": 123}"#;
+        let result = serde_json::from_str::<EdgeToServerMsg>(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn edge_missing_required_field_fails() {
+        let json = r#"{"type": "SPOT_UPDATE", "spot_id": "A-01"}"#;
+        let result = serde_json::from_str::<EdgeToServerMsg>(json);
+        assert!(result.is_err());
+    }
+}
