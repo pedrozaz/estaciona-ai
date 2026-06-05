@@ -9,3 +9,15 @@ dependencies = [
     "websockets>=16.0",
     "python-dotenv>=1.0.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.16",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.ruff.lint]
+ignore = ["E402", "E741"]
