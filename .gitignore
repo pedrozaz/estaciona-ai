@@ -35,3 +35,4 @@ reconstruction/colmap/
 **/yolo**
 **/yolo26n.*
 **/yolo26n.pt
+*.db

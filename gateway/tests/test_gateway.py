@@ -113,7 +113,7 @@ def test_handler_auth_success(tmp_path):
         init_metrics_db(metrics_path)
 
         mock_ws = AsyncMock()
-        mock_ws.extra_headers = {"Authorization": "Bearer secret_key"}
+        mock_ws.request.headers = {"Authorization": "Bearer secret_key"}
         mock_ws.recv.side_effect = [
             json.dumps(
                 {
@@ -147,7 +147,7 @@ def test_handler_auth_fail(tmp_path):
         init_metrics_db(metrics_path)
 
         mock_ws = AsyncMock()
-        mock_ws.extra_headers = {"Authorization": "Bearer wrong_key"}
+        mock_ws.request.headers = {"Authorization": "Bearer wrong_key"}
         sync_event = asyncio.Event()
 
         await handler(mock_ws, db_path, metrics_path, "secret_key", sync_event)

@@ -137,7 +137,7 @@ def is_authorized(headers, expected_key):
 
 
 async def handler(websocket, db_path, metrics_path, expected_key, sync_event):
-    if not is_authorized(websocket.extra_headers, expected_key):
+    if not is_authorized(websocket.request.headers, expected_key):
         await websocket.close(1008, "Unauthorized")
         return
 
