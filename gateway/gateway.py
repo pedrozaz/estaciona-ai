@@ -141,6 +141,10 @@ async def handler(websocket, db_path, metrics_path, expected_key, sync_event):
         await websocket.close(1008, "Unauthorized")
         return
 
+    print(
+        f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] EDGE_CONNECTED",
+        flush=True,
+    )
     try:
         while True:
             message = await websocket.recv()
@@ -172,9 +176,26 @@ async def handler(websocket, db_path, metrics_path, expected_key, sync_event):
                 now_str,
             )
 
+            try:
+                t1 = datetime.datetime.fromisoformat(now_str.replace("Z", "+00:00"))
+                t0 = datetime.datetime.fromisoformat(
+                    edge_sent_ts.replace("Z", "+00:00")
+                )
+                latency_ms = (t1 - t0).total_seconds() * 1000
+            except Exception:
+                latency_ms = 0.0
+
+            print(
+                f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] MSG_RECEIVED edge_id={edge_id} spot_id={spot_id} latency_ms={latency_ms:.1f}",
+                flush=True,
+            )
+
             sync_event.set()
-    except Exception:
-        pass
+    except Exception as e:
+        print(
+            f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] EDGE_DISCONNECTED reason={e}",
+            flush=True,
+        )
 
 
 async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
@@ -191,6 +212,10 @@ async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
             if cloud_conn is None:
                 cloud_conn = await websockets.connect(
                     cloud_url, additional_headers=headers, open_timeout=3
+                )
+                print(
+                    f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] CLOUD_CONNECTED",
+                    flush=True,
                 )
 
             synced_ids = []
@@ -209,13 +234,37 @@ async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
                 spot_id = payload.get("spot_id") or "unknown"
                 update_metric_forwarded(metrics_path, spot_id, now_str)
 
+                try:
+                    t1 = datetime.datetime.fromisoformat(now_str.replace("Z", "+00:00"))
+                    t0 = datetime.datetime.fromisoformat(
+                        payload.get("gateway_received_at", now_str).replace(
+                            "Z", "+00:00"
+                        )
+                    )
+                    queue_time_ms = (t1 - t0).total_seconds() * 1000
+                except Exception:
+                    queue_time_ms = 0.0
+
+                print(
+                    f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] MSG_FORWARDED spot_id={spot_id} queue_time_ms={queue_time_ms:.1f}",
+                    flush=True,
+                )
+
             mark_events_as_synced(db_path, synced_ids)
+            print(
+                f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] SYNC_BATCH count={len(events)}",
+                flush=True,
+            )
 
         except asyncio.CancelledError:
             if cloud_conn:
                 await cloud_conn.close()
             raise
-        except Exception:
+        except Exception as e:
+            print(
+                f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [ERROR] CLOUD_DISCONNECTED reason={e}",
+                flush=True,
+            )
             if cloud_conn:
                 try:
                     await cloud_conn.close()
@@ -240,6 +289,11 @@ async def main():
     cloud_url = os.environ.get("SERVER_WS_URL", "wss://api.estaciona.tech/ws/edge")
     api_key = os.environ.get("EDGE_API_KEY", "secret_edge_key")
     port = int(os.environ.get("GATEWAY_PORT", "8001"))
+
+    print(
+        f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] STARTING_GATEWAY port={port}",
+        flush=True,
+    )
 
     sync_event = asyncio.Event()
 
