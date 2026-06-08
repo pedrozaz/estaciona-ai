@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO users (id, name, email, password_hash, date_of_birth, pcd_status, plate)\n        VALUES ($1, $2, $3, $4, $5, $6, $7)\n        RETURNING\n        id,\n        name as \"name!\",\n        email as \"email!\",\n        date_of_birth,\n        pcd_status,\n        plate,\n        created_at as \"created_at?\"\n        ",
+  "query": "\n        SELECT \n        id,\n        name as \"name!\",\n        email as \"email!\",\n        date_of_birth,\n        pcd_status,\n        plate,\n        role as \"role!\",\n        created_at as \"created_at?\"\n        FROM users\n        WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -71,6 +71,17 @@
       },
       {
         "ordinal": 6,
+        "name": "role!",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "role"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
         "name": "created_at?",
         "type_info": "Timestamptz",
         "origin": {
@@ -83,13 +94,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Date",
-        "Bool",
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -99,8 +104,9 @@
       true,
       true,
       true,
+      false,
       true
     ]
   },
-  "hash": "7d5ffe1dfc4d5f9d69259e9e2da727c557b3094197c576619cb3c7b42711a6d6"
+  "hash": "254267d5a687d63b4817133e9624fbb55bafca410b4e2c1c58042c8eec889473"
 }

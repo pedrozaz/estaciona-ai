@@ -29,6 +29,7 @@ pub struct UserResponse {
     pub date_of_birth: Option<NaiveDate>,
     pub pcd_status: Option<bool>,
     pub plate: Option<String>,
+    pub role: String,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -61,6 +62,7 @@ pub async fn create_user(
         date_of_birth,
         pcd_status,
         plate,
+        role as "role!",
         created_at as "created_at?"
         "#,
         new_id,
@@ -69,7 +71,8 @@ pub async fn create_user(
         hashed_password,
         payload.date_of_birth,
         payload.pcd_status,
-        hashed_plate
+        hashed_plate,
+        payload.role
     )
     .fetch_one(&state.pool)
     .await
@@ -95,6 +98,7 @@ pub async fn create_user(
         date_of_birth: record.date_of_birth,
         pcd_status: record.pcd_status,
         plate: record.plate,
+        role: record.role,
         created_at: record.created_at,
     };
 
@@ -115,6 +119,7 @@ pub async fn get_user(
         date_of_birth,
         pcd_status,
         plate,
+        role as "role!",
         created_at as "created_at?"
         FROM users
         WHERE id = $1
