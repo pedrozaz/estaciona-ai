@@ -20,8 +20,12 @@ from json import load
 import os
 import pandas as pd
 import numpy as np
+import lightgbm as lgb
+import pickle
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, r2_score
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env.local"))
 
@@ -66,6 +70,51 @@ def load_and_preprocess_data():
     return df
 
 
+def train_duration_model(df):
+    print("[3/4] Treinando modelo LightGBM para predição de tempo de permanência...")
+
+    features = ["hour_of_day", "day_of_week", "is_weekend", "pcd_status", "is_elderly"]
+    X = df[features].astype({"pcd_status": int, "is_elderly": int, "is_weekend": int})
+    y = df["duration_mins"]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    params = {
+        "objective": "regression",
+        "metric": "mae",
+        "boosting_type": "gbdt",
+        "learning_rate": 0.05,
+        "num_leaves": 31,
+        "verbose": -1,
+    }
+
+    train_data = lgb.Dataset(X_train, label=y_train)
+    test_data = lgb.Dataset(X_test, label=y_test, reference=train_data)
+
+    model = lgb.train(params, train_data, num_boost_round=100, valid_sets=[test_data])
+
+    preds = model.predict(X_test)
+    mae = mean_absolute_error(y_test, preds)
+    r2 = r2_score(y_test, preds)
+
+    print(
+        f"Modelo LightGBM treinado! Erro médio (MAE): {mae:.2f} minutos | R²: {r2:.2f}"
+    )
+
+    models_dir = os.path.join(os.path.dirname(__file__), "models")
+    os.makedirs(models_dir, exist_ok=True)
+    model_path = os.path.join(models_dir, "duration_model.pkl")
+
+    with open(model_path, "wb") as f:
+        pickle.dump(model, f)
+
+    print(f"Pesos salvos em: {model_path}")
+    return model
+
+
 if __name__ == "__main__":
     df = load_and_preprocess_data()
+    train_duration_model(df)
     print(df[["spot_id", "duration_mins", "hour_of_day", "is_weekend"]].head())
