@@ -341,7 +341,7 @@ pub async fn recommend_spot(
 
     if let Some(fav) = favorite_spot {
         let graph = state.graph.read().await;
-        let route = graph.calculate_route("cam_entrada_1", &fav.spot_id);
+        let route = graph.calculate_route("cam-01", &fav.spot_id);
         return Ok((
             StatusCode::OK,
             Json(serde_json::json!({
@@ -369,7 +369,7 @@ pub async fn recommend_spot(
 
     if let Some(pop) = popular_spot {
         let graph = state.graph.read().await;
-        let route = graph.calculate_route("cam_entrada_1", &pop.spot_id);
+        let route = graph.calculate_route("cam-01", &pop.spot_id);
         return Ok((
             StatusCode::OK,
             Json(serde_json::json!({
@@ -396,7 +396,7 @@ pub async fn recommend_spot(
     match closest_spot {
         Some(spot) => {
             let graph = state.graph.read().await;
-            let route = graph.calculate_route("cam_entrada_1", &spot.id);
+            let route = graph.calculate_route("cam-01", &spot.id);
             Ok((
                 StatusCode::OK,
                 Json(serde_json::json!({
