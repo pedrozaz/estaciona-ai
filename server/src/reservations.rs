@@ -321,6 +321,41 @@ pub async fn recommend_spot(
     State(state): State<SharedState>,
     Query(query): Query<RecommendQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let priority_spot = sqlx::query!(
+        r#"
+        WITH user_data AS (
+            SELECT pcd_status, EXTRACT(YEAR FROM age(CURRENT_DATE, date_of_birth)) as age 
+            FROM users WHERE id = $1
+        )
+        SELECT s.id 
+        FROM spots s, user_data u
+        WHERE s.status = 'free'
+          AND (
+              (u.pcd_status = true AND s.id IN ('A-01', 'A-02'))
+              OR 
+              (u.age >= 60 AND s.id IN ('A-03', 'A-04'))
+          )
+        ORDER BY s.id
+        LIMIT 1
+        "#,
+        query.user_id
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
+
+    if let Some(priority) = priority_spot {
+        let graph = state.graph.read().await;
+        let route = graph.calculate_route("cam-01", &priority.id);
+        return Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "recommended_spot": priority.id,
+                "route": route
+            })),
+        ));
+    }
+
     let favorite_spot = sqlx::query!(
         r#"
         SELECT h.spot_id, COUNT(*) as uses 
