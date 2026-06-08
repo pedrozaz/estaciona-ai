@@ -206,20 +206,22 @@ pub async fn cancel_reservation(
 
     match result {
         Some(record) => {
-            let _ = sqlx::query!(
-                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
+            let updated_spot = sqlx::query!(
+                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1 AND status = 'reserved' RETURNING id",
                 record.spot_id
             )
-            .execute(&state.pool)
+            .fetch_optional(&state.pool)
             .await;
 
-            let update_msg = ServerToAppMsg::SpotUpdate {
-                spot_id: record.spot_id,
-                status: "free".to_string(),
-            };
+            if let Ok(Some(_)) = updated_spot {
+                let update_msg = ServerToAppMsg::SpotUpdate {
+                    spot_id: record.spot_id.clone(),
+                    status: "free".to_string(),
+                };
 
-            if let Ok(json_str) = serde_json::to_string(&update_msg) {
-                let _ = state.tx.send(json_str);
+                if let Ok(json_str) = serde_json::to_string(&update_msg) {
+                    let _ = state.tx.send(json_str);
+                }
             }
 
             Ok((StatusCode::OK, "Reservation cancelled.".to_string()))
@@ -321,6 +323,41 @@ pub async fn recommend_spot(
     State(state): State<SharedState>,
     Query(query): Query<RecommendQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let priority_spot = sqlx::query!(
+        r#"
+        WITH user_data AS (
+            SELECT pcd_status, EXTRACT(YEAR FROM age(CURRENT_DATE, date_of_birth)) as age 
+            FROM users WHERE id = $1
+        )
+        SELECT s.id 
+        FROM spots s, user_data u
+        WHERE s.status = 'free'
+          AND (
+              (u.pcd_status = true AND s.id IN ('A-01', 'A-02'))
+              OR 
+              (u.age >= 60 AND s.id IN ('A-03', 'A-04'))
+          )
+        ORDER BY s.id
+        LIMIT 1
+        "#,
+        query.user_id
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
+
+    if let Some(priority) = priority_spot {
+        let graph = state.graph.read().await;
+        let route = graph.calculate_route("cam-01", &priority.id);
+        return Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "recommended_spot": priority.id,
+                "route": route
+            })),
+        ));
+    }
+
     let favorite_spot = sqlx::query!(
         r#"
         SELECT h.spot_id, COUNT(*) as uses 
@@ -340,9 +377,14 @@ pub async fn recommend_spot(
     .unwrap_or(None);
 
     if let Some(fav) = favorite_spot {
+        let graph = state.graph.read().await;
+        let route = graph.calculate_route("cam-01", &fav.spot_id);
         return Ok((
             StatusCode::OK,
-            Json(serde_json::json!({ "recommended_spot": fav.spot_id })),
+            Json(serde_json::json!({
+                "recommended_spot": fav.spot_id,
+                "route": route
+            })),
         ));
     }
 
@@ -363,9 +405,14 @@ pub async fn recommend_spot(
     .unwrap_or(None);
 
     if let Some(pop) = popular_spot {
+        let graph = state.graph.read().await;
+        let route = graph.calculate_route("cam-01", &pop.spot_id);
         return Ok((
             StatusCode::OK,
-            Json(serde_json::json!({ "recommended_spot": pop.spot_id })),
+            Json(serde_json::json!({
+                "recommended_spot": pop.spot_id,
+                "route": route
+            })),
         ));
     }
 
@@ -375,7 +422,7 @@ pub async fn recommend_spot(
         FROM spots 
         WHERE status = 'free' 
           AND id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
-        ORDER BY ((x - 5.778) * (x - 5.778) + (COALESCE(z, 0) - 4.3207) * (COALESCE(z, 0) - 4.3207)) ASC
+        ORDER BY ((x - 3.2547) * (x - 3.2547) + (COALESCE(z, 0) - 0.2290) * (COALESCE(z, 0) - 0.2290)) ASC
         LIMIT 1
         "#
     )
@@ -384,10 +431,55 @@ pub async fn recommend_spot(
     .unwrap_or(None);
 
     match closest_spot {
-        Some(spot) => Ok((
-            StatusCode::OK,
-            Json(serde_json::json!({ "recommended_spot": spot.id })),
-        )),
+        Some(spot) => {
+            let graph = state.graph.read().await;
+            let route = graph.calculate_route("cam-01", &spot.id);
+            Ok((
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "recommended_spot": spot.id,
+                    "route": route
+                })),
+            ))
+        }
         None => Err((StatusCode::NOT_FOUND, "Estacionamento Lotado".to_string())),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_reservation_deserializes() {
+        let json_data = r#"{
+            "user_id": "123e4567-e89b-12d3-a456-426614174000",
+            "spot_id": "A-01",
+            "expires_at": "2026-10-10T10:00:00Z"
+        }"#;
+
+        let parsed: CreateReservation = serde_json::from_str(json_data).unwrap();
+        assert_eq!(parsed.spot_id, "A-01");
+        assert_eq!(
+            parsed.user_id,
+            uuid::Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000").unwrap()
+        );
+    }
+
+    #[test]
+    fn update_spot_status_deserializes() {
+        let json_data = r#"{"status": "occupied"}"#;
+        let parsed: UpdateSpotStatus = serde_json::from_str(json_data).unwrap();
+        assert_eq!(parsed.status, "occupied");
+    }
+
+    #[test]
+    fn recommend_query_deserializes() {
+        let json_data = r#"{"user_id": "123e4567-e89b-12d3-a456-426614174000"}"#;
+        let parsed: RecommendQuery = serde_json::from_str(json_data).unwrap();
+        assert_eq!(
+            parsed.user_id,
+            uuid::Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000").unwrap()
+        );
     }
 }

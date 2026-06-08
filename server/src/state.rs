@@ -41,30 +41,48 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
     let mut graph = ParkingGraph::new();
 
     #[derive(Deserialize)]
-    struct NodeDef {
-        id: String,
-        x: f32,
-        y: f32,
-    }
-    #[derive(Deserialize)]
-    struct EdgeDef {
-        from: String,
-        to: String,
-        weight: u32,
-        is_active: bool,
-    }
-    #[derive(Deserialize)]
-    struct ConfigDef {
-        nodes: Vec<NodeDef>,
-        edges: Vec<EdgeDef>,
+    struct PathNode {
+        x: f64,
+        z: f64,
     }
 
-    let file_content =
-        std::fs::read_to_string("parking_graph.json").expect("Falha ao ler parking_graph.json");
-    let config: ConfigDef =
-        serde_json::from_str(&file_content).expect("Falha no parse do parking_graph.json");
+    #[derive(Deserialize)]
+    struct ParkingLotConfig {
+        path: Vec<PathNode>,
+    }
+
+    let config_content =
+        std::fs::read_to_string("../web/data/config.json").expect("Falha ao ler config.json");
+    let parkings: Vec<ParkingLotConfig> =
+        serde_json::from_str(&config_content).expect("Falha no parse do config.json");
 
     let mut node_map = std::collections::HashMap::new();
+    let mut config_nodes = Vec::new();
+
+    if let Some(parking) = parkings.first() {
+        let mut prev_node_id: Option<String> = None;
+        for (i, p) in parking.path.iter().enumerate() {
+            let node_id = if i == 0 {
+                "cam-01".to_string()
+            } else {
+                format!("path_node_{}", i)
+            };
+
+            let graph_node = graph.add_node(&node_id, p.x as f32, p.z as f32);
+            node_map.insert(node_id.clone(), graph_node);
+            config_nodes.push((node_id.clone(), p.x, p.z));
+
+            if let Some(prev_id) = &prev_node_id
+                && let (Some(&from_node), Some(&to_node)) =
+                    (node_map.get(prev_id), node_map.get(&node_id))
+            {
+                let prev_p = &parking.path[i - 1];
+                let dist = ((p.x - prev_p.x).powi(2) + (p.z - prev_p.z).powi(2)).sqrt() as u32;
+                graph.add_edge(from_node, to_node, dist.max(1), true);
+            }
+            prev_node_id = Some(node_id);
+        }
+    }
 
     #[derive(Deserialize)]
     struct Coords3D {
@@ -100,16 +118,26 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
         .execute(&pool)
         .await
         .expect("Falha ao sincronizar vaga com o banco de dados");
-    }
 
-    for n in config.nodes {
-        let graph_node = graph.add_node(&n.id, n.x, n.y);
-        node_map.insert(n.id, graph_node);
-    }
+        let spot_node = graph.add_node(&spot.id, spot.center_3d.x as f32, spot.center_3d.z as f32);
 
-    for e in config.edges {
-        if let (Some(&from_node), Some(&to_node)) = (node_map.get(&e.from), node_map.get(&e.to)) {
-            graph.add_edge(from_node, to_node, e.weight, e.is_active);
+        let mut closest_node_id = None;
+        let mut min_dist = f64::MAX;
+
+        for (n_id, n_x, n_z) in &config_nodes {
+            let dx = n_x - spot.center_3d.x;
+            let dz = n_z - spot.center_3d.z;
+            let dist = (dx * dx + dz * dz).sqrt();
+            if dist < min_dist {
+                min_dist = dist;
+                if let Some(&g_node) = node_map.get(n_id) {
+                    closest_node_id = Some(g_node);
+                }
+            }
+        }
+
+        if let Some(closest) = closest_node_id {
+            graph.add_edge(closest, spot_node, min_dist.max(1.0) as u32, true);
         }
     }
 
