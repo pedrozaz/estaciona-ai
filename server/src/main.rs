@@ -1,3 +1,20 @@
+// ==============================================================================
+// Copyright (C) 2026 Guilherme Pedroza
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// ==============================================================================
+
 mod auth;
 mod pathfinding;
 mod reservations;
@@ -43,15 +60,16 @@ async fn main() {
 
     let args: Vec<String> = std::env::args().collect();
     if args.len() >= 4 && args[1] == "--create-admin" {
-        let username = &args[2];
+        let email = &args[2];
         let plain_password = &args[3];
 
         let hashed = crate::security::hash_password(plain_password)
             .expect("Falha ao gerar o hash da senha via Argon2");
 
         sqlx::query!(
-            "INSERT INTO dashboard_admins (username, password_hash) VALUES ($1, $2)",
-            username,
+            "INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, 'Admin', $2, $3, 'admin')",
+            uuid::Uuid::new_v4(),
+            email,
             hashed
         )
         .execute(&pool)
@@ -60,7 +78,7 @@ async fn main() {
 
         tracing::info!(
             "Administrador '{}' criado com sucesso! Servidor sendo finalizado.",
-            username
+            email
         );
         return;
     }
