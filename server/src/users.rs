@@ -72,7 +72,6 @@ pub async fn create_user(
         payload.date_of_birth,
         payload.pcd_status,
         hashed_plate,
-        payload.role
     )
     .fetch_one(&state.pool)
     .await

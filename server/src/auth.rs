@@ -21,7 +21,7 @@ pub async fn login_dashboard(
     Json(payload): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let user = sqlx::query!(
-        "SELECT id, password_hash, role FROM users WHERE email = $1",
+        "SELECT id, password_hash as \"password_hash!\", role FROM users WHERE email = $1",
         payload.email
     )
     .fetch_optional(&state.pool)
@@ -56,4 +56,3 @@ pub async fn login_dashboard(
     };
     Ok((StatusCode::OK, Json(response)))
 }
-
