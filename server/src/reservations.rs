@@ -206,20 +206,22 @@ pub async fn cancel_reservation(
 
     match result {
         Some(record) => {
-            let _ = sqlx::query!(
-                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
+            let updated_spot = sqlx::query!(
+                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1 AND status = 'reserved' RETURNING id",
                 record.spot_id
             )
-            .execute(&state.pool)
+            .fetch_optional(&state.pool)
             .await;
 
-            let update_msg = ServerToAppMsg::SpotUpdate {
-                spot_id: record.spot_id,
-                status: "free".to_string(),
-            };
+            if let Ok(Some(_)) = updated_spot {
+                let update_msg = ServerToAppMsg::SpotUpdate {
+                    spot_id: record.spot_id.clone(),
+                    status: "free".to_string(),
+                };
 
-            if let Ok(json_str) = serde_json::to_string(&update_msg) {
-                let _ = state.tx.send(json_str);
+                if let Ok(json_str) = serde_json::to_string(&update_msg) {
+                    let _ = state.tx.send(json_str);
+                }
             }
 
             Ok((StatusCode::OK, "Reservation cancelled.".to_string()))
@@ -420,7 +422,7 @@ pub async fn recommend_spot(
         FROM spots 
         WHERE status = 'free' 
           AND id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
-        ORDER BY ((x - 5.778) * (x - 5.778) + (COALESCE(z, 0) - 4.3207) * (COALESCE(z, 0) - 4.3207)) ASC
+        ORDER BY ((x - 3.2547) * (x - 3.2547) + (COALESCE(z, 0) - 0.2290) * (COALESCE(z, 0) - 0.2290)) ASC
         LIMIT 1
         "#
     )
