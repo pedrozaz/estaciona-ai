@@ -4,22 +4,31 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::security::hash_plate;
+use crate::security::{hash_password, hash_plate};
 use crate::state::SharedState;
 
 #[derive(Deserialize)]
 pub struct CreateUser {
-    pub plate: String,
+    pub name: String,
+    pub email: String,
+    pub password: String,
+    pub date_of_birth: Option<NaiveDate>,
+    pub pcd_status: Option<bool>,
+    pub plate: Option<String>,
 }
 
 #[derive(Serialize)]
 pub struct UserResponse {
     pub id: Uuid,
-    pub plate: String,
+    pub name: String,
+    pub email: String,
+    pub date_of_birth: Option<NaiveDate>,
+    pub pcd_status: Option<bool>,
+    pub plate: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
