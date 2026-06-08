@@ -443,3 +443,41 @@ pub async fn recommend_spot(
         None => Err((StatusCode::NOT_FOUND, "Estacionamento Lotado".to_string())),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_reservation_deserializes() {
+        let json_data = r#"{
+            "user_id": "123e4567-e89b-12d3-a456-426614174000",
+            "spot_id": "A-01",
+            "expires_at": "2026-10-10T10:00:00Z"
+        }"#;
+
+        let parsed: CreateReservation = serde_json::from_str(json_data).unwrap();
+        assert_eq!(parsed.spot_id, "A-01");
+        assert_eq!(
+            parsed.user_id,
+            uuid::Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000").unwrap()
+        );
+    }
+
+    #[test]
+    fn update_spot_status_deserializes() {
+        let json_data = r#"{"status": "occupied"}"#;
+        let parsed: UpdateSpotStatus = serde_json::from_str(json_data).unwrap();
+        assert_eq!(parsed.status, "occupied");
+    }
+
+    #[test]
+    fn recommend_query_deserializes() {
+        let json_data = r#"{"user_id": "123e4567-e89b-12d3-a456-426614174000"}"#;
+        let parsed: RecommendQuery = serde_json::from_str(json_data).unwrap();
+        assert_eq!(
+            parsed.user_id,
+            uuid::Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000").unwrap()
+        );
+    }
+}
