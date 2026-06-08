@@ -340,9 +340,14 @@ pub async fn recommend_spot(
     .unwrap_or(None);
 
     if let Some(fav) = favorite_spot {
+        let graph = state.graph.read().await;
+        let route = graph.calculate_route("cam_entrada_1", &fav.spot_id);
         return Ok((
             StatusCode::OK,
-            Json(serde_json::json!({ "recommended_spot": fav.spot_id })),
+            Json(serde_json::json!({
+                "recommended_spot": fav.spot_id,
+                "route": route
+            })),
         ));
     }
 
@@ -363,9 +368,14 @@ pub async fn recommend_spot(
     .unwrap_or(None);
 
     if let Some(pop) = popular_spot {
+        let graph = state.graph.read().await;
+        let route = graph.calculate_route("cam_entrada_1", &pop.spot_id);
         return Ok((
             StatusCode::OK,
-            Json(serde_json::json!({ "recommended_spot": pop.spot_id })),
+            Json(serde_json::json!({
+                "recommended_spot": pop.spot_id,
+                "route": route
+            })),
         ));
     }
 
@@ -384,10 +394,17 @@ pub async fn recommend_spot(
     .unwrap_or(None);
 
     match closest_spot {
-        Some(spot) => Ok((
-            StatusCode::OK,
-            Json(serde_json::json!({ "recommended_spot": spot.id })),
-        )),
+        Some(spot) => {
+            let graph = state.graph.read().await;
+            let route = graph.calculate_route("cam_entrada_1", &spot.id);
+            Ok((
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "recommended_spot": spot.id,
+                    "route": route
+                })),
+            ))
+        }
         None => Err((StatusCode::NOT_FOUND, "Estacionamento Lotado".to_string())),
     }
 }
