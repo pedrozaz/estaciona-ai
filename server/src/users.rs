@@ -38,7 +38,17 @@ pub async fn create_user(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let new_id = Uuid::new_v4();
 
-    let hashed_plate = hash_plate(&payload.plate, &state.plate_pepper);
+    let hashed_password = hash_password(&payload.password).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Error hashing password".to_string(),
+        )
+    })?;
+
+    let hashed_plate = payload
+        .plate
+        .as_deref()
+        .map(|p| hash_plate(p, &state.plate_pepper));
 
     let record = sqlx::query!(
         r#"
