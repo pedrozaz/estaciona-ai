@@ -6,21 +6,23 @@ use crate::state::SharedState;
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    pub username: String,
+    pub email: String,
     pub password: String,
 }
 
 #[derive(Serialize)]
 pub struct LoginResponse {
     pub token: String,
+    pub role: String,
 }
+
 pub async fn login_dashboard(
     State(state): State<SharedState>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let admin = sqlx::query!(
-        "SELECT id, password_hash FROM dashboard_admins WHERE username = $1",
-        payload.username
+    let user = sqlx::query!(
+        "SELECT id, password_hash, role FROM users WHERE email = $1",
+        payload.email
     )
     .fetch_optional(&state.pool)
     .await
@@ -32,31 +34,26 @@ pub async fn login_dashboard(
         )
     })?;
 
-    let admin_record = match admin {
+    let user_record = match user {
         Some(record) => record,
-        None => {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                "Credenciais inválidas".to_string(),
-            ));
-        }
+        None => return Err((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string())),
     };
 
-    if !verify_password(&payload.password, &admin_record.password_hash) {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            "Credenciais inválidas".to_string(),
-        ));
+    if !verify_password(&payload.password, &user_record.password_hash) {
+        return Err((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()));
     }
 
-    let token =
-        create_jwt(&payload.username, "dashboard_admin", &state.jwt_secret).map_err(|_| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Falha ao gerar o token de acesso".to_string(),
-            )
-        })?;
+    let token = create_jwt(&payload.email, &user_record.role, &state.jwt_secret).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed while generating access token".to_string(),
+        )
+    })?;
 
-    let response = LoginResponse { token };
+    let response = LoginResponse {
+        token,
+        role: user_record.role,
+    };
     Ok((StatusCode::OK, Json(response)))
 }
+
