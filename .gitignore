@@ -30,9 +30,9 @@ reconstruction/photos/
 reconstruction/colmap/
 **/sparse/
 
-# YOLO / Models
+# Models / AI
 **/models/
 **/yolo**
-**/yolo26n.*
-**/yolo26n.pt
+*.pt
+*.pkl
 *.db
