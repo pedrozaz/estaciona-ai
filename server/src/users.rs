@@ -157,3 +157,64 @@ pub async fn get_user(
         None => Err((StatusCode::NOT_FOUND, "User not found".to_string())),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_user_deserializes() {
+        let json_data = r#"{
+            "name": "Test User",
+            "email": "test@example.com",
+            "password": "secure123",
+            "date_of_birth": "1990-01-01",
+            "pcd_status": true,
+            "plate": "ABC-1234"
+        }"#;
+
+        let parsed: CreateUser = serde_json::from_str(json_data).unwrap();
+        assert_eq!(parsed.name, "Test User");
+        assert_eq!(parsed.email, "test@example.com");
+        assert_eq!(parsed.password, "secure123");
+        assert_eq!(
+            parsed.date_of_birth.unwrap(),
+            NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()
+        );
+        assert_eq!(parsed.pcd_status, Some(true));
+        assert_eq!(parsed.plate, Some("ABC-1234".to_string()));
+    }
+
+    #[test]
+    fn create_user_optional_fields_can_be_omitted() {
+        let json_data = r#"{
+            "name": "Minimal User",
+            "email": "minimal@example.com",
+            "password": "password"
+        }"#;
+
+        let parsed: CreateUser = serde_json::from_str(json_data).unwrap();
+        assert_eq!(parsed.name, "Minimal User");
+        assert!(parsed.date_of_birth.is_none());
+        assert!(parsed.pcd_status.is_none());
+        assert!(parsed.plate.is_none());
+    }
+
+    #[test]
+    fn user_response_serializes() {
+        let response = UserResponse {
+            id: Uuid::nil(),
+            name: "Admin".to_string(),
+            email: "admin@example.com".to_string(),
+            date_of_birth: None,
+            pcd_status: None,
+            plate: None,
+            role: "admin".to_string(),
+            created_at: None,
+        };
+
+        let json_str = serde_json::to_string(&response).unwrap();
+        assert!(json_str.contains(r#""name":"Admin""#));
+        assert!(json_str.contains(r#""role":"admin""#));
+    }
+}

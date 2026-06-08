@@ -73,3 +73,32 @@ pub async fn login_dashboard(
     };
     Ok((StatusCode::OK, Json(response)))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn login_request_deserializes() {
+        let json_data = r#"{
+            "email": "test@example.com",
+            "password": "my_secure_password"
+        }"#;
+
+        let parsed: LoginRequest = serde_json::from_str(json_data).unwrap();
+        assert_eq!(parsed.email, "test@example.com");
+        assert_eq!(parsed.password, "my_secure_password");
+    }
+
+    #[test]
+    fn login_response_serializes() {
+        let response = LoginResponse {
+            token: "jwt.token.here".to_string(),
+            role: "admin".to_string(),
+        };
+
+        let json_str = serde_json::to_string(&response).unwrap();
+        assert!(json_str.contains(r#""token":"jwt.token.here""#));
+        assert!(json_str.contains(r#""role":"admin""#));
+    }
+}
