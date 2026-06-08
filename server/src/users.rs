@@ -52,12 +52,23 @@ pub async fn create_user(
 
     let record = sqlx::query!(
         r#"
-        INSERT INTO users (id, plate)
-        VALUES ($1, $2)
-        ON CONFLICT (plate) DO UPDATE SET plate = EXCLUDED.plate
-        RETURNING id, plate, created_at as "created_at?"
+        INSERT INTO users (id, name, email, password_hash, date_of_birth, pcd_status, plate)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING
+        id,
+        name as "name!",
+        email as "email!",
+        date_of_birth,
+        pcd_status,
+        plate,
+        created_at as "created_at?"
         "#,
         new_id,
+        payload.name,
+        payload.email,
+        hashed_password,
+        payload.date_of_birth,
+        payload.pcd_status,
         hashed_plate
     )
     .fetch_one(&state.pool)
@@ -65,7 +76,10 @@ pub async fn create_user(
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
         if e.to_string().contains("duplicate key value") {
-            (StatusCode::CONFLICT, "Plate already registered".to_string())
+            (
+                StatusCode::CONFLICT,
+                "Email or Plate already registered".to_string(),
+            )
         } else {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -76,6 +90,10 @@ pub async fn create_user(
 
     let response = UserResponse {
         id: record.id,
+        name: record.name,
+        email: record.email,
+        date_of_birth: record.date_of_birth,
+        pcd_status: record.pcd_status,
         plate: record.plate,
         created_at: record.created_at,
     };
@@ -90,7 +108,14 @@ pub async fn get_user(
     let record = sqlx::query_as!(
         UserResponse,
         r#"
-        SELECT id, plate, created_at as "created_at?"
+        SELECT 
+        id,
+        name as "name!",
+        email as "email!",
+        date_of_birth,
+        pcd_status,
+        plate,
+        created_at as "created_at?"
         FROM users
         WHERE id = $1
         "#,
