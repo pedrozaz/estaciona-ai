@@ -395,21 +395,25 @@
           localStorage.setItem('estaciona_logged_in', 'true');
           localStorage.setItem('estaciona_user', email);
           localStorage.setItem('estaciona_name', data.name || email.split('@')[0]);
+          localStorage.setItem('estaciona_id', data.id);
           localStorage.setItem('estaciona_token', data.token);
           
           sessionStorage.removeItem('estaciona_logged_in');
           sessionStorage.removeItem('estaciona_user');
           sessionStorage.removeItem('estaciona_name');
+          sessionStorage.removeItem('estaciona_id');
           sessionStorage.removeItem('estaciona_token');
         } else {
           sessionStorage.setItem('estaciona_logged_in', 'true');
           sessionStorage.setItem('estaciona_user', email);
           sessionStorage.setItem('estaciona_name', data.name || email.split('@')[0]);
+          sessionStorage.setItem('estaciona_id', data.id);
           sessionStorage.setItem('estaciona_token', data.token);
           
           localStorage.removeItem('estaciona_logged_in');
           localStorage.removeItem('estaciona_user');
           localStorage.removeItem('estaciona_name');
+          localStorage.removeItem('estaciona_id');
           localStorage.removeItem('estaciona_token');
         }
         

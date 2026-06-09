@@ -667,8 +667,7 @@
       document.getElementById("userAvatar").textContent = initial;
       document.getElementById("userName").textContent = userName;
 
-      let simulatedUserId = null;
-      const simulatedUserPlate = "DEV-9999";
+      const simulatedUserId = sessionStorage.getItem("estaciona_id") || localStorage.getItem("estaciona_id");
       let activePinpointPath = null;
       let currentReservation = null;
       let reservationTimerId = null;
@@ -690,19 +689,6 @@
       const apiUrl = isLocal
         ? `http://${apiHost}:8000`
         : "https://api.estaciona.tech";
-
-      fetch(`${apiUrl}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ plate: simulatedUserPlate }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          simulatedUserId = data.id;
-        })
-        .catch((err) => console.error(err));
 
       function requestRecommendationAndReserve(pathData) {
         if (!simulatedUserId) {
@@ -1810,11 +1796,13 @@
         sessionStorage.removeItem("estaciona_logged_in");
         sessionStorage.removeItem("estaciona_user");
         sessionStorage.removeItem("estaciona_name");
+        sessionStorage.removeItem("estaciona_id");
         sessionStorage.removeItem("estaciona_token");
         
         localStorage.removeItem("estaciona_logged_in");
         localStorage.removeItem("estaciona_user");
         localStorage.removeItem("estaciona_name");
+        localStorage.removeItem("estaciona_id");
         localStorage.removeItem("estaciona_token");
         
         window.location.href = "index.html";

@@ -32,6 +32,7 @@ pub struct LoginResponse {
     pub token: String,
     pub role: String,
     pub name: String,
+    pub id: uuid::Uuid,
 }
 
 pub async fn login_dashboard(
@@ -72,6 +73,7 @@ pub async fn login_dashboard(
         token,
         role: user_record.role,
         name: user_record.name.unwrap_or_default(),
+        id: user_record.id,
     };
     Ok((StatusCode::OK, Json(response)))
 }
@@ -98,6 +100,7 @@ mod tests {
             token: "jwt.token.here".to_string(),
             role: "admin".to_string(),
             name: "John Doe".to_string(),
+            id: uuid::Uuid::nil(),
         };
 
         let json_str = serde_json::to_string(&response).unwrap();
