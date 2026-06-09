@@ -1,2195 +1,469 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Estaciona AI</title>
-    <meta name="description" content="Painel de controle 3D do Estaciona AI" />
-    <link rel="icon" href="data:," />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media = 'all'"
-    />
-    <noscript
-      ><link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
-        rel="stylesheet"
-    /></noscript>
-    <link rel="stylesheet" href="css/styles.css" />
-    <link
-      rel="preload"
-      href="assets/reconstruction/melhorresultado_web.glb"
-      as="fetch"
-      crossorigin
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-      body {
-        font-family: var(--font-main);
-        background: #0f1117;
-        color: #e2e8f0;
-        overflow: hidden;
-        height: 100vh;
-      }
-
-      .dashboard-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 1.25rem;
-        background: rgba(15, 17, 23, 0.9);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        z-index: 100;
-      }
-
-      .dashboard-nav .logo {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-      }
-
-      .dashboard-nav .logo-text {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #e2e8f0;
-        letter-spacing: -0.5px;
-      }
-
-      .dashboard-nav .logo-pin {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--primary-green);
-        color: #fff;
-        font-weight: 800;
-        font-size: 0.75rem;
-        height: 28px;
-        width: 28px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        margin-left: 5px;
-        margin-top: -4px;
-        box-shadow: 0 2px 8px rgba(28, 167, 69, 0.35);
-      }
-
-      .dashboard-nav .logo-pin span {
-        transform: rotate(45deg);
-      }
-
-      .nav-right {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .user-badge {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        color: #94a3b8;
-      }
-
-      .user-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: linear-gradient(
-          135deg,
-          var(--primary-green),
-          var(--primary-dark)
-        );
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.8rem;
-        color: #fff;
-      }
-
-      .btn-logout {
-        padding: 0.4rem 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        background: transparent;
-        color: #94a3b8;
-        font-family: var(--font-main);
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.25s ease;
-      }
-
-      .btn-logout:hover {
-        background: rgba(220, 38, 38, 0.1);
-        border-color: rgba(220, 38, 38, 0.3);
-        color: #f87171;
-      }
-
-      #viewport {
-        position: fixed;
-        top: 48px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-      }
-
-      #viewport canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-
-      .loading-overlay {
-        position: fixed;
-        top: 48px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: #0f1117;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 50;
-        transition: opacity 0.6s ease;
-      }
-
-      .loading-overlay.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .loading-ring {
-        width: 56px;
-        height: 56px;
-        border: 3px solid rgba(28, 167, 69, 0.15);
-        border-top-color: var(--primary-green);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 1.5rem;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
+        :root {
+            --bg-base: #0a0b0e;
+            --bg-surface: #12141a;
+            --primary-green: #10b981;
+            --primary-green-dim: rgba(16, 185, 129, 0.15);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-subtle: rgba(255, 255, 255, 0.05);
         }
-      }
 
-      .loading-text {
-        font-size: 1rem;
-        color: #64748b;
-        font-weight: 500;
-      }
-
-      .loading-progress {
-        margin-top: 0.75rem;
-        font-size: 0.85rem;
-        color: var(--primary-green);
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .info-panel {
-        position: fixed;
-        bottom: 1.25rem;
-        left: 1.25rem;
-        background: rgba(15, 17, 23, 0.8);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-        z-index: 60;
-        pointer-events: none;
-        width: 320px;
-        opacity: 0;
-        transform: translateY(20px);
-        transition:
-          opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-          transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .info-panel.visible {
-        opacity: 1;
-        transform: translateY(0);
-        pointer-events: auto;
-      }
-
-      .info-panel h4 {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #64748b;
-        margin-bottom: 0.5rem;
-      }
-
-      .info-panel p {
-        font-size: 1rem;
-        color: #e2e8f0;
-        margin-bottom: 0.3rem;
-        line-height: 1.5;
-      }
-
-      .info-panel .highlight {
-        color: var(--primary-green);
-        font-weight: 700;
-        font-size: 1.1rem;
-      }
-
-      .btn-back {
-        position: fixed;
-        top: 5rem;
-        left: 50%;
-        transform: translateX(-50%) translateY(-20px);
-        background: var(--primary-green);
-        color: white;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        border-radius: 30px;
-        font-family: var(--font-main);
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        z-index: 70;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-shadow: 0 4px 15px rgba(28, 167, 69, 0.4);
-      }
-
-      .btn-back.visible {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateX(-50%) translateY(0);
-      }
-
-      .btn-back:hover {
-        background: #158a36;
-      }
-
-      .btn-control {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0.8rem;
-        border: 1px solid rgba(28, 167, 69, 0.3);
-        border-radius: 8px;
-        background: rgba(28, 167, 69, 0.08);
-        color: #1ca745;
-        font-family: var(--font-main);
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.25s ease;
-      }
-
-      .btn-control:hover {
-        background: rgba(28, 167, 69, 0.15);
-        border-color: rgba(28, 167, 69, 0.5);
-        color: #2ee566;
-        box-shadow: 0 0 10px rgba(28, 167, 69, 0.15);
-      }
-
-      .test-panel-drawer {
-        position: fixed;
-        top: 48px;
-        right: -340px;
-        width: 340px;
-        height: calc(100vh - 48px);
-        background: rgba(15, 17, 23, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 1.5rem;
-        z-index: 120;
-        transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        display: flex;
-        flex-direction: column;
-        color: #e2e8f0;
-        pointer-events: auto;
-      }
-
-      .test-panel-drawer.open {
-        right: 0;
-      }
-
-      .test-panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-      }
-
-      .test-panel-header h4 {
-        font-size: 0.95rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #e2e8f0;
-        margin: 0;
-      }
-
-      .btn-close-drawer {
-        background: none;
-        border: none;
-        color: #94a3b8;
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.2s;
-      }
-
-      .btn-close-drawer:hover {
-        color: #f87171;
-      }
-
-      .test-panel-instruction {
-        font-size: 0.78rem;
-        color: #64748b;
-        margin-bottom: 1rem;
-      }
-
-      .test-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem 0.75rem;
-        margin-bottom: 1.25rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: #94a3b8;
-      }
-
-      .legend-color {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-      }
-
-      .legend-color.std {
-        background: #1ca745;
-      }
-      .legend-color.pcd {
-        background: #2563eb;
-      }
-      .legend-color.eld {
-        background: #8b5cf6;
-      }
-      .legend-color.occ {
-        background: #ef4444;
-      }
-      .legend-color.res {
-        background: #eab308;
-      }
-
-      .test-spots-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-        gap: 6px;
-        overflow-y: auto;
-        flex-grow: 1;
-        padding-right: 4px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar {
-        width: 4px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-
-      .spot-pill {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 32px;
-        border-radius: 6px;
-        font-family: var(--font-main);
-        font-size: 0.75rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        background: rgba(255, 255, 255, 0.03);
-        color: #94a3b8;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        user-select: none;
-      }
-
-      .spot-pill.free-standard {
-        background: rgba(28, 167, 69, 0.12);
-        color: #4ade80;
-        border-color: rgba(28, 167, 69, 0.25);
-      }
-      .spot-pill.free-standard:hover {
-        background: rgba(28, 167, 69, 0.2);
-        border-color: rgba(28, 167, 69, 0.45);
-        box-shadow: 0 0 8px rgba(28, 167, 69, 0.2);
-      }
-      .spot-pill.free-pcd {
-        background: rgba(37, 99, 235, 0.12);
-        color: #60a5fa;
-        border-color: rgba(37, 99, 235, 0.25);
-      }
-      .spot-pill.free-pcd:hover {
-        background: rgba(37, 99, 235, 0.2);
-        border-color: rgba(37, 99, 235, 0.45);
-        box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
-      }
-      .spot-pill.free-elderly {
-        background: rgba(139, 92, 246, 0.12);
-        color: #c084fc;
-        border-color: rgba(139, 92, 246, 0.25);
-      }
-      .spot-pill.free-elderly:hover {
-        background: rgba(139, 92, 246, 0.2);
-        border-color: rgba(139, 92, 246, 0.45);
-        box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
-      }
-      .spot-pill.occupied {
-        background: rgba(239, 68, 68, 0.12);
-        color: #f87171;
-        border-color: rgba(239, 68, 68, 0.25);
-      }
-      .spot-pill.occupied:hover {
-        background: rgba(239, 68, 68, 0.2);
-        border-color: rgba(239, 68, 68, 0.45);
-        box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
-      }
-      .spot-pill.reserved {
-        background: rgba(234, 179, 8, 0.12);
-        color: #fde047;
-        border-color: rgba(234, 179, 8, 0.25);
-      }
-      .spot-pill.reserved:hover {
-        background: rgba(234, 179, 8, 0.2);
-        border-color: rgba(234, 179, 8, 0.45);
-        box-shadow: 0 0 8px rgba(234, 179, 8, 0.2);
-      }
-
-      #markersLayer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: 10;
-        overflow: hidden;
-      }
-
-      .marker-wrapper {
-        position: absolute;
-        top: 0;
-        left: 0;
-        will-change: transform;
-      }
-
-      .marker-content {
-        position: absolute;
-        width: 54px;
-        height: 72px;
-        transform: translate(-50%, -100%);
-        transform-origin: bottom center;
-        animation: float-pin 1.5s ease-in-out infinite;
-        cursor: pointer;
-        pointer-events: auto;
-        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      }
-
-      .marker-content:hover {
-        transform: translate(-50%, -100%) scale(1.15);
-      }
-
-      .marker-svg {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-
-      .marker-label {
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        margin-bottom: 8px;
-        background: rgba(15, 17, 23, 0.9);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0.35rem 0.7rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #e2e8f0;
-        white-space: nowrap;
-        opacity: 0;
-        transition: opacity 0.2s;
-        pointer-events: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-      }
-
-      .marker-content:hover .marker-label {
-        opacity: 1;
-      }
-
-      @keyframes float-pin {
-        0%,
-        100% {
-          margin-top: -5px;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            background-image: radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
         }
-        50% {
-          margin-top: -15px;
-        }
-      }
 
-      @keyframes pulse-ring {
-        0% {
-          transform: translate(-50%, -50%) scale(0.5);
-          opacity: 0.8;
+        #desktop-environment {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 10;
         }
-        100% {
-          transform: translate(-50%, -50%) scale(3.5);
-          opacity: 0;
-        }
-      }
 
-      @media (max-width: 600px) {
-        .user-badge span {
-          display: none;
+        #sidebar {
+            width: 280px;
+            background-color: rgba(18, 20, 26, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            flex-direction: column;
+            padding: 32px 24px;
+            box-shadow: 4px 0 32px rgba(0, 0, 0, 0.4);
+            z-index: 20;
         }
-        .btn-control .text {
-          display: none;
-        }
-        .btn-control {
-          padding: 0.4rem 0.6rem;
-        }
-        .dashboard-nav .logo-text {
-          font-size: 1.1rem;
-        }
-        .dashboard-nav .logo-pin {
-          height: 24px;
-          width: 24px;
-          font-size: 0.65rem;
-        }
-        .info-panel {
-          bottom: 1rem;
-          left: 1rem;
-          right: 1rem;
-          width: auto;
-          padding: 0.8rem 1rem;
-        }
-        .info-panel p {
-          display: flex;
-          justify-content: space-between;
-        }
-        .test-panel-drawer {
-          width: 100%;
-          right: 0;
-          left: 0;
-          bottom: -60vh;
-          height: 60vh;
-          top: auto;
-          border-left: none;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px 20px 0 0;
-          box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
-          transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .test-panel-drawer.open {
-          bottom: 0;
-        }
-      }
 
-      .popup-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(15, 17, 23, 0.7);
-        backdrop-filter: blur(8px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.4s ease;
-      }
-      .popup-overlay.active {
-        opacity: 1;
-        pointer-events: auto;
-      }
-      .popup-card {
-        background: rgba(30, 41, 59, 0.8);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 2rem;
-        width: 90%;
-        max-width: 400px;
-        text-align: center;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-        transform: scale(0.9);
-        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-      .popup-overlay.active .popup-card {
-        transform: scale(1);
-      }
-      .popup-card h3 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        color: #fff;
-      }
-      .popup-card p {
-        color: #94a3b8;
-        font-size: 0.95rem;
-        margin-bottom: 1.5rem;
-      }
-      .popup-buttons {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-      }
-      .popup-btn {
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: 8px;
-        font-family: var(--font-main);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      .popup-btn-yes {
-        background: #1ca745;
-        color: #fff;
-      }
-      .popup-btn-yes:hover {
-        background: #15803d;
-        box-shadow: 0 0 12px rgba(28, 167, 69, 0.4);
-      }
-      .popup-btn-no {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-      .popup-btn-no:hover {
-        background: rgba(220, 38, 38, 0.2);
-        border-color: rgba(220, 38, 38, 0.4);
-        color: #f87171;
-      }
+        .brand-container {
+            margin-bottom: 48px;
+            position: relative;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            padding-left: 16px;
+        }
+
+        .brand {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .brand-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+        }
+
+        .brand-highlight {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
+            font-size: 24px;
+            color: var(--primary-green);
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+            animation: text-breathe 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes text-breathe {
+            0% { text-shadow: 0 0 8px rgba(16, 185, 129, 0.1); }
+            100% { text-shadow: 0 0 24px rgba(16, 185, 129, 0.9); }
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-left: 16px;
+        }
+
+        .nav-item {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.2px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.03);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            color: var(--primary-green);
+            background-color: rgba(16, 185, 129, 0.05);
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--primary-green);
+        }
+
+        .profile-container {
+            margin-top: auto;
+            position: relative;
+        }
+
+        .profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .profile-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .p-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+
+        .p-role {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+
+        .profile-dropdown.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .btn-logout {
+            padding: 10px 12px;
+            color: #ef4444;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-logout:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        #workspace {
+            flex: 1;
+            position: relative;
+            background-color: transparent;
+        }
+
+        #canvas-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        .home-widget {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            z-index: 5;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .hw-greeting {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 64px;
+            letter-spacing: -3px;
+            color: var(--text-primary);
+            line-height: 1;
+            text-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
+        }
+
+        .hw-greeting span {
+            color: transparent;
+            -webkit-text-stroke: 1px var(--primary-green);
+        }
+
+        .hw-time {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            letter-spacing: 8px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .hw-status-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .hw-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: var(--primary-green);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-transform: uppercase;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary-green);
+            box-shadow: 0 0 16px var(--primary-green);
+            animation: pulse-dot 2s infinite alternate;
+        }
+
+        @keyframes pulse-dot {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        #mobile-blocker {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg-base); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center;
+        }
+        .m-icon { font-size: 40px; margin-bottom: 24px; color: var(--primary-green); }
+        .m-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -1px; margin-bottom: 12px; }
+        .m-desc { color: var(--text-secondary); font-size: 15px; max-width: 340px; line-height: 1.6; }
+
+        @media (max-width: 1024px) { #desktop-environment { display: none !important; } #mobile-blocker { display: flex !important; } }
     </style>
-  </head>
+</head>
+<body>
 
-  <body>
-    <nav class="dashboard-nav">
-      <a href="index.html" class="logo">
-        <span class="logo-text">Estaciona</span>
-        <div class="logo-pin"><span>AI</span></div>
-      </a>
-      <div class="nav-right">
-        <button
-          class="btn-control"
-          id="testPanelToggleBtn"
-          onclick="window.toggleTestPanel()"
-        >
-          <span>🧪</span> <span class="text">Simulação</span>
-        </button>
-        <div class="user-badge">
-          <div class="user-avatar" id="userAvatar">A</div>
-          <span id="userName">admin</span>
-        </div>
-        <button class="btn-logout" id="logoutBtn" onclick="handleLogout()">
-          Sair
-        </button>
-      </div>
-    </nav>
-
-    <div id="viewport">
-      <div id="markersLayer"></div>
+    <div id="mobile-blocker">
+        <div class="m-icon">🖥️</div>
+        <div class="m-title">Acesso Restrito</div>
+        <div class="m-desc">O painel de administração exige um ambiente desktop para visualização do mapa 3D e calibrações.</div>
     </div>
 
-    <div class="loading-overlay" id="loadingOverlay">
-      <div class="loading-ring"></div>
-      <div class="loading-text">Carregando modelo 3D...</div>
-      <div class="loading-progress" id="loadingProgress">0%</div>
-    </div>
-
-    <div class="info-panel" id="infoPanel" onclick="event.stopPropagation()">
-      <h4>VAGAS LIVRES</h4>
-      <div id="infoPanelContent"></div>
-    </div>
-
-    <div
-      class="test-panel-drawer"
-      id="testPanel"
-      style="display: none"
-      onclick="event.stopPropagation()"
-    >
-      <div class="test-panel-header">
-        <h4>Simulação de Vagas</h4>
-        <button class="btn-close-drawer" onclick="window.toggleTestPanel()">
-          ✕
-        </button>
-      </div>
-      <p class="test-panel-instruction">
-        Clique em uma vaga para alternar sua ocupação.
-      </p>
-      <div class="test-legend">
-        <div class="legend-item">
-          <span class="legend-color std"></span>Padrão
-        </div>
-        <div class="legend-item"><span class="legend-color pcd"></span>PCD</div>
-        <div class="legend-item">
-          <span class="legend-color eld"></span>Idoso
-        </div>
-        <div class="legend-item">
-          <span class="legend-color occ"></span>Ocupada
-        </div>
-        <div class="legend-item">
-          <span class="legend-color res"></span>Reservada
-        </div>
-      </div>
-      <div id="testSpotsContainer" class="test-spots-grid"></div>
-    </div>
-
-    <div class="popup-overlay" id="confirmationPopup">
-      <div class="popup-card">
-        <h3>Confirmação de Ocupação</h3>
-        <p id="popupText">
-          Detectamos um veículo na vaga reservada. Foi você quem estacionou?
-        </p>
-        <div class="popup-buttons">
-          <button
-            class="popup-btn popup-btn-no"
-            onclick="window.handlePopupResponse(false)"
-          >
-            Não
-          </button>
-          <button
-            class="popup-btn popup-btn-yes"
-            onclick="window.handlePopupResponse(true)"
-          >
-            Sim
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="popup-overlay" id="extensionPopup">
-      <div class="popup-card">
-        <h3>Tempo de Reserva Expirado</h3>
-        <p>
-          Seu tempo de reserva expirou. Deseja estender a reserva por mais 30
-          segundos?
-        </p>
-        <div class="popup-buttons">
-          <button
-            class="popup-btn popup-btn-no"
-            onclick="window.handleExtensionResponse(false)"
-          >
-            Não
-          </button>
-          <button
-            class="popup-btn popup-btn-yes"
-            onclick="window.handleExtensionResponse(true)"
-          >
-            Sim
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn-back" id="backBtn" onclick="resetCamera()">
-      ← Voltar à Visão Geral
-    </button>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "./lib/three/three.module.js?v=2",
-          "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js?v=2",
-          "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js?v=2"
-        }
-      }
-    </script>
-
-    <script type="module">
-      import * as THREE from "three";
-      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-      import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
-
-      const isLoggedIn = sessionStorage.getItem("estaciona_logged_in") === "true" || localStorage.getItem("estaciona_logged_in") === "true";
-      if (!isLoggedIn) {
-        window.location.href = "login.html";
-      }
-
-      const userEmail = sessionStorage.getItem("estaciona_user") || localStorage.getItem("estaciona_user") || "admin";
-      const initial = userEmail.charAt(0).toUpperCase();
-      document.getElementById("userAvatar").textContent = initial;
-      document.getElementById("userName").textContent = userEmail.split("@")[0];
-
-      let simulatedUserId = null;
-      const simulatedUserPlate = "DEV-9999";
-      let activePinpointPath = null;
-      let currentReservation = null;
-      let reservationTimerId = null;
-      let reservationCountdown = 0;
-      let hasExtended = false;
-
-      const host = window.location.hostname || "localhost";
-      const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
-      const isLocal =
-        host === "localhost" ||
-        host === "127.0.0.1" ||
-        host.includes("ngrok") ||
-        host.startsWith("192.168.") ||
-        host.startsWith("10.") ||
-        host.startsWith("172.") ||
-        host.endsWith(".local") ||
-        isIP;
-      const apiHost = host.includes("ngrok") ? "localhost" : host;
-      const apiUrl = isLocal
-        ? `http://${apiHost}:8000`
-        : "https://api.estaciona.tech";
-
-      fetch(`${apiUrl}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ plate: simulatedUserPlate }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          simulatedUserId = data.id;
-        })
-        .catch((err) => console.error(err));
-
-      function requestRecommendationAndReserve(pathData) {
-        if (!simulatedUserId) {
-          console.warn("User not loaded.");
-          return;
-        }
-        activePinpointPath = pathData;
-
-        fetch(`${apiUrl}/reservations/recommend?user_id=${simulatedUserId}`)
-          .then((res) => {
-            if (!res.ok) throw new Error("Estacionamento Lotado");
-            return res.json();
-          })
-          .then((data) => {
-            const spotId = data.recommended_spot;
-            const expiresAt = new Date(Date.now() + 120 * 1000).toISOString();
-
-            return fetch(`${apiUrl}/reservations`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                user_id: simulatedUserId,
-                spot_id: spotId,
-                expires_at: expiresAt,
-              }),
-            });
-          })
-          .then((res) => {
-            if (!res.ok) throw new Error("Falha ao reservar vaga");
-            return res.json();
-          })
-          .then((reservation) => {
-            currentReservation = {
-              id: reservation.id,
-              spot_id: reservation.spot_id,
-            };
-
-            const spotObj = spotsMeshes[reservation.spot_id];
-            if (spotObj) {
-              spotObj.status = "reserved";
-              spotObj.mesh.material.color.setHex(0xeab308);
-              spotObj.line.material.color.setHex(0xeab308);
-
-              const actualY =
-                spotObj.data.terrainY !== undefined
-                  ? spotObj.data.terrainY
-                  : -6.0;
-
-              const spotPos = new THREE.Vector3(
-                spotObj.data.center3D.x,
-                actualY,
-                spotObj.data.center3D.z,
-              );
-
-              if (pathData.length > 1) {
-                let closestSegmentIndex = 0;
-                let minDistance = Infinity;
-                let bestProjectedPoint = null;
-
-                for (let i = 0; i < pathData.length - 1; i++) {
-                  const A = new THREE.Vector3(
-                    pathData[i].x,
-                    pathData[i].y,
-                    pathData[i].z,
-                  );
-                  const B = new THREE.Vector3(
-                    pathData[i + 1].x,
-                    pathData[i + 1].y,
-                    pathData[i + 1].z,
-                  );
-
-                  const ab = new THREE.Vector3().subVectors(B, A);
-                  const as = new THREE.Vector3().subVectors(spotPos, A);
-
-                  const abLenSq = ab.lengthSq();
-                  let t = abLenSq > 0 ? as.dot(ab) / abLenSq : 0;
-                  t = Math.max(0, Math.min(1, t));
-
-                  const P = new THREE.Vector3()
-                    .copy(A)
-                    .add(ab.multiplyScalar(t));
-                  const dist = P.distanceTo(spotPos);
-
-                  if (dist < minDistance) {
-                    minDistance = dist;
-                    closestSegmentIndex = i;
-                    bestProjectedPoint = P;
-                  }
-                }
-
-                const truncatedPath = pathData.slice(
-                  0,
-                  closestSegmentIndex + 1,
-                );
-                activeCarPath = [
-                  ...truncatedPath,
-                  {
-                    x: bestProjectedPoint.x,
-                    y: bestProjectedPoint.y,
-                    z: bestProjectedPoint.z,
-                  },
-                  { x: spotPos.x, y: spotPos.y, z: spotPos.z },
-                ];
-              } else if (pathData.length === 1) {
-                activeCarPath = [
-                  { x: pathData[0].x, y: pathData[0].y, z: pathData[0].z },
-                  { x: spotPos.x, y: spotPos.y, z: spotPos.z },
-                ];
-              } else {
-                activeCarPath = [];
-              }
-            } else {
-              activeCarPath = pathData;
-            }
-
-            createStaticPathLine(activeCarPath);
-            currentPathIndex = 0;
-            carFinishedRoute = false;
-            carGroup.position.set(pathData[0].x, pathData[0].y, pathData[0].z);
-            carGroup.visible = true;
-            hasExtended = false;
-            startReservationTimer(90);
-            document.getElementById("infoPanel").classList.add("visible");
-          })
-          .catch((err) => {
-            console.error(err);
-            alert(err.message || "Erro na recomendação");
-            window.resetCamera();
-          });
-      }
-
-      const viewport = document.getElementById("viewport");
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0f1117);
-
-      scene.fog = new THREE.FogExp2(0x0f1117, 0.002);
-
-      const camera = new THREE.PerspectiveCamera(
-        50,
-        viewport.clientWidth / viewport.clientHeight,
-        0.1,
-        1000,
-      );
-      camera.position.set(15, 12, 15);
-
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: false,
-      });
-      renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-      renderer.setPixelRatio(
-        isMobile
-          ? Math.min(window.devicePixelRatio, 1.5)
-          : Math.min(window.devicePixelRatio, 2),
-      );
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.2;
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      viewport.appendChild(renderer.domElement);
-
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-      scene.add(ambientLight);
-
-      const keyLight = new THREE.DirectionalLight(0xfff4e6, 1.2);
-      keyLight.position.set(10, 20, 10);
-      keyLight.castShadow = false;
-      scene.add(keyLight);
-
-      const fillLight = new THREE.DirectionalLight(0xc4d4f7, 0.5);
-      fillLight.position.set(-10, 10, -10);
-      scene.add(fillLight);
-
-      const rimLight = new THREE.DirectionalLight(0x1ca745, 0.3);
-      rimLight.position.set(0, 5, -15);
-      scene.add(rimLight);
-
-      let loadedModelBounds = null;
-      let globalCameraPos = new THREE.Vector3();
-      let globalCameraTarget = new THREE.Vector3();
-
-      let currentCameraTarget = new THREE.Vector3();
-      let targetCameraPos = new THREE.Vector3();
-      let targetCameraLookAt = new THREE.Vector3();
-      let currentFocusCamData = null;
-      let activeCarPath = null;
-      let currentPathIndex = 0;
-      let carFinishedRoute = false;
-
-      function updateCameraPosition() {
-        if (!loadedModelBounds) return;
-        const { center, size } = loadedModelBounds;
-
-        const aspect = viewport.clientWidth / viewport.clientHeight;
-        let distMult = 0.55;
-        if (aspect < 1) {
-          distMult = 0.55 * Math.max(1, (1 / aspect) * 1.4);
-        }
-
-        const dist = size.length() * distMult;
-        const angle = Math.PI / 4;
-        const yOffset = size.y * 0.35;
-
-        globalCameraPos.set(
-          center.x - dist * Math.cos(angle),
-          center.y + dist * Math.sin(angle),
-          center.z - dist * Math.cos(angle),
-        );
-        globalCameraTarget.set(center.x, center.y - yOffset, center.z);
-
-        if (!currentFocusCamData) {
-          targetCameraPos.copy(globalCameraPos);
-          targetCameraLookAt.copy(globalCameraTarget);
-        }
-      }
-
-      const dracoLoader = new DRACOLoader();
-      dracoLoader.setDecoderPath("./lib/draco/");
-      const loader = new GLTFLoader();
-      loader.setDRACOLoader(dracoLoader);
-      const modelPath = "assets/reconstruction/melhorresultado_web.glb";
-      const loadingOverlay = document.getElementById("loadingOverlay");
-      const loadingProgress = document.getElementById("loadingProgress");
-
-      let loadedModel = null;
-
-      let lancerModel = null;
-      let pendingCars = [];
-
-      function loadCarModel() {
-        loader.load(
-          "assets/car/mitsubishi_lancer_evolution_viii_low_poly.glb",
-          function (gltf) {
-            const model = gltf.scene;
-            const box = new THREE.Box3().setFromObject(model);
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 1.1 / maxDim;
-            model.scale.setScalar(scale);
-            const center = box.getCenter(new THREE.Vector3());
-            model.position.sub(center).multiplyScalar(scale);
-            const newBox = new THREE.Box3().setFromObject(model);
-            model.position.y -= newBox.min.y;
-            model.traverse((child) => {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
-            lancerModel = model;
-            pendingCars.forEach((data) => {
-              const { group } = data;
-              group.clear();
-              group.add(lancerModel.clone());
-            });
-            if (typeof carGroup !== "undefined" && carGroup) {
-              carGroup.clear();
-              carGroup.add(lancerModel.clone());
-            }
-          },
-          undefined,
-          (err) => console.error("Erro ao carregar o Lancer:", err),
-        );
-      }
-
-      loader.load(
-        modelPath,
-        (gltf) => {
-          const model = gltf.scene;
-          loadedModel = model;
-
-          const box = new THREE.Box3().setFromObject(model);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-
-          model.position.sub(center);
-
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const scale = 15 / maxDim;
-          model.scale.setScalar(scale);
-
-          scene.add(model);
-
-          model.updateMatrixWorld(true);
-
-          const finalBox = new THREE.Box3().setFromObject(model);
-
-          loadedModelBounds = {
-            center: finalBox.getCenter(new THREE.Vector3()),
-            size: finalBox.getSize(new THREE.Vector3()),
-          };
-
-          updateCameraPosition();
-
-          camera.position.copy(globalCameraPos);
-          currentCameraTarget.copy(globalCameraTarget);
-          camera.lookAt(currentCameraTarget);
-
-          loadCarModel();
-
-          fetch("data/config.json?v=" + Date.now())
-            .then((res) => res.json())
-            .then((data) => {
-              configData = data;
-              data.forEach((pin) => createPinpoint(pin));
-              updateInfoPanel();
-              loadSpots();
-            })
-            .catch((err) =>
-              console.error("Erro ao carregar config.json:", err),
-            );
-        },
-        (xhr) => {
-          if (xhr.lengthComputable) {
-            const pct = Math.round((xhr.loaded / xhr.total) * 100);
-            loadingProgress.textContent = pct + "%";
-          }
-        },
-        (error) => {
-          console.error("Erro ao carregar o modelo:", error);
-          loadingProgress.textContent = "";
-          document.querySelector(".loading-text").textContent =
-            "Erro ao carregar o modelo 3D.";
-          document.querySelector(".loading-ring").style.borderTopColor =
-            "#dc2626";
-        },
-      );
-
-      const carGroup = new THREE.Group();
-      carGroup.visible = false;
-      scene.add(carGroup);
-
-      let configData = [];
-      let parkingSpotsData = [];
-      let spotsMeshes = {};
-      let spotsCars = {};
-      let totalSpots = 0;
-      let freeSpots = 0;
-
-      function updateInfoPanel() {
-        if (currentReservation) {
-          const minutes = Math.floor(reservationCountdown / 60);
-          const seconds = reservationCountdown % 60;
-          const formattedTime = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-
-          let infoHTML = `
-          <div class="info-row" style="margin-bottom: 12px;">
-            <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <span>Vaga Reservada</span>
-              <span class="highlight" style="color: #eab308;">${currentReservation.spot_id}</span>
-            </p>
-            <p style="margin-top: 8px; font-size: 0.9rem; color: #94a3b8;">
-              Tempo de expiração: <strong style="color: #e2e8f0; font-size: 1rem;">${formattedTime}</strong>
-            </p>
-          </div>
-        `;
-          document.getElementById("infoPanel").querySelector("h4").textContent =
-            "RESERVA ATIVA";
-          document.getElementById("infoPanelContent").innerHTML = infoHTML;
-          return;
-        }
-
-        document.getElementById("infoPanel").querySelector("h4").textContent =
-          "VAGAS LIVRES";
-        let infoHTML = "";
-        configData.forEach((pin) => {
-          if (pin.name === "Estacionamento A") {
-            const isA_Blocked = totalSpots > 0 && freeSpots === 0;
-
-            const pinObj = pinpoints.find((p) => p.name === pin.name);
-            if (pinObj) {
-              const primaryColor = isA_Blocked ? "#ef4444" : "#1ca745";
-              const icon = isA_Blocked ? "🔒" : pin.name.split(" ").pop();
-              const fontSize = isA_Blocked ? 10 : 13;
-
-              pinObj.content.querySelector("svg").style.fill = primaryColor;
-              const textEl = pinObj.content.querySelector("text");
-              if (textEl) {
-                textEl.textContent = icon;
-                textEl.setAttribute("fill", primaryColor);
-                textEl.setAttribute("font-size", fontSize);
-              }
-              pinObj.content.style.cursor = isA_Blocked
-                ? "not-allowed"
-                : "pointer";
-              pinObj.content.dataset.blocked = isA_Blocked ? "true" : "false";
-
-              if (pinObj.ring3D && pinObj.ring3D.material) {
-                pinObj.ring3D.material.color.setHex(
-                  isA_Blocked ? 0xef4444 : 0x1ca745,
-                );
-              }
-            }
-
-            if (isA_Blocked) {
-              infoHTML += `
-              <div class="info-row" style="margin-bottom: 12px;">
-                <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                  <span>${pin.name}</span>
-                  <span class="highlight" style="color: #ef4444;">Indisponível</span>
-                </p>
-              </div>
-            `;
-            } else {
-              let color = "#1ca745";
-              if (totalSpots > 0) {
-                const ratio = freeSpots / totalSpots;
-                const h = Math.round(134 * ratio);
-                const s = Math.round(84 - (84 - 71) * ratio);
-                const l = Math.round(60 - (60 - 38) * ratio);
-                color = `hsl(${h}, ${s}%, ${l}%)`;
-              }
-
-              let freePCD = 0;
-              let freeElderly = 0;
-              let freeStandard = 0;
-
-              Object.values(spotsMeshes).forEach((spotObj) => {
-                if (
-                  spotObj.status !== "occupied" &&
-                  spotObj.status !== "reserved"
-                ) {
-                  if (
-                    spotObj.data.id === "A-01" ||
-                    spotObj.data.id === "A-02"
-                  ) {
-                    freePCD++;
-                  } else if (
-                    spotObj.data.id === "A-03" ||
-                    spotObj.data.id === "A-04"
-                  ) {
-                    freeElderly++;
-                  } else {
-                    freeStandard++;
-                  }
-                }
-              });
-
-              infoHTML += `
-              <div class="info-row" style="margin-bottom: 12px;">
-                <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                  <span>${pin.name}</span>
-                  <span class="highlight" style="color: ${color};">${freeSpots} vagas</span>
-                </p>
-                <div class="detailed-vagas" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 0.72rem; font-weight: 600;">
-                  <span style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; border-radius: 4px; padding: 2px 6px;">${freeStandard} Padrão</span>
-                  <span style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; padding: 2px 6px;">${freePCD} PCD</span>
-                  <span style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); color: #c084fc; border-radius: 4px; padding: 2px 6px;">${freeElderly} Idoso</span>
+    <div id="desktop-environment">
+        
+        <nav id="sidebar">
+            <div class="brand-container">
+                <div class="brand">
+                    <div class="brand-text">ESTACIONA</div>
+                    <div class="brand-highlight">AI</div>
                 </div>
-              </div>
-            `;
-            }
-          } else if (pin.blocked) {
-            infoHTML += `
-            <div class="info-row" style="margin-bottom: 12px;">
-              <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span>${pin.name}</span>
-                <span class="highlight" style="color: #ef4444;">Indisponível</span>
-              </p>
             </div>
-          `;
-          } else {
-            infoHTML += `
-            <div class="info-row" style="margin-bottom: 12px;">
-              <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span>${pin.name}</span>
-                <span class="highlight" style="color: #ef4444;">Indisponível</span>
-              </p>
+
+            <div class="nav-menu">
+                <div class="nav-label">Overview</div>
+                <div class="nav-item active" data-app="dashboard">Dashboard</div>
+                
+                <div class="nav-label" style="margin-top: 16px;">Map Controls</div>
+                <div class="nav-item" data-app="ortho">Orthomosaic View</div>
+                <div class="nav-item" data-app="points">Point Calibration</div>
+                <div class="nav-item" data-app="zones">Zone Management</div>
             </div>
-          `;
-          }
-        });
-        document.getElementById("infoPanelContent").innerHTML = infoHTML;
-      }
 
-      function buildFallbackCarModel(g) {
-        const chassisGeo = new THREE.BoxGeometry(0.3, 0.12, 0.6);
-        const chassisMat = new THREE.MeshStandardMaterial({
-          color: 0x3b82f6,
-          roughness: 0.2,
-          metalness: 0.3,
-        });
-        const chassis = new THREE.Mesh(chassisGeo, chassisMat);
-        chassis.position.y = 0.1;
-        chassis.castShadow = true;
-        g.add(chassis);
-
-        const cabinGeo = new THREE.BoxGeometry(0.24, 0.1, 0.3);
-        const cabinMat = new THREE.MeshStandardMaterial({
-          color: 0x1e3a8a,
-          roughness: 0.1,
-        });
-        const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-        cabin.position.set(0, 0.2, -0.05);
-        cabin.castShadow = true;
-        g.add(cabin);
-
-        const wheelGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.04, 16);
-        const wheelMat = new THREE.MeshStandardMaterial({
-          color: 0x111111,
-          roughness: 0.8,
-        });
-        const wPos = [
-          [-0.16, 0.06, 0.18],
-          [0.16, 0.06, 0.18],
-          [-0.16, 0.06, -0.18],
-          [0.16, 0.06, -0.18],
-        ];
-        wPos.forEach((p) => {
-          const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-          wheel.rotation.z = Math.PI / 2;
-          wheel.position.set(p[0], p[1], p[2]);
-          wheel.castShadow = true;
-          g.add(wheel);
-        });
-      }
-
-      function createStaticCar(spotId) {
-        const g = new THREE.Group();
-        if (lancerModel) {
-          g.add(lancerModel.clone());
-        } else {
-          pendingCars.push({ group: g, spotId: spotId });
-          buildFallbackCarModel(g);
-        }
-        g.scale.setScalar(0.5);
-        return g;
-      }
-
-      const globalRaycaster = new THREE.Raycaster();
-      const rayOrigin = new THREE.Vector3();
-      const rayDirection = new THREE.Vector3(0, -1, 0);
-
-      function getTerrainY(x, z, defaultY) {
-        if (!loadedModel) return defaultY;
-        rayOrigin.set(x, 50, z);
-        globalRaycaster.set(rayOrigin, rayDirection);
-        const intersects = globalRaycaster.intersectObject(loadedModel, true);
-        return intersects.length > 0 ? intersects[0].point.y : defaultY;
-      }
-
-      let pathLine = null;
-
-      function createStaticPathLine(path) {
-        clearStaticPathLine();
-        if (!path || path.length < 2) return;
-
-        const points = path.map((p) => new THREE.Vector3(p.x, p.y + 0.03, p.z));
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.LineBasicMaterial({
-          color: 0x10b981,
-          transparent: true,
-          opacity: 0.8,
-          linewidth: 2,
-        });
-        pathLine = new THREE.Line(geometry, material);
-        scene.add(pathLine);
-      }
-
-      function clearStaticPathLine() {
-        if (pathLine) {
-          scene.remove(pathLine);
-          pathLine.geometry.dispose();
-          if (pathLine.material) pathLine.material.dispose();
-          pathLine = null;
-        }
-      }
-
-      function loadSpots() {
-        fetch("data/spots_3d.json?v=" + Date.now())
-          .then((res) => res.json())
-          .then((data) => {
-            data.sort((a, b) =>
-              a.id.localeCompare(b.id, undefined, {
-                numeric: true,
-                sensitivity: "base",
-              }),
-            );
-            parkingSpotsData = data;
-            totalSpots = data.length;
-            freeSpots = data.length;
-            updateInfoPanel();
-            buildTestPanel();
-
-            const defaultGroundY =
-              configData && configData[0] ? configData[0].position.y : -6.0;
-
-            // Vagas com carros fixos/estáticos no modelo 3D (para evitar que flutuem no teto/capô dos carros)
-            const spotsWithStaticCars = [
-              "A-07",
-              "A-08",
-              "A-09",
-              "A-28",
-              "A-44",
-            ];
-
-            let i = 0;
-            const chunkSize = 10;
-            function processChunk() {
-              const end = Math.min(i + chunkSize, data.length);
-              for (; i < end; i++) {
-                const spot = data[i];
-                let actualY = getTerrainY(
-                  spot.center3D.x,
-                  spot.center3D.z,
-                  defaultGroundY,
-                );
-                spot.raycastY = actualY;
-
-                if (spotsWithStaticCars.includes(spot.id)) {
-                  actualY = defaultGroundY;
-                } else {
-                  const diff = actualY - defaultGroundY;
-                  if (diff > 0.15) {
-                    actualY = defaultGroundY;
-                  } else if (diff > 0.05) {
-                    console.warn(
-                      `[Spot Height Warning] Vaga ${spot.id} com elevação suspeita (${diff.toFixed(4)} unidades acima do chão). Se houver um carro fixo nela, adicione-a em 'spotsWithStaticCars'.`,
-                    );
-                  }
-                }
-
-                spot.terrainY = actualY;
-
-                const shape = new THREE.Shape();
-                spot.polygon3D.forEach((pt, idx) => {
-                  if (idx === 0) shape.moveTo(pt.x, -pt.z);
-                  else shape.lineTo(pt.x, -pt.z);
-                });
-                let colorHex = 0x1ca745;
-                if (spot.id === "A-01" || spot.id === "A-02") {
-                  colorHex = 0x2563eb;
-                } else if (spot.id === "A-03" || spot.id === "A-04") {
-                  colorHex = 0x8b5cf6;
-                }
-
-                const geo = new THREE.ShapeGeometry(shape);
-                const mat = new THREE.MeshBasicMaterial({
-                  color: colorHex,
-                  transparent: true,
-                  opacity: 0.45,
-                  depthTest: true,
-                  depthWrite: false,
-                  side: THREE.DoubleSide,
-                  polygonOffset: true,
-                  polygonOffsetFactor: -1,
-                  polygonOffsetUnits: -4,
-                });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.rotation.x = -Math.PI / 2;
-                mesh.position.y = actualY + 0.02;
-                mesh.userData = { spotId: spot.id };
-                scene.add(mesh);
-
-                const edges = new THREE.EdgesGeometry(geo);
-                const lineMat = new THREE.LineBasicMaterial({
-                  color: colorHex,
-                  transparent: true,
-                  opacity: 0.85,
-                  linewidth: 1,
-                  depthTest: true,
-                  depthWrite: false,
-                  polygonOffset: true,
-                  polygonOffsetFactor: -1,
-                  polygonOffsetUnits: -4,
-                });
-                const line = new THREE.LineSegments(edges, lineMat);
-                line.rotation.x = -Math.PI / 2;
-                line.position.y = actualY + 0.02;
-                scene.add(line);
-
-                spotsMeshes[spot.id] = {
-                  mesh,
-                  line,
-                  isOccupied: false,
-                  autoOccupied: false,
-                  data: spot,
-                };
-              }
-
-              if (i < data.length) {
-                const pct = Math.round((i / data.length) * 100);
-                loadingProgress.textContent = `Carregando Vagas... (${pct}%)`;
-                requestAnimationFrame(processChunk);
-              } else {
-                loadingOverlay.classList.add("hidden");
-                setTimeout(() => {
-                  loadingOverlay.style.display = "none";
-                  document.getElementById("infoPanel").classList.add("visible");
-                  if (typeof connectAppWebSocket === "function") {
-                    connectAppWebSocket();
-                  }
-                }, 600);
-              }
-            }
-            processChunk();
-          })
-          .catch((err) =>
-            console.error("Erro ao carregar spots_3d.json:", err),
-          );
-      }
-
-      window.toggleSpot = function (id, status = null, isAuto = false) {
-        const spotObj = spotsMeshes[id];
-        if (!spotObj) return;
-
-        let targetStatus = status;
-        if (typeof status === "boolean") {
-          targetStatus = status ? "occupied" : "free";
-        } else if (status === null) {
-          targetStatus = spotObj.status === "occupied" ? "free" : "occupied";
-        }
-
-        if (spotObj.status === targetStatus) return;
-        spotObj.status = targetStatus;
-
-        if (targetStatus === "occupied" && isAuto) {
-          spotObj.autoOccupied = true;
-        } else if (!isAuto) {
-          spotObj.autoOccupied = false;
-        }
-
-        const btn = document.getElementById(`btn-spot-${id}`);
-        const actualY =
-          spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
-
-        if (spotsCars[id]) {
-          scene.remove(spotsCars[id]);
-          delete spotsCars[id];
-        }
-
-        if (targetStatus === "occupied") {
-          freeSpots--;
-          spotObj.mesh.material.color.setHex(0xef4444);
-          spotObj.line.material.color.setHex(0xef4444);
-          if (btn) {
-            btn.className = "spot-pill occupied";
-          }
-
-          const car = createStaticCar(id);
-          const p1 = spotObj.data.polygon3D[0];
-          const p2 = spotObj.data.polygon3D[1];
-          let angle = Math.atan2(p2.x - p1.x, p2.z - p1.z);
-          car.rotation.y = angle;
-          car.position.set(
-            spotObj.data.center3D.x,
-            actualY + 0.05,
-            spotObj.data.center3D.z,
-          );
-          scene.add(car);
-          spotsCars[id] = car;
-
-          if (currentReservation && id === currentReservation.spot_id) {
-            carGroup.visible = false;
-          }
-        } else if (targetStatus === "reserved") {
-          spotObj.mesh.material.color.setHex(0xeab308);
-          spotObj.line.material.color.setHex(0xeab308);
-          if (btn) {
-            btn.className = "spot-pill reserved";
-          }
-        } else {
-          freeSpots++;
-          let colorHex = 0x1ca745;
-          let baseClass = "spot-pill free-standard";
-          if (id === "A-01" || id === "A-02") {
-            colorHex = 0x2563eb;
-            baseClass = "spot-pill free-pcd";
-          } else if (id === "A-03" || id === "A-04") {
-            colorHex = 0x8b5cf6;
-            baseClass = "spot-pill free-elderly";
-          }
-          spotObj.mesh.material.color.setHex(colorHex);
-          spotObj.line.material.color.setHex(colorHex);
-          if (btn) {
-            btn.className = baseClass;
-          }
-        }
-
-        freeSpots = Object.values(spotsMeshes).filter(
-          (obj) => obj.status !== "occupied" && obj.status !== "reserved",
-        ).length;
-        updateInfoPanel();
-      };
-
-      window.testPanelToggleSpot = function (id) {
-        const spotObj = spotsMeshes[id];
-        if (!spotObj) return;
-        const currentStatus = spotObj.status;
-        const targetStatus = currentStatus === "occupied" ? "free" : "occupied";
-
-        fetch(`${apiUrl}/spots/${id}/status`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: targetStatus }),
-        }).catch((err) => console.error(err));
-      };
-
-      window.toggleTestPanel = function () {
-        const panel = document.getElementById("testPanel");
-        panel.classList.toggle("open");
-      };
-
-      function buildTestPanel() {
-        const container = document.getElementById("testSpotsContainer");
-        let html = "";
-        parkingSpotsData.forEach((spot) => {
-          const spotObj = spotsMeshes[spot.id];
-          let statusClass = "free-standard";
-          if (spot.id === "A-01" || spot.id === "A-02")
-            statusClass = "free-pcd";
-          else if (spot.id === "A-03" || spot.id === "A-04")
-            statusClass = "free-elderly";
-
-          if (spotObj && spotObj.status === "occupied") {
-            statusClass = "occupied";
-          } else if (spotObj && spotObj.status === "reserved") {
-            statusClass = "reserved";
-          }
-
-          html += `
-          <button id="btn-spot-${spot.id}" class="spot-pill ${statusClass}" onclick="window.testPanelToggleSpot('${spot.id}'); event.stopPropagation();">
-            ${spot.id}
-          </button>
-        `;
-        });
-        container.innerHTML = html;
-        document.getElementById("testPanel").style.display = "flex";
-      }
-
-      function buildCar() {
-        if (lancerModel) {
-          carGroup.add(lancerModel.clone());
-        } else {
-          pendingCars.push({ group: carGroup, spotId: "moving_car" });
-          buildFallbackCarModel(carGroup);
-
-          const headlightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
-          const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
-          const h1 = new THREE.Mesh(headlightGeo, headlightMat);
-          h1.position.set(0.08, 0.12, -0.31);
-          const h2 = h1.clone();
-          h2.position.set(-0.08, 0.12, -0.31);
-          carGroup.add(h1, h2);
-
-          const taillightGeo = new THREE.BoxGeometry(0.08, 0.04, 0.02);
-          const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-          const t1 = new THREE.Mesh(taillightGeo, taillightMat);
-          t1.position.set(0.08, 0.12, 0.31);
-          const t2 = t1.clone();
-          t2.position.set(-0.08, 0.12, 0.31);
-          carGroup.add(t1, t2);
-        }
-      }
-      buildCar();
-      carGroup.scale.setScalar(0.5);
-
-      const pinpoints = [];
-      const markersLayer = document.getElementById("markersLayer");
-
-      function createPinpoint(pinData) {
-        const name = pinData.name;
-        const pos = pinData.position;
-        const camData = pinData.camera;
-        const pathData = pinData.path || [];
-        const wrapper = document.createElement("div");
-        wrapper.className = "marker-wrapper";
-
-        const content = document.createElement("div");
-        content.className = "marker-content";
-
-        const letter = name.split(" ").pop();
-        const isBlocked = pinData.blocked === true;
-        const primaryColor = isBlocked ? "#ef4444" : "#1ca745";
-        const icon = isBlocked ? "🔒" : letter;
-
-        const svgHTML = `
-        <svg class="marker-svg" width="54" height="72" viewBox="0 0 24 32" style="fill: ${primaryColor}; filter: drop-shadow(0px 6px 8px rgba(0,0,0,0.5));">
-          <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 20 12 20s12-11.75 12-20C24 5.373 18.627 0 12 0z"/>
-          <circle cx="12" cy="11.5" r="7.5" fill="#fff"/>
-          <text x="12" y="16" font-family="Outfit, sans-serif" font-weight="800" font-size="${isBlocked ? 10 : 13}" fill="${primaryColor}" text-anchor="middle">${icon}</text>
-        </svg>
-      `;
-        content.innerHTML = svgHTML;
-
-        if (isBlocked) {
-          content.style.cursor = "not-allowed";
-          content.title = "Estacionamento Indisponível";
-        }
-
-        const label = document.createElement("div");
-        label.className = "marker-label";
-        label.textContent = name;
-        content.appendChild(label);
-
-        wrapper.appendChild(content);
-        markersLayer.appendChild(wrapper);
-
-        const ringGeo = new THREE.RingGeometry(0.15, 0.45, 16);
-        const ringMat = new THREE.MeshBasicMaterial({
-          color: isBlocked ? 0xef4444 : 0x1ca745,
-          transparent: true,
-          opacity: 0.5,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-        });
-        const ring3D = new THREE.Mesh(ringGeo, ringMat);
-        ring3D.rotation.x = -Math.PI / 2;
-        ring3D.position.set(pos.x, pos.y + 0.05, pos.z);
-        scene.add(ring3D);
-
-        content.addEventListener("click", () => {
-          if (isBlocked) return;
-          if (content.dataset.blocked === "true") return;
-          if (camData) {
-            currentFocusCamData = camData;
-
-            if (pathData && pathData.length > 0) {
-              requestRecommendationAndReserve(pathData);
-            }
-
-            updateCameraPosition();
-            const backBtn = document.getElementById("backBtn");
-            if (backBtn) backBtn.classList.add("visible");
-          }
-        });
-
-        pinpoints.push({
-          name: name,
-          element: wrapper,
-          content: content,
-          ring3D: ring3D,
-          pos3D: new THREE.Vector3(pos.x, pos.y, pos.z),
-        });
-      }
-
-      function animate() {
-        requestAnimationFrame(animate);
-
-        if (activeCarPath && activeCarPath.length > 1) {
-          carFinishedRoute = false;
-          const p1 = new THREE.Vector3(
-            activeCarPath[currentPathIndex].x,
-            activeCarPath[currentPathIndex].y,
-            activeCarPath[currentPathIndex].z,
-          );
-          const p2 = new THREE.Vector3(
-            activeCarPath[currentPathIndex + 1].x,
-            activeCarPath[currentPathIndex + 1].y,
-            activeCarPath[currentPathIndex + 1].z,
-          );
-
-          const dist = p1.distanceTo(p2);
-          const speed = 0.026;
-
-          const currentDist = carGroup.position.distanceTo(p1);
-          const nextDist = currentDist + speed;
-
-          if (nextDist >= dist) {
-            currentPathIndex++;
-            if (currentPathIndex >= activeCarPath.length - 1) {
-              currentPathIndex = 0;
-              carGroup.position.set(
-                activeCarPath[0].x,
-                activeCarPath[0].y,
-                activeCarPath[0].z,
-              );
-            } else {
-              carGroup.position.copy(p2);
-            }
-          } else {
-            const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
-            carGroup.position.add(dir.multiplyScalar(speed));
-            carGroup.lookAt(p2);
-          }
-        }
-
-        if (!activeCarPath) {
-          clearStaticPathLine();
-        }
-
-        if (currentFocusCamData && carGroup.visible) {
-          const aspect = viewport.clientWidth / viewport.clientHeight;
-          const mobileScale =
-            aspect < 1 ? Math.min(1.5, Math.max(1.0, 1 / aspect)) : 1.0;
-
-          const tPos = new THREE.Vector3(
-            currentFocusCamData.target.x,
-            currentFocusCamData.target.y,
-            currentFocusCamData.target.z,
-          );
-          const cPos = new THREE.Vector3(
-            currentFocusCamData.position.x,
-            currentFocusCamData.position.y,
-            currentFocusCamData.position.z,
-          );
-
-          const offset = new THREE.Vector3().subVectors(cPos, tPos).normalize();
-
-          const height = 7.5 * mobileScale;
-          const horizontalOffset = 0.9 * mobileScale;
-
-          offset.y = 0;
-          offset.normalize().multiplyScalar(horizontalOffset);
-          offset.y = height;
-
-          const dynamicTarget = carGroup.position.clone();
-          targetCameraPos.copy(dynamicTarget).add(offset);
-          targetCameraLookAt.copy(dynamicTarget);
-        } else if (currentFocusCamData && !carGroup.visible) {
-          const aspect = viewport.clientWidth / viewport.clientHeight;
-          const mobileZoomMult =
-            aspect < 1 ? Math.max(1, (1 / aspect) * 1.1) : 1;
-
-          const tPos = new THREE.Vector3(
-            currentFocusCamData.target.x,
-            currentFocusCamData.target.y,
-            currentFocusCamData.target.z,
-          );
-          const cPos = new THREE.Vector3(
-            currentFocusCamData.position.x,
-            currentFocusCamData.position.y,
-            currentFocusCamData.position.z,
-          );
-
-          const offset = new THREE.Vector3()
-            .subVectors(cPos, tPos)
-            .multiplyScalar(mobileZoomMult);
-
-          targetCameraPos.copy(tPos).add(offset);
-          targetCameraLookAt.copy(tPos);
-        }
-
-        camera.position.lerp(targetCameraPos, 0.05);
-        currentCameraTarget.lerp(targetCameraLookAt, 0.05);
-        camera.lookAt(currentCameraTarget);
-
-        renderer.render(scene, camera);
-
-        camera.updateMatrixWorld();
-        const hw = viewport.clientWidth / 2;
-        const hh = viewport.clientHeight / 2;
-        const t = Date.now() * 0.0008;
-
-        pinpoints.forEach((pin, i) => {
-          if (currentFocusCamData) {
-            pin.element.style.display = "none";
-            pin.ring3D.visible = false;
-            return;
-          }
-
-          pin.ring3D.visible = true;
-          const rippleCycle = (t + i * 0.5) % 1.0;
-          const scale = 1 + rippleCycle * 3.5;
-          pin.ring3D.scale.set(scale, scale, scale);
-          pin.ring3D.material.opacity = (1 - rippleCycle) * 0.6;
-
-          const vec = pin.pos3D.clone();
-          vec.project(camera);
-
-          const x = vec.x * hw + hw;
-          const y = -(vec.y * hh) + hh;
-
-          if (vec.z > 1) {
-            pin.element.style.display = "none";
-          } else {
-            pin.element.style.display = "block";
-            pin.element.style.transform = `translate(${x}px, ${y}px)`;
-          }
-        });
-      }
-
-      function connectAppWebSocket() {
-        try {
-          const host = window.location.hostname || "localhost";
-          const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
-          const isLocal =
-            host === "localhost" ||
-            host === "127.0.0.1" ||
-            host.includes("ngrok") ||
-            host.startsWith("192.168.") ||
-            host.startsWith("10.") ||
-            host.startsWith("172.") ||
-            host.endsWith(".local") ||
-            isIP;
-          const apiHost = host.includes("ngrok") ? "localhost" : host;
-          const wsUrl = isLocal
-            ? `ws://${apiHost}:8000/ws/dashboard`
-            : "wss://api.estaciona.tech/ws/dashboard";
-
-          const ws = new WebSocket(wsUrl);
-
-          ws.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data);
-              console.log("WebSocket received:", data);
-              if (data.type === "SPOT_UPDATE") {
-                window.toggleSpot(data.spot_id, data.status, false);
-                console.log("Current reservation:", currentReservation);
-                if (
-                  currentReservation &&
-                  data.spot_id === currentReservation.spot_id &&
-                  data.status === "occupied"
-                ) {
-                  if (reservationTimerId) {
-                    clearInterval(reservationTimerId);
-                    reservationTimerId = null;
-                  }
-                  activeCarPath = null;
-                  carGroup.visible = false;
-                  carFinishedRoute = true;
-                  document.getElementById("infoPanel").classList.add("visible");
-                  document.getElementById("popupText").textContent =
-                    `Detectamos um veículo na vaga reservada (${currentReservation.spot_id}). Foi você quem estacionou?`;
-                  document
-                    .getElementById("confirmationPopup")
-                    .classList.add("active");
-                }
-              } else if (data.type === "NAVIGATION_START") {
-              }
-            } catch (e) {
-              console.error("WebSocket message parsing error:", e);
-            }
-          };
-
-          ws.onclose = () => {
-            setTimeout(connectAppWebSocket, 5000);
-          };
-        } catch (err) {
-          console.error("Erro crítico ao iniciar WebSocket:", err);
-        }
-      }
-
-      animate();
-
-      window.addEventListener("resize", () => {
-        const w = viewport.clientWidth;
-        const h = viewport.clientHeight;
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
-        updateCameraPosition();
-      });
-
-      window.handleLogout = function () {
-        sessionStorage.removeItem("estaciona_logged_in");
-        sessionStorage.removeItem("estaciona_user");
-        sessionStorage.removeItem("estaciona_token");
+            <div class="profile-container">
+                <div class="profile-btn" id="adminProfileBtn">
+                    <div class="avatar">A</div>
+                    <div class="profile-info">
+                        <span class="p-name">Administrator</span>
+                        <span class="p-role">Full Access</span>
+                    </div>
+                </div>
+                
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="btn-logout" id="logoutBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        Log Out
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main id="workspace">
+            <div id="canvas-layer"></div>
+            
+            <div class="home-widget" id="homeWidget">
+                <div class="hw-greeting">BEM-VINDO, <br><span>ADMIN</span></div>
+                <div class="hw-time" id="clockDisplay">00 JAN 0000 // 00:00:00</div>
+                
+                <div class="hw-status-container">
+                    <div class="hw-value"><div class="status-dot"></div> SERVER ONLINE</div>
+                </div>
+            </div>
+        </main>
         
-        localStorage.removeItem("estaciona_logged_in");
-        localStorage.removeItem("estaciona_user");
-        localStorage.removeItem("estaciona_token");
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="/js/admin/main.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0a0b0e, 0.04);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 2, 14);
         
-        window.location.href = "index.html";
-      };
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-layer').appendChild(renderer.domElement);
 
-      window.handlePopupResponse = function (response) {
-        document.getElementById("confirmationPopup").classList.remove("active");
+        const geometry = new THREE.PlaneGeometry(80, 80, 40, 40);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x10b981, 
+            wireframe: true, 
+            transparent: true, 
+            opacity: 0.08 
+        });
 
-        if (reservationTimerId) {
-          clearInterval(reservationTimerId);
-          reservationTimerId = null;
+        const plane = new THREE.Mesh(geometry, material);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -3;
+        scene.add(plane);
+
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.003;
+            
+            const positions = plane.geometry.attributes.position.array;
+            for(let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];
+                const y = positions[i+1];
+                positions[i+2] = Math.sin(x * 0.2 + time) * 1.5 + Math.cos(y * 0.2 + time * 0.8) * 1.5;
+            }
+            plane.geometry.attributes.position.needsUpdate = true;
+            plane.rotation.z += 0.0005;
+            
+            renderer.render(scene, camera);
         }
+        animate();
 
-        if (!currentReservation) return;
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-        const reservationToHandle = currentReservation;
-        currentReservation = null;
+        document.getElementById('adminProfileBtn').addEventListener('click', () => {
+            document.getElementById('profileDropdown').classList.toggle('show');
+        });
 
-        if (response) {
-          fetch(`${apiUrl}/reservations/${reservationToHandle.id}/confirm`, {
-            method: "POST",
-          })
-            .then(() => {
-              window.resetCamera();
-            })
-            .catch((err) => console.error(err));
-        } else {
-          const intruderSpotId = reservationToHandle.spot_id;
-          window.toggleSpot(intruderSpotId, "occupied", false);
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#adminProfileBtn')) {
+                document.getElementById('profileDropdown').classList.remove('show');
+            }
+        });
 
-          fetch(`${apiUrl}/reservations/${reservationToHandle.id}/cancel`, {
-            method: "PUT",
-          })
-            .then(() => {
-              return fetch(`${apiUrl}/spots/${intruderSpotId}/status`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ status: "occupied" }),
-              });
-            })
-            .then(() => {
-              if (activePinpointPath) {
-                requestRecommendationAndReserve(activePinpointPath);
-              }
-            })
-            .catch((err) => console.error(err));
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            localStorage.removeItem('estaciona_token');
+            sessionStorage.removeItem('estaciona_token');
+            window.location.href = '/login.html';
+        });
+
+        function updateClock() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('pt-BR', { hour12: false });
+            const date = now.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+            document.getElementById('clockDisplay').textContent = `${date} // ${time}`;
         }
-      };
-
-      function startReservationTimer(seconds) {
-        if (reservationTimerId) {
-          clearInterval(reservationTimerId);
-        }
-        reservationCountdown = seconds;
-        updateInfoPanel();
-
-        reservationTimerId = setInterval(() => {
-          if (reservationCountdown > 0) {
-            reservationCountdown--;
-            updateInfoPanel();
-          } else {
-            clearInterval(reservationTimerId);
-            reservationTimerId = null;
-            handleReservationExpired();
-          }
-        }, 1000);
-      }
-
-      function handleReservationExpired() {
-        if (!hasExtended) {
-          document.getElementById("extensionPopup").classList.add("active");
-        } else {
-          expireReservation();
-        }
-      }
-
-      window.handleExtensionResponse = function (response) {
-        document.getElementById("extensionPopup").classList.remove("active");
-        if (!currentReservation) return;
-
-        if (response) {
-          fetch(`${apiUrl}/reservations/${currentReservation.id}/extend`, {
-            method: "PUT",
-          })
-            .then((res) => {
-              if (!res.ok) throw new Error();
-              hasExtended = true;
-              startReservationTimer(30);
-            })
-            .catch(() => {
-              expireReservation();
-            });
-        } else {
-          expireReservation();
-        }
-      };
-
-      function expireReservation() {
-        if (reservationTimerId) {
-          clearInterval(reservationTimerId);
-          reservationTimerId = null;
-        }
-        if (!currentReservation) return;
-
-        const reservationToHandle = currentReservation;
-        currentReservation = null;
-
-        fetch(`${apiUrl}/reservations/${reservationToHandle.id}/cancel`, {
-          method: "PUT",
-        })
-          .then(() => {
-            window.toggleSpot(reservationToHandle.spot_id, "free", false);
-            window.resetCamera();
-            updateInfoPanel();
-          })
-          .catch((err) => console.error(err));
-      }
-
-      window.resetCamera = function () {
-        if (currentReservation) {
-          expireReservation();
-          return;
-        }
-        currentFocusCamData = null;
-        activeCarPath = null;
-        carFinishedRoute = false;
-        carGroup.visible = false;
-        updateCameraPosition();
-        document.getElementById("backBtn").classList.remove("visible");
-        document.getElementById("infoPanel").classList.add("visible");
-        updateInfoPanel();
-      };
+        setInterval(updateClock, 1000);
+        updateClock();
     </script>
-  </body>
+</body>
 </html>
