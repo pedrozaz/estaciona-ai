@@ -16,18 +16,13 @@
 # ==============================================================================
 #
 
-from json import load
 import os
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
 import pickle
-from pandas.io.pytables import DataIndexableCol
-import sqlalchemy
 import torch
-from torch.jit import optimize_for_inference
 import torch.nn as nn
-from torch.nn.modules import Linear, ReLU
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from sqlalchemy import create_engine
@@ -145,7 +140,7 @@ class TemporalAttentionForecast(nn.Module):
 
 
 def prepare_timeseries_data(df):
-    print(f"[4/6] Agrupando histórico em série temporal (hora a hora)...")
+    print("[4/6] Agrupando histórico em série temporal (hora a hora)...")
     start_time = df["occupied_at"].min().floor("h")
     end_time = df["released_at"].max().ceil("h")
 
@@ -190,7 +185,7 @@ def train_forecasting_model(df):
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.MSELoss()
 
-    print(f"[6/6] Treinando Rede Neural de Atenção...")
+    print("[6/6] Treinando Rede Neural de Atenção...")
     model.train()
     epochs = 10
 
