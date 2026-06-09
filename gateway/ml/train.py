@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env.local"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
 
 def get_db_engine():

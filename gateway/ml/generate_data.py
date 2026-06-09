@@ -25,7 +25,7 @@ import numpy as np
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env.local"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
 DB_URL = os.environ.get("DATABASE_URL")
 if DB_URL and DB_URL.startswith("postgres://"):

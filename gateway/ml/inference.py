@@ -26,7 +26,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env.local"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
 
 class TemporalAttentionForecast(nn.Module):
