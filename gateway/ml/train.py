@@ -182,8 +182,10 @@ def train_forecasting_model(df):
     loader = DataLoader(dataset, batch_size=32, shuffle=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"[6/6] Treinando Rede Neural de Atenção (Aceleração: {device.type.upper()})...")
-    
+    print(
+        f"[6/6] Treinando Rede Neural de Atenção (Aceleração: {device.type.upper()})..."
+    )
+
     model = TemporalAttentionForecast(seq_len, pred_len).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.MSELoss()
@@ -203,7 +205,9 @@ def train_forecasting_model(df):
             total_loss += loss.item()
 
         if (epoch + 1) % 5 == 0:
-            print(f"    Epoch {epoch + 1}/{epochs} | Loss: {total_loss / len(loader):.4f}")
+            print(
+                f"    Epoch {epoch + 1}/{epochs} | Loss: {total_loss / len(loader):.4f}"
+            )
 
     print("Treinamento finalizado.")
 
