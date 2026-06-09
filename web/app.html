@@ -1729,6 +1729,7 @@
             activeCarPath[currentPathIndex].y,
             activeCarPath[currentPathIndex].z,
           );
+          
           const p2 = new THREE.Vector3(
             activeCarPath[currentPathIndex + 1].x,
             activeCarPath[currentPathIndex + 1].y,
@@ -1736,7 +1737,7 @@
           );
 
           const dist = p1.distanceTo(p2);
-          const speed = 0.026;
+          const speed = 0.015;
 
           const currentDist = carGroup.position.distanceTo(p1);
           const nextDist = currentDist + speed;
@@ -1756,7 +1757,11 @@
           } else {
             const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
             carGroup.position.add(dir.multiplyScalar(speed));
-            carGroup.lookAt(p2);
+            
+            window.carGhost = window.carGhost || new THREE.Object3D();
+            window.carGhost.position.copy(carGroup.position);
+            window.carGhost.lookAt(p2);
+            carGroup.quaternion.slerp(window.carGhost.quaternion, 0.12);
           }
         }
 
@@ -1783,10 +1788,14 @@
           const offset = new THREE.Vector3().subVectors(cPos, tPos).normalize();
 
           const height = 7.5 * mobileScale;
-          const horizontalOffset = 0.9 * mobileScale;
+          const horizontalOffset = 1.6 * mobileScale;
 
           offset.y = 0;
           offset.normalize().multiplyScalar(horizontalOffset);
+          
+          const sideOffset = new THREE.Vector3().crossVectors(offset, new THREE.Vector3(0, 1, 0)).normalize();
+          offset.add(sideOffset.multiplyScalar(-2.8 * mobileScale));
+
           offset.y = height;
 
           const dynamicTarget = carGroup.position.clone();
@@ -1816,9 +1825,17 @@
           targetCameraLookAt.copy(tPos);
         }
 
-        camera.position.lerp(targetCameraPos, 0.05);
-        currentCameraTarget.lerp(targetCameraLookAt, 0.05);
-        camera.lookAt(currentCameraTarget);
+        const isTrackingCar = activeCarPath && activeCarPath.length > 1;
+        
+        const posSpeed = isTrackingCar ? 0.08 : 0.02; 
+        const lookSpeed = isTrackingCar ? 0.1 : 0.06;
+
+        camera.position.lerp(targetCameraPos, posSpeed);
+
+        window.camGhost = window.camGhost || new THREE.PerspectiveCamera();
+        window.camGhost.position.copy(camera.position);
+        window.camGhost.lookAt(targetCameraLookAt);
+        camera.quaternion.slerp(window.camGhost.quaternion, lookSpeed);
 
         renderer.render(scene, camera);
 
