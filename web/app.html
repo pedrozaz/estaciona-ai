@@ -939,7 +939,7 @@
       for (let x = -gridSize / 2; x < gridSize / 2; x++) {
         for (let z = -gridSize / 2; z < gridSize / 2; z++) {
           posArray[idx++] = x * gridSpacing;
-          posArray[idx++] = -6;
+          posArray[idx++] = -25;
           posArray[idx++] = z * gridSpacing;
         }
       }
@@ -956,7 +956,7 @@
       const circleTexture = new THREE.CanvasTexture(circleCanvas);
 
       const gridMat = new THREE.PointsMaterial({
-        size: 0.12,
+        size: 0.18,
         color: 0x1ca745,
         transparent: true,
         opacity: 0.4,
