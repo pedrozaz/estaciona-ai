@@ -855,11 +855,12 @@
       import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
       import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 
-      if (sessionStorage.getItem("estaciona_logged_in") !== "true") {
+      const isLoggedIn = sessionStorage.getItem("estaciona_logged_in") === "true" || localStorage.getItem("estaciona_logged_in") === "true";
+      if (!isLoggedIn) {
         window.location.href = "login.html";
       }
 
-      const userEmail = sessionStorage.getItem("estaciona_user") || "admin";
+      const userEmail = sessionStorage.getItem("estaciona_user") || localStorage.getItem("estaciona_user") || "admin";
       const initial = userEmail.charAt(0).toUpperCase();
       document.getElementById("userAvatar").textContent = initial;
       document.getElementById("userName").textContent = userEmail.split("@")[0];
@@ -2051,6 +2052,12 @@
       window.handleLogout = function () {
         sessionStorage.removeItem("estaciona_logged_in");
         sessionStorage.removeItem("estaciona_user");
+        sessionStorage.removeItem("estaciona_token");
+        
+        localStorage.removeItem("estaciona_logged_in");
+        localStorage.removeItem("estaciona_user");
+        localStorage.removeItem("estaciona_token");
+        
         window.location.href = "index.html";
       };
 
