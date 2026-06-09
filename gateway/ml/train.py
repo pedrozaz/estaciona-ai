@@ -121,6 +121,7 @@ def train_duration_model(df):
     print(f"Pesos salvos em: {model_path}")
     return model
 
+
 class TemporalAttentionForecast(nn.Module):
     def __init__(self, seq_len=168, pred_len=24, d_model=32):
         super().__init__()
@@ -128,12 +129,12 @@ class TemporalAttentionForecast(nn.Module):
         self.pred_len = pred_len
 
         self.feature_proj = nn.Linear(1, d_model)
-        self.attention = nn.MultiheadAttention(embed_dim=d_model, num_heads=4, batch_first=True)
+        self.attention = nn.MultiheadAttention(
+            embed_dim=d_model, num_heads=4, batch_first=True
+        )
 
         self.fc = nn.Sequential(
-            nn.Linear(d_model * seq_len, 128),
-            nn.ReLU(),
-            nn.Linear(128, pred_len)
+            nn.Linear(d_model * seq_len, 128), nn.ReLU(), nn.Linear(128, pred_len)
         )
 
     def forward(self, x):
@@ -142,24 +143,26 @@ class TemporalAttentionForecast(nn.Module):
         flat = attn_out.reshape(attn_out.size(0), -1)
         return self.fc(flat)
 
+
 def prepare_timeseries_data(df):
     print(f"[4/6] Agrupando histórico em série temporal (hora a hora)...")
-    start_time = df['occupied_at'].min().floor('h')
-    end_time = df['released_at'].max().ceil('h')
+    start_time = df["occupied_at"].min().floor("h")
+    end_time = df["released_at"].max().ceil("h")
 
-    hours = pd.date_range(start=start_time, end=end_time, freq='h')
-    ts_df = pd.DataFrame({'timestamp': hours})
+    hours = pd.date_range(start=start_time, end=end_time, freq="h")
+    ts_df = pd.DataFrame({"timestamp": hours})
 
     occupancy_counts = []
     for h in hours:
-        count = ((df['occupied_at'] <= h) & (df['released_at'] > h)).sum()
+        count = ((df["occupied_at"] <= h) & (df["released_at"] > h)).sum()
         occupancy_counts.append(count)
 
-    ts_df['occupancy'] = occupancy_counts
+    ts_df["occupancy"] = occupancy_counts
     return ts_df
 
+
 def create_sequences(ts_df, seq_len=168, pred_len=24):
-    data = ts_df['occupancy'].values.astype(np.float32)
+    data = ts_df["occupancy"].values.astype(np.float32)
     max_val = data.max() if data.max() > 0 else 1.0
     data_norm = data / max_val
 
@@ -169,6 +172,7 @@ def create_sequences(ts_df, seq_len=168, pred_len=24):
         y.append(data_norm[i + seq_len : i + seq_len + pred_len])
 
     return torch.tensor(np.array(X)).unsqueeze(-1), torch.tensor(np.array(y)), max_val
+
 
 def train_forecasting_model(df):
     ts_df = prepare_timeseries_data(df)
@@ -201,21 +205,28 @@ def train_forecasting_model(df):
             total_loss += loss.item()
 
         if (epoch + 1) % 2 == 0:
-            print(f"    Epoch {epoch+1}/{epochs} | Loss: {total_loss/len(loader):.4f}")
+            print(
+                f"    Epoch {epoch + 1}/{epochs} | Loss: {total_loss / len(loader):.4f}"
+            )
 
     print("Treinamento finalizado.")
 
     models_dir = os.path.join(os.path.dirname(__file__), "models")
     os.makedirs(models_dir, exist_ok=True)
 
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'max_val': float(max_val)
-    }, os.path.join(models_dir, "occupancy_transformer.pt"))
+    torch.save(
+        {"model_state_dict": model.state_dict(), "max_val": float(max_val)},
+        os.path.join(models_dir, "occupancy_transformer.pt"),
+    )
     print("Pesos do transformer salvos com sucesso.")
 
 
 if __name__ == "__main__":
+    print("Estaciona AI - Inteligência Preditiva")
+    print("Copyright (C) 2026 Guilherme Pedroza")
+    print("This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.")
+    print("This is free software, and you are welcome to redistribute it under")
+    print("certain conditions; see the GNU Affero General Public License v3.\n")
     df = load_and_preprocess_data()
     train_duration_model(df)
     train_forecasting_model(df)

@@ -191,4 +191,9 @@ def main():
 
 
 if __name__ == "__main__":
+    print("Estaciona AI - Inteligência Preditiva")
+    print("Copyright (C) 2026 Guilherme Pedroza")
+    print("This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.")
+    print("This is free software, and you are welcome to redistribute it under")
+    print("certain conditions; see the GNU Affero General Public License v3.\n")
     main()
