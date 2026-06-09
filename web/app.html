@@ -283,157 +283,9 @@
         background: #158a36;
       }
 
-      .btn-control {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0.8rem;
-        border: 1px solid rgba(28, 167, 69, 0.3);
-        border-radius: 8px;
-        background: rgba(28, 167, 69, 0.08);
-        color: #1ca745;
-        font-family: var(--font-main);
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.25s ease;
-      }
 
-      .btn-control:hover {
-        background: rgba(28, 167, 69, 0.15);
-        border-color: rgba(28, 167, 69, 0.5);
-        color: #2ee566;
-        box-shadow: 0 0 10px rgba(28, 167, 69, 0.15);
-      }
 
-      .test-panel-drawer {
-        position: fixed;
-        top: 48px;
-        right: -340px;
-        width: 340px;
-        height: calc(100vh - 48px);
-        background: rgba(15, 17, 23, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 1.5rem;
-        z-index: 120;
-        transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        display: flex;
-        flex-direction: column;
-        color: #e2e8f0;
-        pointer-events: auto;
-      }
 
-      .test-panel-drawer.open {
-        right: 0;
-      }
-
-      .test-panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-      }
-
-      .test-panel-header h4 {
-        font-size: 0.95rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #e2e8f0;
-        margin: 0;
-      }
-
-      .btn-close-drawer {
-        background: none;
-        border: none;
-        color: #94a3b8;
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.2s;
-      }
-
-      .btn-close-drawer:hover {
-        color: #f87171;
-      }
-
-      .test-panel-instruction {
-        font-size: 0.78rem;
-        color: #64748b;
-        margin-bottom: 1rem;
-      }
-
-      .test-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem 0.75rem;
-        margin-bottom: 1.25rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: #94a3b8;
-      }
-
-      .legend-color {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-      }
-
-      .legend-color.std {
-        background: #1ca745;
-      }
-      .legend-color.pcd {
-        background: #2563eb;
-      }
-      .legend-color.eld {
-        background: #8b5cf6;
-      }
-      .legend-color.occ {
-        background: #ef4444;
-      }
-      .legend-color.res {
-        background: #eab308;
-      }
-
-      .test-spots-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-        gap: 6px;
-        overflow-y: auto;
-        flex-grow: 1;
-        padding-right: 4px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar {
-        width: 4px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
 
       .spot-pill {
         display: flex;
@@ -593,12 +445,7 @@
         .user-badge span {
           display: none;
         }
-        .btn-control .text {
-          display: none;
-        }
-        .btn-control {
-          padding: 0.4rem 0.6rem;
-        }
+
         .dashboard-nav .logo-text {
           font-size: 1.1rem;
         }
@@ -618,22 +465,7 @@
           display: flex;
           justify-content: space-between;
         }
-        .test-panel-drawer {
-          width: 100%;
-          right: 0;
-          left: 0;
-          bottom: -60vh;
-          height: 60vh;
-          top: auto;
-          border-left: none;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px 20px 0 0;
-          box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
-          transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .test-panel-drawer.open {
-          bottom: 0;
-        }
+
       }
 
       .popup-overlay {
@@ -724,13 +556,7 @@
         <div class="logo-pin"><span>AI</span></div>
       </a>
       <div class="nav-right">
-        <button
-          class="btn-control"
-          id="testPanelToggleBtn"
-          onclick="window.toggleTestPanel()"
-        >
-          <span>🧪</span> <span class="text">Simulação</span>
-        </button>
+
         <div class="user-badge">
           <div class="user-avatar" id="userAvatar">A</div>
           <span id="userName">admin</span>
@@ -756,38 +582,7 @@
       <div id="infoPanelContent"></div>
     </div>
 
-    <div
-      class="test-panel-drawer"
-      id="testPanel"
-      style="display: none"
-      onclick="event.stopPropagation()"
-    >
-      <div class="test-panel-header">
-        <h4>Simulação de Vagas</h4>
-        <button class="btn-close-drawer" onclick="window.toggleTestPanel()">
-          ✕
-        </button>
-      </div>
-      <p class="test-panel-instruction">
-        Clique em uma vaga para alternar sua ocupação.
-      </p>
-      <div class="test-legend">
-        <div class="legend-item">
-          <span class="legend-color std"></span>Padrão
-        </div>
-        <div class="legend-item"><span class="legend-color pcd"></span>PCD</div>
-        <div class="legend-item">
-          <span class="legend-color eld"></span>Idoso
-        </div>
-        <div class="legend-item">
-          <span class="legend-color occ"></span>Ocupada
-        </div>
-        <div class="legend-item">
-          <span class="legend-color res"></span>Reservada
-        </div>
-      </div>
-      <div id="testSpotsContainer" class="test-spots-grid"></div>
-    </div>
+
 
     <div class="popup-overlay" id="confirmationPopup">
       <div class="popup-card">
@@ -1485,7 +1280,7 @@
             totalSpots = data.length;
             freeSpots = data.length;
             updateInfoPanel();
-            buildTestPanel();
+
 
             const defaultGroundY =
               configData && configData[0] ? configData[0].position.y : -6.0;
@@ -1688,52 +1483,7 @@
         updateInfoPanel();
       };
 
-      window.testPanelToggleSpot = function (id) {
-        const spotObj = spotsMeshes[id];
-        if (!spotObj) return;
-        const currentStatus = spotObj.status;
-        const targetStatus = currentStatus === "occupied" ? "free" : "occupied";
 
-        fetch(`${apiUrl}/spots/${id}/status`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: targetStatus }),
-        }).catch((err) => console.error(err));
-      };
-
-      window.toggleTestPanel = function () {
-        const panel = document.getElementById("testPanel");
-        panel.classList.toggle("open");
-      };
-
-      function buildTestPanel() {
-        const container = document.getElementById("testSpotsContainer");
-        let html = "";
-        parkingSpotsData.forEach((spot) => {
-          const spotObj = spotsMeshes[spot.id];
-          let statusClass = "free-standard";
-          if (spot.id === "A-01" || spot.id === "A-02")
-            statusClass = "free-pcd";
-          else if (spot.id === "A-03" || spot.id === "A-04")
-            statusClass = "free-elderly";
-
-          if (spotObj && spotObj.status === "occupied") {
-            statusClass = "occupied";
-          } else if (spotObj && spotObj.status === "reserved") {
-            statusClass = "reserved";
-          }
-
-          html += `
-          <button id="btn-spot-${spot.id}" class="spot-pill ${statusClass}" onclick="window.testPanelToggleSpot('${spot.id}'); event.stopPropagation();">
-            ${spot.id}
-          </button>
-        `;
-        });
-        container.innerHTML = html;
-        document.getElementById("testPanel").style.display = "flex";
-      }
 
       function buildCar() {
         if (lancerModel) {
