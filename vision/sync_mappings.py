@@ -30,7 +30,7 @@ def main():
     print("This is free software, and you are welcome to redistribute it under")
     print("certain conditions; see the GNU Affero General Public License v3.\\n")
 
-    db_url = os.environ.get("DATABASE_URL")
+    db_url = os.environ.get("ML_DATABASE_URL") or os.environ.get("DATABASE_URL")
     if db_url and db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 

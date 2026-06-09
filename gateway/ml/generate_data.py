@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
-DB_URL = os.environ.get("DATABASE_URL")
+DB_URL = os.environ.get("ML_DATABASE_URL") or os.environ.get("DATABASE_URL")
 if DB_URL and DB_URL.startswith("postgres://"):
     DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
 

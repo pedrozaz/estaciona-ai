@@ -50,7 +50,7 @@ class TemporalAttentionForecast(nn.Module):
 
 
 def get_db_engine():
-    db_url = os.environ.get("DATABASE_URL")
+    db_url = os.environ.get("ML_DATABASE_URL") or os.environ.get("DATABASE_URL")
     if db_url and db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     return create_engine(db_url)
