@@ -434,12 +434,11 @@ pub async fn recommend_spot(
     {
         let graph = state.graph.read().await;
         for spot in &free_spots {
-            if let Some(cost) = graph.calculate_cost("cam-01", &spot.id) {
-                if cost < min_cost {
+            if let Some(cost) = graph.calculate_cost("cam-01", &spot.id)
+                && cost < min_cost {
                     min_cost = cost;
                     closest_spot_id = Some(spot.id.clone());
                 }
-            }
         }
     }
 
