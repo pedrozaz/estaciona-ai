@@ -22,6 +22,8 @@ import datetime
 import asyncio
 import websockets
 
+from ml.inference import PredictiveEngine
+
 
 def init_db(db_path):
     conn = sqlite3.connect(db_path)
@@ -292,6 +294,42 @@ async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
             await asyncio.sleep(5)
 
 
+async def prediction_loop(db_path, sync_event):
+    print(
+        f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] LOADING_PREDICTIVE_MODELS",
+        flush=True,
+    )
+    try:
+        engine = PredictiveEngine()
+        print(
+            f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] PREDICTIVE_MODELS_READY",
+            flush=True,
+        )
+    except Exception as e:
+        print(
+            f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [ERROR] ML_INIT_FAILED reason={e}",
+            flush=True,
+        )
+        return
+
+    while True:
+        try:
+            payload = engine.predict_trends()
+            save_event(db_path, json.dumps(payload))
+            sync_event.set()
+            print(
+                f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] TREND_PREDICTION_QUEUED",
+                flush=True,
+            )
+        except Exception as e:
+            print(
+                f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [ERROR] PREDICTION_FAILED reason={e}",
+                flush=True,
+            )
+
+        await asyncio.sleep(300)
+
+
 async def main():
     import os
     from dotenv import load_dotenv
@@ -318,6 +356,8 @@ async def main():
     asyncio.create_task(
         sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event)
     )
+
+    asyncio.create_task(prediction_loop(db_path, sync_event))
 
     async def ws_handler(websocket, *args, **kwargs):
         await handler(websocket, db_path, metrics_path, api_key, sync_event)
