@@ -170,6 +170,25 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                         is_active
                     );
                 }
+                EdgeToServerMsg::TrendPrediction {
+                    timestamp,
+                    avg_stay_duration_mins,
+                    next_24h_occupancy,
+                } => {
+                    tracing::info!(
+                        "[WS EDGE] TrendPrediction received: {:.1} mins avg stay, {} hours forecast",
+                        avg_stay_duration_mins,
+                        next_24h_occupancy.len()
+                    );
+                    let broadcast_msg = ServerToAppMsg::TrendPrediction {
+                        timestamp,
+                        avg_stay_duration_mins,
+                        next_24h_occupancy,
+                    };
+                    if let Ok(json_str) = serde_json::to_string(&broadcast_msg) {
+                        let _ = state.tx.send(json_str);
+                    }
+                }
             }
         }
     }

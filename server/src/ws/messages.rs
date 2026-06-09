@@ -33,6 +33,12 @@ pub enum AppToServerMsg {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HourlyOccupancy {
+    pub timestamp: DateTime<Utc>,
+    pub occupancy: i32,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "type")]
 pub enum EdgeToServerMsg {
     #[serde(rename = "SPOT_UPDATE")]
@@ -55,6 +61,12 @@ pub enum EdgeToServerMsg {
         to_node: String,
         is_active: bool,
     },
+    #[serde(rename = "TREND_PREDICTION")]
+    TrendPrediction {
+        timestamp: DateTime<Utc>,
+        avg_stay_duration_mins: f64,
+        next_24h_occupancy: Vec<HourlyOccupancy>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -74,6 +86,12 @@ pub enum ServerToAppMsg {
     ReservationRejected { spot_id: String, reason: String },
     #[serde(rename = "SPOT_UPDATE")]
     SpotUpdate { spot_id: String, status: String },
+    #[serde(rename = "TREND_PREDICTION")]
+    TrendPrediction {
+        timestamp: DateTime<Utc>,
+        avg_stay_duration_mins: f64,
+        next_24h_occupancy: Vec<HourlyOccupancy>,
+    },
 }
 
 #[cfg(test)]
