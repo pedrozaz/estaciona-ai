@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, password_hash as \"password_hash!\", role FROM users WHERE email = $1",
+  "query": "SELECT id, password_hash as \"password_hash!\", role, name FROM users WHERE email = $1",
   "describe": {
     "columns": [
       {
@@ -35,6 +35,17 @@
             "name": "role"
           }
         }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "name"
+          }
+        }
       }
     ],
     "parameters": {
@@ -45,8 +56,9 @@
     "nullable": [
       false,
       true,
-      false
+      false,
+      true
     ]
   },
-  "hash": "6b9c503f71c31f09468852c351bd83d26582e97fef221e015a6340504f3fcd22"
+  "hash": "f47a5709a3aca7210e249e2358f84ea8dc8b9016eb6c25657c1ccbc6fa083a4b"
 }

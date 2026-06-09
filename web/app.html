@@ -442,9 +442,6 @@
       }
 
       @media (max-width: 600px) {
-        .user-badge span {
-          display: none;
-        }
 
         .dashboard-nav .logo-text {
           font-size: 1.1rem;
@@ -557,13 +554,22 @@
       </a>
       <div class="nav-right">
 
-        <div class="user-badge">
-          <div class="user-avatar" id="userAvatar">A</div>
-          <span id="userName">admin</span>
+        <div class="user-menu-container" style="position: relative;">
+          <div class="user-badge" id="userBadgeBtn" style="cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 8px; transition: background 0.2s;" onclick="toggleUserMenu()">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <span id="userName" style="font-weight: 500;">admin</span>
+            <span style="font-size: 0.6rem; margin-left: 4px; color: #64748b;">▼</span>
+          </div>
+          
+          <div id="userDropdown" style="display: none; position: absolute; top: 110%; right: 0; background: rgba(15, 17, 23, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.5rem; min-width: 160px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 200;">
+            <div style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 0.5rem;">
+              <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Configurações</span>
+            </div>
+            <button class="btn-logout" id="logoutBtn" onclick="handleLogout()" style="width: 100%; text-align: left; border: none; padding: 0.6rem 0.8rem; border-radius: 6px;">
+              Sair da conta
+            </button>
+          </div>
         </div>
-        <button class="btn-logout" id="logoutBtn" onclick="handleLogout()">
-          Sair
-        </button>
       </div>
     </nav>
 
@@ -656,9 +662,10 @@
       }
 
       const userEmail = sessionStorage.getItem("estaciona_user") || localStorage.getItem("estaciona_user") || "admin";
-      const initial = userEmail.charAt(0).toUpperCase();
+      const userName = sessionStorage.getItem("estaciona_name") || localStorage.getItem("estaciona_name") || userEmail.split("@")[0];
+      const initial = userName.charAt(0).toUpperCase();
       document.getElementById("userAvatar").textContent = initial;
-      document.getElementById("userName").textContent = userEmail.split("@")[0];
+      document.getElementById("userName").textContent = userName;
 
       let simulatedUserId = null;
       const simulatedUserPlate = "DEV-9999";
@@ -1802,14 +1809,29 @@
       window.handleLogout = function () {
         sessionStorage.removeItem("estaciona_logged_in");
         sessionStorage.removeItem("estaciona_user");
+        sessionStorage.removeItem("estaciona_name");
         sessionStorage.removeItem("estaciona_token");
         
         localStorage.removeItem("estaciona_logged_in");
         localStorage.removeItem("estaciona_user");
+        localStorage.removeItem("estaciona_name");
         localStorage.removeItem("estaciona_token");
         
         window.location.href = "index.html";
       };
+
+      window.toggleUserMenu = function() {
+        const dropdown = document.getElementById("userDropdown");
+        dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+      };
+
+      document.addEventListener("click", function(event) {
+        const container = document.querySelector(".user-menu-container");
+        if (container && !container.contains(event.target)) {
+          const dropdown = document.getElementById("userDropdown");
+          if (dropdown) dropdown.style.display = "none";
+        }
+      });
 
       window.handlePopupResponse = function (response) {
         document.getElementById("confirmationPopup").classList.remove("active");
