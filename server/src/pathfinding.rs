@@ -136,6 +136,51 @@ impl ParkingGraph {
         ((dx * dx + dy * dy).sqrt() * 10.0) as u32
     }
 
+    pub fn calculate_cost(&self, start_name: &str, end_name: &str) -> Option<u32> {
+        let start = *self.name_to_id.get(start_name)?;
+        let goal = *self.name_to_id.get(end_name)?;
+
+        let mut frontier = BinaryHeap::new();
+        frontier.push(State {
+            cost: 0,
+            node: start,
+        });
+
+        let mut cost_so_far: HashMap<NodeId, u32> = HashMap::new();
+        cost_so_far.insert(start, 0);
+
+        while let Some(State { node: current, .. }) = frontier.pop() {
+            if current == goal {
+                return cost_so_far.get(&goal).copied();
+            }
+
+            if let Some(neighbors) = self.edges.get(&current) {
+                for edge in neighbors {
+                    if !edge.active {
+                        continue;
+                    }
+
+                    let next = edge.target;
+                    let new_cost = cost_so_far.get(&current).unwrap_or(&0) + edge.cost;
+
+                    if !cost_so_far.contains_key(&next)
+                        || new_cost < *cost_so_far.get(&next).unwrap()
+                    {
+                        cost_so_far.insert(next, new_cost);
+                        let priority = new_cost + self.heuristic(next, goal);
+
+                        frontier.push(State {
+                            cost: priority,
+                            node: next,
+                        });
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
     pub fn calculate_route(&self, start_name: &str, end_name: &str) -> Option<Vec<String>> {
         let start = *self.name_to_id.get(start_name)?;
         let goal = *self.name_to_id.get(end_name)?;
