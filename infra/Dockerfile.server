@@ -28,7 +28,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY --from=builder /build/server/target/release/estaciona-ai-rust-server ./server
-COPY --from=builder /build/server/parking_graph.json ./parking_graph.json
 COPY web/data/spots_3d.json /web/data/spots_3d.json
 
 ENV RUST_LOG=info

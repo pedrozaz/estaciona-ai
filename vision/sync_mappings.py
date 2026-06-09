@@ -20,7 +20,7 @@ import json
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "../.env.local"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
 
 
 def main():
