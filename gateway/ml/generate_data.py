@@ -76,8 +76,8 @@ def get_base_rate(hour, is_weekend):
             return 6.0
         return 1.0
 
-    if 8 <= hour <= 9:
-        return 15.0
+    if 6 <= hour <= 9:
+        return 20.0
     if 12 <= hour <= 14:
         return 12.0
     if 17 <= hour <= 19:
@@ -87,7 +87,7 @@ def get_base_rate(hour, is_weekend):
     return 0.5
 
 
-def generate_occupancy(engine, users_df, days=180):
+def generate_occupancy(engine, users_df, days=730):
     with engine.connect() as conn:
         spots_result = conn.execute(text("SELECT id FROM spots")).fetchall()
         spot_ids = [r[0] for r in spots_result]
@@ -111,8 +111,15 @@ def generate_occupancy(engine, users_df, days=180):
         available_normal = [s for s in normal_spots if s not in active_parkings]
         available_special = [s for s in special_spots if s not in active_parkings]
 
-        is_weekend = current_time.weekday() >= 5
-        rate = get_base_rate(current_time.hour, is_weekend)
+        local_time = current_time - datetime.timedelta(hours=3)
+        is_weekend = local_time.weekday() >= 5
+        rate = get_base_rate(local_time.hour, is_weekend)
+
+        if 23 <= local_time.hour or local_time.hour < 6:
+            if len(active_parkings) >= 5:
+                rate = 0.0
+            else:
+                rate = 0.05
 
         arrivals = np.random.poisson(rate / 4)
 
@@ -168,8 +175,8 @@ def main():
                 row.to_dict(),
             )
 
-    print("Usuarios inseridos. Gerando histórico falso realista (6 meses)...")
-    history_df = generate_occupancy(engine, users_df, days=180)
+    print("Usuarios inseridos. Gerando histórico falso realista (2 anos)...")
+    history_df = generate_occupancy(engine, users_df, days=730)
 
     print(f"Gerados {len(history_df)} registros. Limpando tabela e inserindo lotes...")
 
