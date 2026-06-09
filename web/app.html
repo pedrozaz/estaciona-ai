@@ -720,48 +720,78 @@
       document.getElementById("userAvatar").textContent = initial;
       document.getElementById("userName").textContent = userName;
 
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const audioCtx = new AudioContext();
+      window.wakeUpAudio = function() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
+        if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
+      };
+      document.addEventListener("pointerdown", window.wakeUpAudio, { passive: true });
 
       window.sounds = {
         playBeep: function() {
-          if (audioCtx.state === 'suspended') audioCtx.resume();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
+          window.wakeUpAudio();
+          const check = () => {
+            if (window.audioCtx.state === 'running') this._playBeep();
+            else setTimeout(check, 10);
+          };
+          check();
+        },
+        _playBeep: function() {
+          const t = window.audioCtx.currentTime;
+          const osc = window.audioCtx.createOscillator();
+          const gain = window.audioCtx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
-          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
-          gain.gain.setValueAtTime(0, audioCtx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-          osc.connect(gain); gain.connect(audioCtx.destination);
-          osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(880, t); 
+          osc.frequency.exponentialRampToValueAtTime(1760, t + 0.1);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.1, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc.connect(gain); gain.connect(window.audioCtx.destination);
+          osc.start(t); osc.stop(t + 0.1);
         },
+
         playWoosh: function() {
-          if (audioCtx.state === 'suspended') audioCtx.resume();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(250, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
-          gain.gain.setValueAtTime(0, audioCtx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
-          gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
-          osc.connect(gain); gain.connect(audioCtx.destination);
-          osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+          window.wakeUpAudio();
+          const check = () => {
+            if (window.audioCtx.state === 'running') this._playWoosh();
+            else setTimeout(check, 10);
+          };
+          check();
         },
+        _playWoosh: function() {
+          const t = window.audioCtx.currentTime;
+          const osc = window.audioCtx.createOscillator();
+          const gain = window.audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(250, t);
+          osc.frequency.exponentialRampToValueAtTime(40, t + 0.5);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.05, t + 0.1);
+          gain.gain.linearRampToValueAtTime(0, t + 0.5);
+          osc.connect(gain); gain.connect(window.audioCtx.destination);
+          osc.start(t); osc.stop(t + 0.5);
+        },
+
         playPop: function() {
-          if (audioCtx.state === 'suspended') audioCtx.resume();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
+          window.wakeUpAudio();
+          const check = () => {
+            if (window.audioCtx.state === 'running') this._playPop();
+            else setTimeout(check, 10);
+          };
+          check();
+        },
+        _playPop: function() {
+          const t = window.audioCtx.currentTime;
+          const osc = window.audioCtx.createOscillator();
+          const gain = window.audioCtx.createGain();
           osc.type = 'square';
-          osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
-          gain.gain.setValueAtTime(0, audioCtx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-          osc.connect(gain); gain.connect(audioCtx.destination);
-          osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(400, t);
+          osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.03, t + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc.connect(gain); gain.connect(window.audioCtx.destination);
+          osc.start(t); osc.stop(t + 0.1);
         }
       };
 
@@ -1688,10 +1718,15 @@
           side: THREE.DoubleSide,
           depthWrite: false,
         });
-        const ring3D = new THREE.Mesh(ringGeo, ringMat);
+                const ring3D = new THREE.Mesh(ringGeo, ringMat);
         ring3D.rotation.x = -Math.PI / 2;
         ring3D.position.set(pos.x, pos.y + 0.05, pos.z);
         scene.add(ring3D);
+
+        content.addEventListener("pointerdown", (e) => {
+          if (window.wakeUpAudio) window.wakeUpAudio();
+          e.stopPropagation();
+        });
 
         content.addEventListener("click", () => {
           if (isBlocked) return;
