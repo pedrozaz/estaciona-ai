@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -271,7 +271,7 @@
             text-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
         }
 
-        .hw-greeting span {
+        .hw-greeting span.hollow-text {
             color: transparent;
             -webkit-text-stroke: 1px var(--primary-green);
         }
@@ -332,8 +332,8 @@
 
     <div id="mobile-blocker">
         <div class="m-icon">🖥️</div>
-        <div class="m-title">Acesso Restrito</div>
-        <div class="m-desc">O painel de administração exige um ambiente desktop para visualização do mapa 3D e calibrações.</div>
+        <div class="m-title" data-i18n="mobile.title">Restricted Access</div>
+        <div class="m-desc" data-i18n="mobile.desc">The administration panel requires a desktop environment for 3D map visualization and calibration.</div>
     </div>
 
     <div id="desktop-environment">
@@ -347,28 +347,28 @@
             </div>
 
             <div class="nav-menu">
-                <div class="nav-label">Overview</div>
-                <div class="nav-item active" data-app="dashboard">Dashboard</div>
+                <div class="nav-label" data-i18n="nav.overview">Overview</div>
+                <div class="nav-item active" data-app="dashboard" data-i18n="nav.dashboard">Dashboard</div>
                 
-                <div class="nav-label" style="margin-top: 16px;">Map Controls</div>
-                <div class="nav-item" data-app="ortho">Orthomosaic View</div>
-                <div class="nav-item" data-app="points">Point Calibration</div>
-                <div class="nav-item" data-app="zones">Zone Management</div>
+                <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.mapControls">Map Controls</div>
+                <div class="nav-item" data-app="ortho" data-i18n="nav.ortho">Orthomosaic View</div>
+                <div class="nav-item" data-app="points" data-i18n="nav.points">Point Calibration</div>
+                <div class="nav-item" data-app="zones" data-i18n="nav.zones">Zone Management</div>
             </div>
 
             <div class="profile-container">
                 <div class="profile-btn" id="adminProfileBtn">
                     <div class="avatar">A</div>
                     <div class="profile-info">
-                        <span class="p-name">Administrator</span>
-                        <span class="p-role">Full Access</span>
+                        <span class="p-name" data-i18n="profile.role">Administrator</span>
+                        <span class="p-role" data-i18n="profile.access">Full Access</span>
                     </div>
                 </div>
                 
                 <div class="profile-dropdown" id="profileDropdown">
                     <div class="btn-logout" id="logoutBtn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        Log Out
+                        <span data-i18n="profile.logout">Log Out</span>
                     </div>
                 </div>
             </div>
@@ -378,11 +378,11 @@
             <div id="canvas-layer"></div>
             
             <div class="home-widget" id="homeWidget">
-                <div class="hw-greeting">BEM-VINDO, <br><span>ADMIN</span></div>
+                <div class="hw-greeting"><span data-i18n="home.welcome">WELCOME,</span> <br><span class="hollow-text" data-i18n="home.admin">ADMIN</span></div>
                 <div class="hw-time" id="clockDisplay">00 JAN 0000 // 00:00:00</div>
                 
                 <div class="hw-status-container">
-                    <div class="hw-value"><div class="status-dot"></div> SERVER ONLINE</div>
+                    <div class="hw-value"><div class="status-dot"></div> <span data-i18n="home.serverStatus">SERVER ONLINE</span></div>
                 </div>
             </div>
         </main>
