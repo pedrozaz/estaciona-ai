@@ -4,12 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Estaciona AI</title>
+  <title>Acesso - Estaciona AI</title>
   <meta name="description" content="Acesse o painel do Estaciona AI">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <style>
     body {
@@ -17,7 +16,6 @@
       flex-direction: column;
       min-height: 100vh;
       background-color: var(--bg-color);
-      /* Subtle radial gradient background pattern matching brand theme */
       background-image: radial-gradient(circle at 10% 20%, rgba(28, 167, 69, 0.05) 0%, transparent 20%), 
                         radial-gradient(circle at 90% 80%, rgba(28, 167, 69, 0.08) 0%, transparent 20%);
     }
@@ -31,16 +29,15 @@
       margin-top: 2rem;
     }
 
-    /* Glassmorphism Card */
     .login-card {
       background: rgba(255, 255, 255, 0.7);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.5);
       border-radius: var(--border-radius);
-      padding: 3rem 2.5rem;
+      padding: 2.5rem 2.5rem;
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05);
       transform: translateY(0);
       transition: transform 0.4s ease, box-shadow 0.4s ease;
@@ -59,7 +56,7 @@
 
     .login-header {
       text-align: center;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
     }
 
     .login-header h2 {
@@ -73,6 +70,48 @@
       color: var(--text-light);
       font-size: 1rem;
       margin-bottom: 0;
+    }
+
+    /* Tabs Styling */
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid rgba(0,0,0,0.05);
+    }
+
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.75rem 0;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-light);
+      transition: all 0.3s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .auth-tab.active {
+      color: var(--primary-green);
+      border-bottom-color: var(--primary-green);
+    }
+
+    .auth-tab:hover:not(.active) {
+      color: var(--text-dark);
+    }
+
+    .form-section {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
     .form-group {
@@ -111,7 +150,6 @@
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Floating label effects */
     .form-control:focus ~ .form-label,
     .form-control:not(:placeholder-shown) ~ .form-label {
       top: 0;
@@ -123,14 +161,31 @@
       transform: translateY(-50%) translateX(-0.5rem);
     }
 
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      color: var(--text-dark);
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    .checkbox-group input {
+      margin-right: 0.75rem;
+      width: 1.2rem;
+      height: 1.2rem;
+      accent-color: var(--primary-green);
+      cursor: pointer;
+    }
+
     .btn-login {
       width: 100%;
-      margin-top: 1rem;
+      margin-top: 0.5rem;
       padding: 1rem;
       font-size: 1.125rem;
       position: relative;
       overflow: hidden;
-      border-radius: 12px; /* modern slight round rather than fully pill shaped */
+      border-radius: 12px;
     }
 
     .btn-login .spinner {
@@ -160,25 +215,6 @@
       display: block;
     }
 
-    .login-footer {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 0.95rem;
-      color: var(--text-light);
-    }
-
-    .login-footer a {
-      color: var(--primary-green);
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.3s;
-    }
-
-    .login-footer a:hover {
-      color: var(--primary-dark);
-      text-decoration: underline;
-    }
-    
     .utilities-row {
       display: flex; 
       justify-content: space-between; 
@@ -202,13 +238,18 @@
   <main class="login-wrapper">
     <div class="login-card">
       <div class="login-header">
-        <h2>Bem-vindo de volta</h2>
-        <p>Acesse o painel do seu estacionamento</p>
+        <h2>Bem-vindo</h2>
+        <p>Acesse o painel do Estaciona AI</p>
       </div>
       
-      <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Entrar</div>
+        <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Criar Conta</div>
+      </div>
+      
+      <!-- FORM: LOGIN -->
+      <form id="loginForm" class="form-section active" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <!-- The 'placeholder=" "' is required for the floating label css trick to work -->
           <input type="email" id="email" class="form-control" placeholder=" " required autocomplete="email">
           <label for="email" class="form-label">E-mail</label>
         </div>
@@ -218,12 +259,11 @@
           <label for="password" class="form-label">Senha</label>
         </div>
 
-        <div class="utilities-row">
+        <div class="utilities-row" style="justify-content: flex-start;">
           <label style="display: flex; align-items: center; cursor: pointer; color: var(--text-light);">
-            <input type="checkbox" style="margin-right: 0.5rem; accent-color: var(--primary-green);">
+            <input type="checkbox" id="rememberMe" style="margin-right: 0.5rem; accent-color: var(--primary-green);">
             Lembrar de mim
           </label>
-          <a href="#" style="color: var(--primary-green); text-decoration: none; font-weight: 500; transition: color 0.2s;">Esqueceu a senha?</a>
         </div>
 
         <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
@@ -232,38 +272,114 @@
         </button>
       </form>
 
-      <div class="login-footer">
-        Não tem uma conta? <a href="mailto:contato@pedroza.studio">Fale conosco</a>
-      </div>
+      <!-- FORM: REGISTER -->
+      <form id="registerForm" class="form-section" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <input type="text" id="regName" class="form-control" placeholder=" " required autocomplete="name">
+          <label for="regName" class="form-label">Nome Completo</label>
+        </div>
+        
+        <div class="form-group">
+          <input type="email" id="regEmail" class="form-control" placeholder=" " required autocomplete="email">
+          <label for="regEmail" class="form-label">E-mail</label>
+        </div>
+
+        <div class="form-group">
+          <input type="text" id="regPlate" class="form-control" placeholder=" " style="text-transform: uppercase;" maxlength="8">
+          <label for="regPlate" class="form-label">Placa do Veículo (Opcional)</label>
+        </div>
+        
+        <div class="form-group">
+          <input type="password" id="regPassword" class="form-control" placeholder=" " required minlength="8" autocomplete="new-password">
+          <label for="regPassword" class="form-label">Senha (min. 8 caracteres)</label>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <input type="date" id="regDob" class="form-control" style="color: var(--text-dark);">
+          <label for="regDob" class="form-label" style="top: 0; font-size: 0.8rem; font-weight: 600; color: var(--primary-dark); background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,1) 100%); padding: 0 0.5rem; transform: translateY(-50%) translateX(-0.5rem);">Data de Nascimento (Opcional)</label>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="regPcd">
+          <label for="regPcd">Sou Pessoa com Deficiência (PCD)</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-login" id="registerBtn" style="margin-top: 0;">
+          <span>Criar Conta</span>
+          <div class="spinner"></div>
+        </button>
+      </form>
+
     </div>
   </main>
 
   <script>
+    function switchTab(tab) {
+      // Toggle styles
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      
+      // Toggle forms
+      document.getElementById('loginForm').classList.toggle('active', tab === 'login');
+      document.getElementById('registerForm').classList.toggle('active', tab === 'register');
+      
+      // Clear forms and errors on switch
+      document.getElementById('loginForm').reset();
+      document.getElementById('registerForm').reset();
+      clearError();
+    }
+
+    function showError(formId, message) {
+      clearError();
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'auth-error';
+      errorDiv.textContent = message;
+      errorDiv.style.cssText = `
+        background: rgba(220, 38, 38, 0.08);
+        color: #dc2626;
+        border: 1px solid rgba(220, 38, 38, 0.2);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: center;
+        animation: slideUp 0.3s ease;
+      `;
+      const form = document.getElementById(formId);
+      form.insertBefore(errorDiv, form.firstChild);
+    }
+
+    function clearError() {
+      const errs = document.querySelectorAll('.auth-error');
+      errs.forEach(e => e.remove());
+    }
+
+    const host = window.location.hostname || 'localhost';
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
+    const apiUrl = isLocal ? 'http://localhost:8000' : 'https://api.estaciona.tech';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const isLoggedIn = localStorage.getItem('estaciona_logged_in') || sessionStorage.getItem('estaciona_logged_in');
+      if (isLoggedIn === 'true') {
+        window.location.href = 'app.html';
+      }
+    });
+
     function handleLogin(event) {
       event.preventDefault();
-
       const btn = document.getElementById('loginBtn');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
 
-      const oldError = document.querySelector('.login-error');
-      if (oldError) oldError.remove();
-
+      clearError();
       btn.classList.add('loading');
-
-      const host = window.location.hostname || 'localhost';
-      const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
-      const apiUrl = isLocal ? 'http://localhost:8000' : 'https://api.estaciona.tech';
 
       fetch(`${apiUrl}/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: email,
-          password: password
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password })
       })
       .then(async response => {
         if (!response.ok) {
@@ -274,20 +390,78 @@
       })
       .then(data => {
         btn.classList.remove('loading');
-        sessionStorage.setItem('estaciona_logged_in', 'true');
-        sessionStorage.setItem('estaciona_user', email);
-        sessionStorage.setItem('estaciona_token', data.token);
-        window.location.href = 'dashboard.html';
+        
+        if (rememberMe) {
+          localStorage.setItem('estaciona_logged_in', 'true');
+          localStorage.setItem('estaciona_user', email);
+          localStorage.setItem('estaciona_token', data.token);
+          
+          sessionStorage.removeItem('estaciona_logged_in');
+          sessionStorage.removeItem('estaciona_user');
+          sessionStorage.removeItem('estaciona_token');
+        } else {
+          sessionStorage.setItem('estaciona_logged_in', 'true');
+          sessionStorage.setItem('estaciona_user', email);
+          sessionStorage.setItem('estaciona_token', data.token);
+          
+          localStorage.removeItem('estaciona_logged_in');
+          localStorage.removeItem('estaciona_user');
+          localStorage.removeItem('estaciona_token');
+        }
+        
+        window.location.href = 'app.html';
       })
       .catch(err => {
         btn.classList.remove('loading');
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'login-error';
-        errorDiv.textContent = err.message || 'Erro ao conectar ao servidor.';
-        errorDiv.style.cssText = `
-          background: rgba(220, 38, 38, 0.08);
-          color: #dc2626;
-          border: 1px solid rgba(220, 38, 38, 0.2);
+        showError('loginForm', err.message || 'Erro ao conectar ao servidor.');
+      });
+    }
+
+    function handleRegister(event) {
+      event.preventDefault();
+      const btn = document.getElementById('registerBtn');
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const rawPlate = document.getElementById('regPlate').value.trim().toUpperCase();
+      const plate = rawPlate ? rawPlate : null;
+      const password = document.getElementById('regPassword').value;
+      const dob = document.getElementById('regDob').value;
+      const pcdStatus = document.getElementById('regPcd').checked;
+
+      clearError();
+      btn.classList.add('loading');
+
+      fetch(`${apiUrl}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          password: password,
+          plate: plate,
+          date_of_birth: dob ? dob : null,
+          pcd_status: pcdStatus
+        })
+      })
+      .then(async response => {
+        if (!response.ok) {
+          const errMsg = await response.text().catch(() => 'Erro ao criar conta.');
+          throw new Error(errMsg || 'Erro ao criar conta. E-mail ou Placa já podem estar em uso.');
+        }
+        return response.json();
+      })
+      .then(() => {
+        btn.classList.remove('loading');
+        document.getElementById('registerForm').reset();
+        switchTab('login');
+        
+        const successDiv = document.createElement('div');
+        successDiv.className = 'auth-error';
+        successDiv.textContent = 'Conta criada com sucesso! Faça seu login para continuar.';
+        successDiv.style.cssText = `
+          background: rgba(28, 167, 69, 0.08);
+          color: #1ca745;
+          border: 1px solid rgba(28, 167, 69, 0.2);
           border-radius: 10px;
           padding: 0.75rem 1rem;
           margin-bottom: 1rem;
@@ -297,7 +471,11 @@
           animation: slideUp 0.3s ease;
         `;
         const form = document.getElementById('loginForm');
-        form.insertBefore(errorDiv, form.firstChild);
+        form.insertBefore(successDiv, form.firstChild);
+      })
+      .catch(err => {
+        btn.classList.remove('loading');
+        showError('registerForm', err.message || 'Erro ao comunicar com servidor.');
       });
     }
   </script>
