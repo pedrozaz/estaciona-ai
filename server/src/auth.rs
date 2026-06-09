@@ -31,6 +31,8 @@ pub struct LoginRequest {
 pub struct LoginResponse {
     pub token: String,
     pub role: String,
+    pub name: String,
+    pub id: uuid::Uuid,
 }
 
 pub async fn login_dashboard(
@@ -38,7 +40,7 @@ pub async fn login_dashboard(
     Json(payload): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let user = sqlx::query!(
-        "SELECT id, password_hash as \"password_hash!\", role FROM users WHERE email = $1",
+        "SELECT id, password_hash as \"password_hash!\", role, name FROM users WHERE email = $1",
         payload.email
     )
     .fetch_optional(&state.pool)
@@ -70,6 +72,8 @@ pub async fn login_dashboard(
     let response = LoginResponse {
         token,
         role: user_record.role,
+        name: user_record.name.unwrap_or_default(),
+        id: user_record.id,
     };
     Ok((StatusCode::OK, Json(response)))
 }
@@ -95,10 +99,13 @@ mod tests {
         let response = LoginResponse {
             token: "jwt.token.here".to_string(),
             role: "admin".to_string(),
+            name: "John Doe".to_string(),
+            id: uuid::Uuid::nil(),
         };
 
         let json_str = serde_json::to_string(&response).unwrap();
         assert!(json_str.contains(r#""token":"jwt.token.here""#));
         assert!(json_str.contains(r#""role":"admin""#));
+        assert!(json_str.contains(r#""name":"John Doe""#));
     }
 }

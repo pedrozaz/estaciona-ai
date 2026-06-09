@@ -283,158 +283,6 @@
         background: #158a36;
       }
 
-      .btn-control {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0.8rem;
-        border: 1px solid rgba(28, 167, 69, 0.3);
-        border-radius: 8px;
-        background: rgba(28, 167, 69, 0.08);
-        color: #1ca745;
-        font-family: var(--font-main);
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.25s ease;
-      }
-
-      .btn-control:hover {
-        background: rgba(28, 167, 69, 0.15);
-        border-color: rgba(28, 167, 69, 0.5);
-        color: #2ee566;
-        box-shadow: 0 0 10px rgba(28, 167, 69, 0.15);
-      }
-
-      .test-panel-drawer {
-        position: fixed;
-        top: 48px;
-        right: -340px;
-        width: 340px;
-        height: calc(100vh - 48px);
-        background: rgba(15, 17, 23, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 1.5rem;
-        z-index: 120;
-        transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        display: flex;
-        flex-direction: column;
-        color: #e2e8f0;
-        pointer-events: auto;
-      }
-
-      .test-panel-drawer.open {
-        right: 0;
-      }
-
-      .test-panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-      }
-
-      .test-panel-header h4 {
-        font-size: 0.95rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #e2e8f0;
-        margin: 0;
-      }
-
-      .btn-close-drawer {
-        background: none;
-        border: none;
-        color: #94a3b8;
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.2s;
-      }
-
-      .btn-close-drawer:hover {
-        color: #f87171;
-      }
-
-      .test-panel-instruction {
-        font-size: 0.78rem;
-        color: #64748b;
-        margin-bottom: 1rem;
-      }
-
-      .test-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem 0.75rem;
-        margin-bottom: 1.25rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: #94a3b8;
-      }
-
-      .legend-color {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-      }
-
-      .legend-color.std {
-        background: #1ca745;
-      }
-      .legend-color.pcd {
-        background: #2563eb;
-      }
-      .legend-color.eld {
-        background: #8b5cf6;
-      }
-      .legend-color.occ {
-        background: #ef4444;
-      }
-      .legend-color.res {
-        background: #eab308;
-      }
-
-      .test-spots-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-        gap: 6px;
-        overflow-y: auto;
-        flex-grow: 1;
-        padding-right: 4px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar {
-        width: 4px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-      }
-
-      .test-spots-grid::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-
       .spot-pill {
         display: flex;
         align-items: center;
@@ -590,15 +438,6 @@
       }
 
       @media (max-width: 600px) {
-        .user-badge span {
-          display: none;
-        }
-        .btn-control .text {
-          display: none;
-        }
-        .btn-control {
-          padding: 0.4rem 0.6rem;
-        }
         .dashboard-nav .logo-text {
           font-size: 1.1rem;
         }
@@ -617,22 +456,6 @@
         .info-panel p {
           display: flex;
           justify-content: space-between;
-        }
-        .test-panel-drawer {
-          width: 100%;
-          right: 0;
-          left: 0;
-          bottom: -60vh;
-          height: 60vh;
-          top: auto;
-          border-left: none;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px 20px 0 0;
-          box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
-          transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .test-panel-drawer.open {
-          bottom: 0;
         }
       }
 
@@ -724,20 +547,76 @@
         <div class="logo-pin"><span>AI</span></div>
       </a>
       <div class="nav-right">
-        <button
-          class="btn-control"
-          id="testPanelToggleBtn"
-          onclick="window.toggleTestPanel()"
-        >
-          <span>🧪</span> <span class="text">Simulação</span>
-        </button>
-        <div class="user-badge">
-          <div class="user-avatar" id="userAvatar">A</div>
-          <span id="userName">admin</span>
+        <div class="user-menu-container" style="position: relative">
+          <div
+            class="user-badge"
+            id="userBadgeBtn"
+            style="
+              cursor: pointer;
+              padding: 0.4rem 0.6rem;
+              border-radius: 8px;
+              transition: background 0.2s;
+            "
+            onclick="toggleUserMenu()"
+          >
+            <div class="user-avatar" id="userAvatar">A</div>
+            <span id="userName" style="font-weight: 500">admin</span>
+            <span style="font-size: 0.6rem; margin-left: 4px; color: #64748b"
+              >▼</span
+            >
+          </div>
+
+          <div
+            id="userDropdown"
+            style="
+              display: none;
+              position: absolute;
+              top: 110%;
+              right: 0;
+              background: rgba(15, 17, 23, 0.95);
+              backdrop-filter: blur(12px);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              border-radius: 12px;
+              padding: 0.5rem;
+              min-width: 160px;
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+              z-index: 200;
+            "
+          >
+            <div
+              style="
+                padding: 0.5rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                margin-bottom: 0.5rem;
+              "
+            >
+              <span
+                style="
+                  font-size: 0.75rem;
+                  color: #64748b;
+                  text-transform: uppercase;
+                  font-weight: 700;
+                  letter-spacing: 0.5px;
+                "
+                >Configurações</span
+              >
+            </div>
+            <button
+              class="btn-logout"
+              id="logoutBtn"
+              onclick="handleLogout()"
+              style="
+                width: 100%;
+                text-align: left;
+                border: none;
+                padding: 0.6rem 0.8rem;
+                border-radius: 6px;
+              "
+            >
+              Sair da conta
+            </button>
+          </div>
         </div>
-        <button class="btn-logout" id="logoutBtn" onclick="handleLogout()">
-          Sair
-        </button>
       </div>
     </nav>
 
@@ -754,39 +633,6 @@
     <div class="info-panel" id="infoPanel" onclick="event.stopPropagation()">
       <h4>VAGAS LIVRES</h4>
       <div id="infoPanelContent"></div>
-    </div>
-
-    <div
-      class="test-panel-drawer"
-      id="testPanel"
-      style="display: none"
-      onclick="event.stopPropagation()"
-    >
-      <div class="test-panel-header">
-        <h4>Simulação de Vagas</h4>
-        <button class="btn-close-drawer" onclick="window.toggleTestPanel()">
-          ✕
-        </button>
-      </div>
-      <p class="test-panel-instruction">
-        Clique em uma vaga para alternar sua ocupação.
-      </p>
-      <div class="test-legend">
-        <div class="legend-item">
-          <span class="legend-color std"></span>Padrão
-        </div>
-        <div class="legend-item"><span class="legend-color pcd"></span>PCD</div>
-        <div class="legend-item">
-          <span class="legend-color eld"></span>Idoso
-        </div>
-        <div class="legend-item">
-          <span class="legend-color occ"></span>Ocupada
-        </div>
-        <div class="legend-item">
-          <span class="legend-color res"></span>Reservada
-        </div>
-      </div>
-      <div id="testSpotsContainer" class="test-spots-grid"></div>
     </div>
 
     <div class="popup-overlay" id="confirmationPopup">
@@ -855,18 +701,103 @@
       import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
       import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 
-      const isLoggedIn = sessionStorage.getItem("estaciona_logged_in") === "true" || localStorage.getItem("estaciona_logged_in") === "true";
+      const isLoggedIn =
+        sessionStorage.getItem("estaciona_logged_in") === "true" ||
+        localStorage.getItem("estaciona_logged_in") === "true";
       if (!isLoggedIn) {
         window.location.href = "login.html";
       }
 
-      const userEmail = sessionStorage.getItem("estaciona_user") || localStorage.getItem("estaciona_user") || "admin";
-      const initial = userEmail.charAt(0).toUpperCase();
+      const userEmail =
+        sessionStorage.getItem("estaciona_user") ||
+        localStorage.getItem("estaciona_user") ||
+        "admin";
+      const userName =
+        sessionStorage.getItem("estaciona_name") ||
+        localStorage.getItem("estaciona_name") ||
+        userEmail.split("@")[0];
+      const initial = userName.charAt(0).toUpperCase();
       document.getElementById("userAvatar").textContent = initial;
-      document.getElementById("userName").textContent = userEmail.split("@")[0];
+      document.getElementById("userName").textContent = userName;
 
-      let simulatedUserId = null;
-      const simulatedUserPlate = "DEV-9999";
+      window.wakeUpAudio = function() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
+        if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
+      };
+      document.addEventListener("pointerdown", window.wakeUpAudio, { passive: true });
+
+      window.sounds = {
+        playBeep: function() {
+          window.wakeUpAudio();
+          const check = () => {
+            if (window.audioCtx.state === 'running') this._playBeep();
+            else setTimeout(check, 10);
+          };
+          check();
+        },
+        _playBeep: function() {
+          const t = window.audioCtx.currentTime;
+          const osc = window.audioCtx.createOscillator();
+          const gain = window.audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, t); 
+          osc.frequency.exponentialRampToValueAtTime(1760, t + 0.1);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.1, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc.connect(gain); gain.connect(window.audioCtx.destination);
+          osc.start(t); osc.stop(t + 0.1);
+        },
+
+        playWoosh: function() {
+          window.wakeUpAudio();
+          const check = () => {
+            if (window.audioCtx.state === 'running') this._playWoosh();
+            else setTimeout(check, 10);
+          };
+          check();
+        },
+        _playWoosh: function() {
+          const t = window.audioCtx.currentTime;
+          const osc = window.audioCtx.createOscillator();
+          const gain = window.audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(250, t);
+          osc.frequency.exponentialRampToValueAtTime(40, t + 0.5);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.05, t + 0.1);
+          gain.gain.linearRampToValueAtTime(0, t + 0.5);
+          osc.connect(gain); gain.connect(window.audioCtx.destination);
+          osc.start(t); osc.stop(t + 0.5);
+        },
+
+        playPop: function() {
+          window.wakeUpAudio();
+          const check = () => {
+            if (window.audioCtx.state === 'running') this._playPop();
+            else setTimeout(check, 10);
+          };
+          check();
+        },
+        _playPop: function() {
+          const t = window.audioCtx.currentTime;
+          const osc = window.audioCtx.createOscillator();
+          const gain = window.audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(400, t);
+          osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.03, t + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc.connect(gain); gain.connect(window.audioCtx.destination);
+          osc.start(t); osc.stop(t + 0.1);
+        }
+      };
+
+      const simulatedUserId =
+        sessionStorage.getItem("estaciona_id") ||
+        localStorage.getItem("estaciona_id");
       let activePinpointPath = null;
       let currentReservation = null;
       let reservationTimerId = null;
@@ -888,19 +819,6 @@
       const apiUrl = isLocal
         ? `http://${apiHost}:8000`
         : "https://api.estaciona.tech";
-
-      fetch(`${apiUrl}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ plate: simulatedUserPlate }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          simulatedUserId = data.id;
-        })
-        .catch((err) => console.error(err));
 
       function requestRecommendationAndReserve(pathData) {
         if (!simulatedUserId) {
@@ -1026,6 +944,7 @@
             hasExtended = false;
             startReservationTimer(90);
             document.getElementById("infoPanel").classList.add("visible");
+            window.sounds.playPop();
           })
           .catch((err) => {
             console.error(err);
@@ -1040,6 +959,43 @@
 
       scene.fog = new THREE.FogExp2(0x0f1117, 0.002);
 
+      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+      const gridGeo = new THREE.BufferGeometry();
+      const gridSize = isMobile ? 60 : 100;
+      const gridSpacing = 2.0;
+      const posArray = new Float32Array(gridSize * gridSize * 3);
+      let idx = 0;
+      for (let x = -gridSize / 2; x < gridSize / 2; x++) {
+        for (let z = -gridSize / 2; z < gridSize / 2; z++) {
+          posArray[idx++] = x * gridSpacing;
+          posArray[idx++] = -25;
+          posArray[idx++] = z * gridSpacing;
+        }
+      }
+      gridGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
+
+      const circleCanvas = document.createElement("canvas");
+      circleCanvas.width = 32;
+      circleCanvas.height = 32;
+      const circleCtx = circleCanvas.getContext("2d");
+      circleCtx.beginPath();
+      circleCtx.arc(16, 16, 16, 0, Math.PI * 2);
+      circleCtx.fillStyle = "#ffffff";
+      circleCtx.fill();
+      const circleTexture = new THREE.CanvasTexture(circleCanvas);
+
+      const gridMat = new THREE.PointsMaterial({
+        size: 0.18,
+        color: 0x1ca745,
+        transparent: true,
+        opacity: 0.4,
+        map: circleTexture,
+        depthWrite: false,
+      });
+      const particlesMesh = new THREE.Points(gridGeo, gridMat);
+      scene.add(particlesMesh);
+
       const camera = new THREE.PerspectiveCamera(
         50,
         viewport.clientWidth / viewport.clientHeight,
@@ -1053,7 +1009,6 @@
         alpha: false,
       });
       renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
       renderer.setPixelRatio(
         isMobile
           ? Math.min(window.devicePixelRatio, 1.5)
@@ -1485,7 +1440,6 @@
             totalSpots = data.length;
             freeSpots = data.length;
             updateInfoPanel();
-            buildTestPanel();
 
             const defaultGroundY =
               configData && configData[0] ? configData[0].position.y : -6.0;
@@ -1688,53 +1642,6 @@
         updateInfoPanel();
       };
 
-      window.testPanelToggleSpot = function (id) {
-        const spotObj = spotsMeshes[id];
-        if (!spotObj) return;
-        const currentStatus = spotObj.status;
-        const targetStatus = currentStatus === "occupied" ? "free" : "occupied";
-
-        fetch(`${apiUrl}/spots/${id}/status`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: targetStatus }),
-        }).catch((err) => console.error(err));
-      };
-
-      window.toggleTestPanel = function () {
-        const panel = document.getElementById("testPanel");
-        panel.classList.toggle("open");
-      };
-
-      function buildTestPanel() {
-        const container = document.getElementById("testSpotsContainer");
-        let html = "";
-        parkingSpotsData.forEach((spot) => {
-          const spotObj = spotsMeshes[spot.id];
-          let statusClass = "free-standard";
-          if (spot.id === "A-01" || spot.id === "A-02")
-            statusClass = "free-pcd";
-          else if (spot.id === "A-03" || spot.id === "A-04")
-            statusClass = "free-elderly";
-
-          if (spotObj && spotObj.status === "occupied") {
-            statusClass = "occupied";
-          } else if (spotObj && spotObj.status === "reserved") {
-            statusClass = "reserved";
-          }
-
-          html += `
-          <button id="btn-spot-${spot.id}" class="spot-pill ${statusClass}" onclick="window.testPanelToggleSpot('${spot.id}'); event.stopPropagation();">
-            ${spot.id}
-          </button>
-        `;
-        });
-        container.innerHTML = html;
-        document.getElementById("testPanel").style.display = "flex";
-      }
-
       function buildCar() {
         if (lancerModel) {
           carGroup.add(lancerModel.clone());
@@ -1811,15 +1718,21 @@
           side: THREE.DoubleSide,
           depthWrite: false,
         });
-        const ring3D = new THREE.Mesh(ringGeo, ringMat);
+                const ring3D = new THREE.Mesh(ringGeo, ringMat);
         ring3D.rotation.x = -Math.PI / 2;
         ring3D.position.set(pos.x, pos.y + 0.05, pos.z);
         scene.add(ring3D);
+
+        content.addEventListener("pointerdown", (e) => {
+          if (window.wakeUpAudio) window.wakeUpAudio();
+          e.stopPropagation();
+        });
 
         content.addEventListener("click", () => {
           if (isBlocked) return;
           if (content.dataset.blocked === "true") return;
           if (camData) {
+            window.sounds.playWoosh();
             currentFocusCamData = camData;
 
             if (pathData && pathData.length > 0) {
@@ -1851,6 +1764,7 @@
             activeCarPath[currentPathIndex].y,
             activeCarPath[currentPathIndex].z,
           );
+          
           const p2 = new THREE.Vector3(
             activeCarPath[currentPathIndex + 1].x,
             activeCarPath[currentPathIndex + 1].y,
@@ -1858,7 +1772,7 @@
           );
 
           const dist = p1.distanceTo(p2);
-          const speed = 0.026;
+          const speed = 0.015;
 
           const currentDist = carGroup.position.distanceTo(p1);
           const nextDist = currentDist + speed;
@@ -1878,7 +1792,11 @@
           } else {
             const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
             carGroup.position.add(dir.multiplyScalar(speed));
-            carGroup.lookAt(p2);
+            
+            window.carGhost = window.carGhost || new THREE.Object3D();
+            window.carGhost.position.copy(carGroup.position);
+            window.carGhost.lookAt(p2);
+            carGroup.quaternion.slerp(window.carGhost.quaternion, 0.12);
           }
         }
 
@@ -1905,10 +1823,14 @@
           const offset = new THREE.Vector3().subVectors(cPos, tPos).normalize();
 
           const height = 7.5 * mobileScale;
-          const horizontalOffset = 0.9 * mobileScale;
+          const horizontalOffset = 1.6 * mobileScale;
 
           offset.y = 0;
           offset.normalize().multiplyScalar(horizontalOffset);
+          
+          const sideOffset = new THREE.Vector3().crossVectors(offset, new THREE.Vector3(0, 1, 0)).normalize();
+          offset.add(sideOffset.multiplyScalar(-2.8 * mobileScale));
+
           offset.y = height;
 
           const dynamicTarget = carGroup.position.clone();
@@ -1938,9 +1860,17 @@
           targetCameraLookAt.copy(tPos);
         }
 
-        camera.position.lerp(targetCameraPos, 0.05);
-        currentCameraTarget.lerp(targetCameraLookAt, 0.05);
-        camera.lookAt(currentCameraTarget);
+        const isTrackingCar = activeCarPath && activeCarPath.length > 1;
+        
+        const posSpeed = isTrackingCar ? 0.08 : 0.02; 
+        const lookSpeed = isTrackingCar ? 0.1 : 0.06;
+
+        camera.position.lerp(targetCameraPos, posSpeed);
+
+        window.camGhost = window.camGhost || new THREE.PerspectiveCamera();
+        window.camGhost.position.copy(camera.position);
+        window.camGhost.lookAt(targetCameraLookAt);
+        camera.quaternion.slerp(window.camGhost.quaternion, lookSpeed);
 
         renderer.render(scene, camera);
 
@@ -2052,16 +1982,35 @@
       window.handleLogout = function () {
         sessionStorage.removeItem("estaciona_logged_in");
         sessionStorage.removeItem("estaciona_user");
+        sessionStorage.removeItem("estaciona_name");
+        sessionStorage.removeItem("estaciona_id");
         sessionStorage.removeItem("estaciona_token");
-        
+
         localStorage.removeItem("estaciona_logged_in");
         localStorage.removeItem("estaciona_user");
+        localStorage.removeItem("estaciona_name");
+        localStorage.removeItem("estaciona_id");
         localStorage.removeItem("estaciona_token");
-        
+
         window.location.href = "index.html";
       };
 
+      window.toggleUserMenu = function () {
+        const dropdown = document.getElementById("userDropdown");
+        dropdown.style.display =
+          dropdown.style.display === "none" ? "block" : "none";
+      };
+
+      document.addEventListener("click", function (event) {
+        const container = document.querySelector(".user-menu-container");
+        if (container && !container.contains(event.target)) {
+          const dropdown = document.getElementById("userDropdown");
+          if (dropdown) dropdown.style.display = "none";
+        }
+      });
+
       window.handlePopupResponse = function (response) {
+        window.sounds.playBeep();
         document.getElementById("confirmationPopup").classList.remove("active");
 
         if (reservationTimerId) {
@@ -2135,6 +2084,7 @@
       }
 
       window.handleExtensionResponse = function (response) {
+        window.sounds.playBeep();
         document.getElementById("extensionPopup").classList.remove("active");
         if (!currentReservation) return;
 
@@ -2177,6 +2127,7 @@
       }
 
       window.resetCamera = function () {
+        window.sounds.playBeep();
         if (currentReservation) {
           expireReservation();
           return;

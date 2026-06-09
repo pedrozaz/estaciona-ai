@@ -416,28 +416,40 @@ pub async fn recommend_spot(
         ));
     }
 
-    let closest_spot = sqlx::query!(
+    let free_spots = sqlx::query!(
         r#"
         SELECT id 
         FROM spots 
         WHERE status = 'free' 
           AND id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
-        ORDER BY ((x - 3.2547) * (x - 3.2547) + (COALESCE(z, 0) - 0.2290) * (COALESCE(z, 0) - 0.2290)) ASC
-        LIMIT 1
         "#
     )
-    .fetch_optional(&state.pool)
+    .fetch_all(&state.pool)
     .await
-    .unwrap_or(None);
+    .unwrap_or_default();
 
-    match closest_spot {
-        Some(spot) => {
+    let mut closest_spot_id = None;
+    let mut min_cost = u32::MAX;
+
+    {
+        let graph = state.graph.read().await;
+        for spot in &free_spots {
+            if let Some(cost) = graph.calculate_cost("cam-01", &spot.id)
+                && cost < min_cost {
+                    min_cost = cost;
+                    closest_spot_id = Some(spot.id.clone());
+                }
+        }
+    }
+
+    match closest_spot_id {
+        Some(spot_id) => {
             let graph = state.graph.read().await;
-            let route = graph.calculate_route("cam-01", &spot.id);
+            let route = graph.calculate_route("cam-01", &spot_id);
             Ok((
                 StatusCode::OK,
                 Json(serde_json::json!({
-                    "recommended_spot": spot.id,
+                    "recommended_spot": spot_id,
                     "route": route
                 })),
             ))
