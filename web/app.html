@@ -720,6 +720,51 @@
       document.getElementById("userAvatar").textContent = initial;
       document.getElementById("userName").textContent = userName;
 
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioContext();
+
+      window.sounds = {
+        playBeep: function() {
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+          osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        },
+        playWoosh: function() {
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+          gain.gain.setValueAtTime(0, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.1);
+          gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+        },
+        playPop: function() {
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        }
+      };
+
       const simulatedUserId =
         sessionStorage.getItem("estaciona_id") ||
         localStorage.getItem("estaciona_id");
@@ -869,6 +914,7 @@
             hasExtended = false;
             startReservationTimer(90);
             document.getElementById("infoPanel").classList.add("visible");
+            window.sounds.playPop();
           })
           .catch((err) => {
             console.error(err);
@@ -1651,6 +1697,7 @@
           if (isBlocked) return;
           if (content.dataset.blocked === "true") return;
           if (camData) {
+            window.sounds.playWoosh();
             currentFocusCamData = camData;
 
             if (pathData && pathData.length > 0) {
@@ -1911,6 +1958,7 @@
       });
 
       window.handlePopupResponse = function (response) {
+        window.sounds.playBeep();
         document.getElementById("confirmationPopup").classList.remove("active");
 
         if (reservationTimerId) {
@@ -1984,6 +2032,7 @@
       }
 
       window.handleExtensionResponse = function (response) {
+        window.sounds.playBeep();
         document.getElementById("extensionPopup").classList.remove("active");
         if (!currentReservation) return;
 
@@ -2026,6 +2075,7 @@
       }
 
       window.resetCamera = function () {
+        window.sounds.playBeep();
         if (currentReservation) {
           expireReservation();
           return;
