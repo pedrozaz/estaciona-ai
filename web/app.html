@@ -283,10 +283,6 @@
         background: #158a36;
       }
 
-
-
-
-
       .spot-pill {
         display: flex;
         align-items: center;
@@ -442,7 +438,6 @@
       }
 
       @media (max-width: 600px) {
-
         .dashboard-nav .logo-text {
           font-size: 1.1rem;
         }
@@ -462,7 +457,6 @@
           display: flex;
           justify-content: space-between;
         }
-
       }
 
       .popup-overlay {
@@ -553,19 +547,72 @@
         <div class="logo-pin"><span>AI</span></div>
       </a>
       <div class="nav-right">
-
-        <div class="user-menu-container" style="position: relative;">
-          <div class="user-badge" id="userBadgeBtn" style="cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 8px; transition: background 0.2s;" onclick="toggleUserMenu()">
+        <div class="user-menu-container" style="position: relative">
+          <div
+            class="user-badge"
+            id="userBadgeBtn"
+            style="
+              cursor: pointer;
+              padding: 0.4rem 0.6rem;
+              border-radius: 8px;
+              transition: background 0.2s;
+            "
+            onclick="toggleUserMenu()"
+          >
             <div class="user-avatar" id="userAvatar">A</div>
-            <span id="userName" style="font-weight: 500;">admin</span>
-            <span style="font-size: 0.6rem; margin-left: 4px; color: #64748b;">▼</span>
+            <span id="userName" style="font-weight: 500">admin</span>
+            <span style="font-size: 0.6rem; margin-left: 4px; color: #64748b"
+              >▼</span
+            >
           </div>
-          
-          <div id="userDropdown" style="display: none; position: absolute; top: 110%; right: 0; background: rgba(15, 17, 23, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.5rem; min-width: 160px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 200;">
-            <div style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 0.5rem;">
-              <span style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Configurações</span>
+
+          <div
+            id="userDropdown"
+            style="
+              display: none;
+              position: absolute;
+              top: 110%;
+              right: 0;
+              background: rgba(15, 17, 23, 0.95);
+              backdrop-filter: blur(12px);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              border-radius: 12px;
+              padding: 0.5rem;
+              min-width: 160px;
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+              z-index: 200;
+            "
+          >
+            <div
+              style="
+                padding: 0.5rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                margin-bottom: 0.5rem;
+              "
+            >
+              <span
+                style="
+                  font-size: 0.75rem;
+                  color: #64748b;
+                  text-transform: uppercase;
+                  font-weight: 700;
+                  letter-spacing: 0.5px;
+                "
+                >Configurações</span
+              >
             </div>
-            <button class="btn-logout" id="logoutBtn" onclick="handleLogout()" style="width: 100%; text-align: left; border: none; padding: 0.6rem 0.8rem; border-radius: 6px;">
+            <button
+              class="btn-logout"
+              id="logoutBtn"
+              onclick="handleLogout()"
+              style="
+                width: 100%;
+                text-align: left;
+                border: none;
+                padding: 0.6rem 0.8rem;
+                border-radius: 6px;
+              "
+            >
               Sair da conta
             </button>
           </div>
@@ -587,8 +634,6 @@
       <h4>VAGAS LIVRES</h4>
       <div id="infoPanelContent"></div>
     </div>
-
-
 
     <div class="popup-overlay" id="confirmationPopup">
       <div class="popup-card">
@@ -656,18 +701,28 @@
       import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
       import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 
-      const isLoggedIn = sessionStorage.getItem("estaciona_logged_in") === "true" || localStorage.getItem("estaciona_logged_in") === "true";
+      const isLoggedIn =
+        sessionStorage.getItem("estaciona_logged_in") === "true" ||
+        localStorage.getItem("estaciona_logged_in") === "true";
       if (!isLoggedIn) {
         window.location.href = "login.html";
       }
 
-      const userEmail = sessionStorage.getItem("estaciona_user") || localStorage.getItem("estaciona_user") || "admin";
-      const userName = sessionStorage.getItem("estaciona_name") || localStorage.getItem("estaciona_name") || userEmail.split("@")[0];
+      const userEmail =
+        sessionStorage.getItem("estaciona_user") ||
+        localStorage.getItem("estaciona_user") ||
+        "admin";
+      const userName =
+        sessionStorage.getItem("estaciona_name") ||
+        localStorage.getItem("estaciona_name") ||
+        userEmail.split("@")[0];
       const initial = userName.charAt(0).toUpperCase();
       document.getElementById("userAvatar").textContent = initial;
       document.getElementById("userName").textContent = userName;
 
-      const simulatedUserId = sessionStorage.getItem("estaciona_id") || localStorage.getItem("estaciona_id");
+      const simulatedUserId =
+        sessionStorage.getItem("estaciona_id") ||
+        localStorage.getItem("estaciona_id");
       let activePinpointPath = null;
       let currentReservation = null;
       let reservationTimerId = null;
@@ -828,6 +883,43 @@
 
       scene.fog = new THREE.FogExp2(0x0f1117, 0.002);
 
+      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+      const gridGeo = new THREE.BufferGeometry();
+      const gridSize = isMobile ? 60 : 100;
+      const gridSpacing = 2.0;
+      const posArray = new Float32Array(gridSize * gridSize * 3);
+      let idx = 0;
+      for (let x = -gridSize / 2; x < gridSize / 2; x++) {
+        for (let z = -gridSize / 2; z < gridSize / 2; z++) {
+          posArray[idx++] = x * gridSpacing;
+          posArray[idx++] = -6;
+          posArray[idx++] = z * gridSpacing;
+        }
+      }
+      gridGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
+
+      const circleCanvas = document.createElement("canvas");
+      circleCanvas.width = 32;
+      circleCanvas.height = 32;
+      const circleCtx = circleCanvas.getContext("2d");
+      circleCtx.beginPath();
+      circleCtx.arc(16, 16, 16, 0, Math.PI * 2);
+      circleCtx.fillStyle = "#ffffff";
+      circleCtx.fill();
+      const circleTexture = new THREE.CanvasTexture(circleCanvas);
+
+      const gridMat = new THREE.PointsMaterial({
+        size: 0.12,
+        color: 0x1ca745,
+        transparent: true,
+        opacity: 0.4,
+        map: circleTexture,
+        depthWrite: false,
+      });
+      const particlesMesh = new THREE.Points(gridGeo, gridMat);
+      scene.add(particlesMesh);
+
       const camera = new THREE.PerspectiveCamera(
         50,
         viewport.clientWidth / viewport.clientHeight,
@@ -841,7 +933,6 @@
         alpha: false,
       });
       renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
       renderer.setPixelRatio(
         isMobile
           ? Math.min(window.devicePixelRatio, 1.5)
@@ -1274,7 +1365,6 @@
             freeSpots = data.length;
             updateInfoPanel();
 
-
             const defaultGroundY =
               configData && configData[0] ? configData[0].position.y : -6.0;
 
@@ -1475,8 +1565,6 @@
         ).length;
         updateInfoPanel();
       };
-
-
 
       function buildCar() {
         if (lancerModel) {
@@ -1798,22 +1886,23 @@
         sessionStorage.removeItem("estaciona_name");
         sessionStorage.removeItem("estaciona_id");
         sessionStorage.removeItem("estaciona_token");
-        
+
         localStorage.removeItem("estaciona_logged_in");
         localStorage.removeItem("estaciona_user");
         localStorage.removeItem("estaciona_name");
         localStorage.removeItem("estaciona_id");
         localStorage.removeItem("estaciona_token");
-        
+
         window.location.href = "index.html";
       };
 
-      window.toggleUserMenu = function() {
+      window.toggleUserMenu = function () {
         const dropdown = document.getElementById("userDropdown");
-        dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+        dropdown.style.display =
+          dropdown.style.display === "none" ? "block" : "none";
       };
 
-      document.addEventListener("click", function(event) {
+      document.addEventListener("click", function (event) {
         const container = document.querySelector(".user-menu-container");
         if (container && !container.contains(event.target)) {
           const dropdown = document.getElementById("userDropdown");
