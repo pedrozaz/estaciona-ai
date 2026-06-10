@@ -92,7 +92,111 @@ class PointsModule {
         setTimeout(() => {
             const undoBtn = document.getElementById('calUndoBtn');
             if (undoBtn) undoBtn.addEventListener('click', () => bus.emit('calibrate:undo'));
+            
+            const calcBtn = document.getElementById('calcMatrixBtn');
+            if (calcBtn) calcBtn.addEventListener('click', () => this.computeAndDownloadMatrix());
+            
+            this.loadExistingCalibration();
         }, 100);
+    }
+
+    async loadExistingCalibration() {
+        try {
+            const res = await fetch('/data/ortho_calibration.json');
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data && data.referencePoints && data.referencePoints.length > 0) {
+                this.pairs = data.referencePoints.map(p => ({
+                    recon: { x: p.model.x, y: 0, z: p.model.z },
+                    ortho: { x: p.image.x, y: p.image.y }
+                }));
+                this.expectedInput = 'recon';
+                
+                this.log(`> Loaded ${this.pairs.length} existing reference points.`, 'success');
+                this.log(`> Pair ${this.pairs.length + 1}: Click on the 3D Reconstruction model...`, 'warning');
+                
+                setTimeout(() => {
+                    bus.emit('calibrate:ortho-load', this.pairs.map(p => p.ortho));
+                    bus.emit('calibrate:recon-load', this.pairs.map(p => p.recon));
+                }, 500);
+            }
+        } catch(e) {
+            console.warn('No existing calibration found or error loading it.', e);
+        }
+    }
+
+    computeAndDownloadMatrix() {
+        if (this.pairs.length < 3) {
+            this.log(`> Error: At least 3 pairs are required to compute an affine transform.`, 'warning');
+            return;
+        }
+        
+        const computeAffine = (src, dst) => {
+            let sumX = 0, sumY = 0, sumU = 0, sumV = 0;
+            let sumXX = 0, sumYY = 0, sumXY = 0;
+            let sumUX = 0, sumUY = 0, sumVX = 0, sumVY = 0;
+            let n = src.length;
+            
+            for(let i=0; i<n; i++) {
+                let x = src[i].x, y = src[i].y;
+                let u = dst[i].x, v = dst[i].y;
+                sumX += x; sumY += y; sumU += u; sumV += v;
+                sumXX += x*x; sumYY += y*y; sumXY += x*y;
+                sumUX += u*x; sumUY += u*y; sumVX += v*x; sumVY += v*y;
+            }
+            
+            const denom = n * (sumXX * sumYY - sumXY * sumXY) - sumX * (sumX * sumYY - sumY * sumXY) + sumY * (sumX * sumXY - sumY * sumXX);
+            if (Math.abs(denom) < 1e-10) return null;
+            
+            const a = (sumUX * (n * sumYY - sumY * sumY) - sumUY * (n * sumXY - sumX * sumY) + sumU * (sumY * sumXY - sumX * sumYY)) / denom;
+            const b = (sumXX * (n * sumUY - sumU * sumY) - sumXY * (n * sumUX - sumU * sumX) + sumX * (sumUX * sumY - sumUY * sumX)) / denom;
+            const tx = (sumXX * (sumYY * sumU - sumY * sumUY) - sumXY * (sumXY * sumU - sumX * sumUY) + sumX * (sumXY * sumUY - sumYY * sumUX)) / denom;
+
+            const c = (sumVX * (n * sumYY - sumY * sumY) - sumVY * (n * sumXY - sumX * sumY) + sumV * (sumY * sumXY - sumX * sumYY)) / denom;
+            const d = (sumXX * (n * sumVY - sumV * sumY) - sumXY * (n * sumVX - sumV * sumX) + sumX * (sumVX * sumY - sumVY * sumX)) / denom;
+            const ty = (sumXX * (sumYY * sumV - sumY * sumVY) - sumXY * (sumXY * sumV - sumX * sumVY) + sumX * (sumXY * sumVY - sumYY * sumVX)) / denom;
+
+            return { a, b, c, d, tx, ty };
+        };
+        
+        const srcModel = this.pairs.map(p => ({ x: p.recon.x, y: p.recon.z }));
+        const dstImage = this.pairs.map(p => ({ x: p.ortho.x, y: p.ortho.y }));
+        
+        const modelToImage = computeAffine(srcModel, dstImage);
+        const imageToModel = computeAffine(dstImage, srcModel);
+        
+        if (!modelToImage || !imageToModel) {
+            this.log(`> Error: Points are collinear or degenerate. Cannot compute matrix.`, 'warning');
+            return;
+        }
+
+        this.log(`> Matrix computed successfully! Triggering download...`, 'success');
+        
+        const outJSON = {
+            "image": "assets/images/uniube_ortho_projection.png",
+            "imageSize": {
+                "width": 1646,
+                "height": 1164
+            },
+            "referencePoints": this.pairs.map(p => ({
+                "model": { "x": parseFloat(p.recon.x.toFixed(6)), "z": parseFloat(p.recon.z.toFixed(6)) },
+                "image": { "x": parseFloat(p.ortho.x.toFixed(6)), "y": parseFloat(p.ortho.y.toFixed(6)) }
+            })),
+            "transform": {
+                "imageToModel": {
+                    "a": parseFloat(imageToModel.a.toFixed(6)), "b": parseFloat(imageToModel.b.toFixed(6)), "c": parseFloat(imageToModel.c.toFixed(6)), "d": parseFloat(imageToModel.d.toFixed(6)), "tx": parseFloat(imageToModel.tx.toFixed(6)), "ty": parseFloat(imageToModel.ty.toFixed(6))
+                },
+                "modelToImage": {
+                    "a": parseFloat(modelToImage.a.toFixed(6)), "b": parseFloat(modelToImage.b.toFixed(6)), "c": parseFloat(modelToImage.c.toFixed(6)), "d": parseFloat(modelToImage.d.toFixed(6)), "tx": parseFloat(modelToImage.tx.toFixed(6)), "ty": parseFloat(modelToImage.ty.toFixed(6))
+                }
+            }
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(outJSON, null, 2));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", "ortho_calibration.json");
+        dlAnchorElem.click();
     }
 
     cleanup() {

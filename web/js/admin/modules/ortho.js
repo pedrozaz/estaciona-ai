@@ -117,6 +117,28 @@ class OrthoModule {
             }
         });
 
+        bus.on('calibrate:ortho-load', (points) => {
+            if (this.mode !== 'calibrate') return;
+            points.forEach(pt => {
+                const mapPt = {
+                    offsetX: pt.x * this.scale + this.panX,
+                    offsetY: pt.y * this.scale + this.panY
+                };
+                const dot = document.createElement('div');
+                dot.style.position = 'absolute';
+                dot.style.left = `${mapPt.offsetX - 4}px`;
+                dot.style.top = `${mapPt.offsetY - 4}px`;
+                dot.style.width = '8px';
+                dot.style.height = '8px';
+                dot.style.background = '#ed6a5e';
+                dot.style.borderRadius = '50%';
+                dot.style.border = '1px solid #fff';
+                dot.style.pointerEvents = 'none';
+                markersLayer.appendChild(dot);
+                markers.push({ el: dot, origX: pt.x, origY: pt.y });
+            });
+        });
+
         bus.on('calibrate:undo:ortho', () => {
             if (markers.length > 0) {
                 const last = markers.pop();

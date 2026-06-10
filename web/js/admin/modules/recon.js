@@ -138,11 +138,21 @@ class ReconModule {
                 const box = new THREE.Box3().setFromObject(model);
                 const size = box.getSize(new THREE.Vector3());
 
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center);
+
                 const maxDim = Math.max(size.x, size.y, size.z);
                 const scale = 15 / maxDim;
                 model.scale.setScalar(scale);
 
+                this.loadedModel = model;
                 scene.add(model);
+                model.updateMatrixWorld(true);
+                
+                if (this.pendingLoadPoints && this.pendingLoadPoints.length > 0) {
+                    this.applyPoints(this.pendingLoadPoints);
+                    this.pendingLoadPoints = [];
+                }
                 
                 const finalBox = new THREE.Box3().setFromObject(model);
                 const finalCenter = finalBox.getCenter(new THREE.Vector3());
@@ -183,6 +193,40 @@ class ReconModule {
         this.activeRenderer = renderer;
 
         this.markers = [];
+        this.pendingLoadPoints = [];
+
+        this.applyPoints = (points) => {
+            points.forEach(pt => {
+                let finalY = pt.y || 0;
+                
+                if (this.loadedModel) {
+                    const raycaster = new THREE.Raycaster();
+                    raycaster.set(new THREE.Vector3(pt.x, 100, pt.z), new THREE.Vector3(0, -1, 0));
+                    const intersects = raycaster.intersectObject(this.loadedModel, true);
+                    if (intersects.length > 0) {
+                        finalY = intersects[0].point.y;
+                    }
+                }
+
+                const sphereGeo = new THREE.SphereGeometry(0.06, 16, 16);
+                const sphereMat = new THREE.MeshBasicMaterial({ color: 0xed6a5e });
+                const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                sphere.position.set(pt.x, finalY, pt.z);
+                
+                this.activeScene.add(sphere);
+                this.markers.push(sphere);
+            });
+        };
+        
+        bus.on('calibrate:recon-load', (points) => {
+            if (this.mode !== 'calibrate') return;
+            if (!this.loadedModel) {
+                this.pendingLoadPoints = points;
+            } else {
+                this.applyPoints(points);
+            }
+        });
+
         bus.on('calibrate:undo:recon', () => {
             if (this.markers && this.markers.length > 0) {
                 const last = this.markers.pop();
