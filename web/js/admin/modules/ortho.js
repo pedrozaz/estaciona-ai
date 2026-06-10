@@ -14,6 +14,7 @@ class OrthoModule {
     }
 
     launch(data) {
+        this.mode = data.mode || 'sandbox';
         const content = `
             <style> #win-${this.id} .fw-body { padding: 0 !important; } </style>
             <div class="ortho-container" id="orthoContainer" style="flex: 1; width: 100%; overflow: hidden; background: #08090a; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
@@ -40,10 +41,25 @@ class OrthoModule {
         const btnOut = document.getElementById('orthoZoomOut');
         const btnReset = document.getElementById('orthoReset');
 
+        const markersLayer = document.createElement('div');
+        markersLayer.style.position = 'absolute';
+        markersLayer.style.top = '0';
+        markersLayer.style.left = '0';
+        markersLayer.style.width = '100%';
+        markersLayer.style.height = '100%';
+        markersLayer.style.pointerEvents = 'none';
+        container.appendChild(markersLayer);
+
+        const markers = [];
+
         if (!container || !viewport || !img) return;
 
         const updateTransform = () => {
             viewport.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.scale})`;
+            markers.forEach(m => {
+                m.el.style.left = `${m.x * this.scale + this.panX}px`;
+                m.el.style.top = `${m.y * this.scale + this.panY}px`;
+            });
         };
 
         const fitImage = () => {
@@ -69,6 +85,45 @@ class OrthoModule {
 
         btnIn.addEventListener('click', () => { this.scale *= 1.2; updateTransform(); });
         btnOut.addEventListener('click', () => { this.scale /= 1.2; updateTransform(); });
+
+        let isDragging = false;
+        container.addEventListener('mousedown', () => isDragging = false);
+        container.addEventListener('mousemove', () => isDragging = true);
+        
+        container.addEventListener('click', (event) => {
+            if (this.mode === 'calibrate' && !isDragging) {
+                const rect = container.getBoundingClientRect();
+                const clickX = event.clientX - rect.left;
+                const clickY = event.clientY - rect.top;
+                
+                const imgX = (clickX - this.panX) / this.scale;
+                const imgY = (clickY - this.panY) / this.scale;
+                
+                const dot = document.createElement('div');
+                dot.style.position = 'absolute';
+                dot.style.width = '12px';
+                dot.style.height = '12px';
+                dot.style.background = '#ed6a5e';
+                dot.style.borderRadius = '50%';
+                dot.style.transform = 'translate(-50%, -50%)';
+                dot.style.border = '2px solid #fff';
+                dot.style.boxShadow = '0 0 8px rgba(0,0,0,0.5)';
+                markersLayer.appendChild(dot);
+                
+                markers.push({ x: imgX, y: imgY, el: dot });
+                updateTransform();
+
+                bus.emit('calibrate:ortho-click', { x: imgX, y: imgY });
+            }
+        });
+
+        bus.on('calibrate:undo:ortho', () => {
+            if (markers.length > 0) {
+                const last = markers.pop();
+                last.el.remove();
+            }
+        });
+        
         btnReset.addEventListener('click', fitImage);
 
         container.addEventListener('wheel', (e) => {

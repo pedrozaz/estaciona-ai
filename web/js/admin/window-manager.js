@@ -63,7 +63,18 @@ export class WindowManager {
     updateTiling() {
         const count = this.activeWindows.size;
         
-        this.workspace.className = count > 0 ? `tiling-active tiling-${Math.min(count, 4)}` : '';
+        if (count > 0) {
+            this.workspace.classList.add('tiling-active');
+            for (let i = 1; i <= 4; i++) {
+                if (i === Math.min(count, 4)) {
+                    this.workspace.classList.add(`tiling-${i}`);
+                } else {
+                    this.workspace.classList.remove(`tiling-${i}`);
+                }
+            }
+        } else {
+            this.workspace.className = '';
+        }
         
         const homeWidget = document.getElementById('homeWidget');
         if (homeWidget) {

@@ -357,6 +357,16 @@
         #tiling-container.tiling-3 > .tiling-window:nth-child(1) { grid-row: span 2; }
         #tiling-container.tiling-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
 
+        #tiling-container.calibration-mode {
+            grid-template-columns: 1fr 1fr !important;
+            grid-template-rows: 1fr 1fr !important;
+            grid-template-areas: none !important;
+        }
+        
+        #tiling-container.calibration-mode #win-recon { grid-column: 1 !important; grid-row: 1 / span 2 !important; }
+        #tiling-container.calibration-mode #win-ortho { grid-column: 2 !important; grid-row: 1 !important; }
+        #tiling-container.calibration-mode #win-points { grid-column: 2 !important; grid-row: 2 !important; }
+
         .tiling-window {
             background: rgba(12, 14, 18, 0.85);
             backdrop-filter: blur(32px);

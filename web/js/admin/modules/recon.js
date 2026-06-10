@@ -17,6 +17,7 @@ class ReconModule {
     }
 
     launch(data) {
+        this.mode = data.mode || 'sandbox';
         const content = `
             <style> #win-${this.id} .fw-body { padding: 0 !important; } </style>
             <div id="reconContainer" style="flex: 1; width: 100%; height: 100%; overflow: hidden; background: #08090a; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
@@ -148,7 +149,12 @@ class ReconModule {
                 const finalSize = finalBox.getSize(new THREE.Vector3());
                 const dist = Math.max(finalSize.x, finalSize.y, finalSize.z) * 1.2;
 
-                camera.position.set(finalCenter.x, finalCenter.y + dist * 0.5, finalCenter.z + dist);
+                if (this.mode === 'calibrate') {
+                    camera.position.set(finalCenter.x, finalCenter.y + dist * 0.6, finalCenter.z);
+                    this.controls.maxPolarAngle = 0.1;
+                } else {
+                    camera.position.set(finalCenter.x, finalCenter.y + dist * 0.5, finalCenter.z + dist);
+                }
                 this.controls.target.copy(finalCenter);
                 this.controls.update();
                 
@@ -176,6 +182,14 @@ class ReconModule {
         this.activeCamera = camera;
         this.activeRenderer = renderer;
 
+        this.markers = [];
+        bus.on('calibrate:undo:recon', () => {
+            if (this.markers && this.markers.length > 0) {
+                const last = this.markers.pop();
+                this.activeScene.remove(last);
+            }
+        });
+
         const animate = () => {
             if (!document.getElementById('reconContainer')) {
                 cancelAnimationFrame(this.animationFrameId);
@@ -187,6 +201,37 @@ class ReconModule {
             renderer.render(scene, camera);
         };
         animate();
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        let isDragging = false;
+        container.addEventListener('mousedown', () => isDragging = false);
+        container.addEventListener('mousemove', () => isDragging = true);
+        
+        container.addEventListener('click', (event) => {
+            if (this.mode === 'calibrate' && !isDragging && this.activeScene) {
+                const rect = container.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, this.activeCamera);
+                
+                const intersects = raycaster.intersectObjects(this.activeScene.children, true);
+                if (intersects.length > 0) {
+                    const pt = intersects[0].point;
+                    
+                    const sphereGeo = new THREE.SphereGeometry(0.06, 16, 16);
+                    const sphereMat = new THREE.MeshBasicMaterial({ color: 0xed6a5e });
+                    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                    sphere.position.copy(pt);
+                    this.activeScene.add(sphere);
+                    this.markers.push(sphere);
+
+                    bus.emit('calibrate:recon-click', { x: pt.x, y: pt.y, z: pt.z });
+                }
+            }
+        });
 
         const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
