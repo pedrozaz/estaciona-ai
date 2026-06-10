@@ -7,7 +7,7 @@ import './modules/points.js';
 import './modules/camera.js';
 import './modules/spots.js';
 import './modules/path.js';
-import './modules/analytics.js';
+import './modules/analytics.js?v=7';
 
 document.addEventListener('DOMContentLoaded', async () => {
     window.i18n = new I18nManager('en');

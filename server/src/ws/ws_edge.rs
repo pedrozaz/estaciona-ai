@@ -173,6 +173,9 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                 EdgeToServerMsg::TrendPrediction {
                     timestamp,
                     avg_stay_duration_mins,
+                    stay_duration_distribution,
+                    max_capacity,
+                    model_health,
                     next_24h_occupancy,
                 } => {
                     tracing::info!(
@@ -183,9 +186,15 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                     let broadcast_msg = ServerToAppMsg::TrendPrediction {
                         timestamp,
                         avg_stay_duration_mins,
+                        stay_duration_distribution,
+                        max_capacity,
+                        model_health,
                         next_24h_occupancy,
                     };
                     if let Ok(json_str) = serde_json::to_string(&broadcast_msg) {
+                        if let Ok(mut cache) = state.last_trend_prediction.lock() {
+                            *cache = Some(json_str.clone());
+                        }
                         let _ = state.tx.send(json_str);
                     }
                 }
