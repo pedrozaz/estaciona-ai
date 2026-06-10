@@ -1,6 +1,7 @@
 import { I18nManager } from './i18n.js';
 import { bus } from './bus.js';
 import { WindowManager } from './window-manager.js';
+import './modules/ortho.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     window.i18n = new I18nManager('en');
@@ -32,11 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const windows = Array.from(window.wm.activeWindows.keys());
                 windows.forEach(id => bus.emit('app:close', id));
             } else {
-                bus.emit('app:open', { 
-                    id: appId, 
-                    title: title, 
-                    content: '<div style="color:var(--text-secondary)">Module Loaded via Window Manager.</div>' 
-                });
+                bus.emit(`app:launch:${appId}`, { id: appId, title: title });
             }
         });
     });

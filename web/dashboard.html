@@ -327,8 +327,9 @@
             -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
-            width: 600px;
-            min-height: 400px;
+            width: 80vw;
+            max-width: 1200px;
+            height: 80vh;
             display: flex;
             flex-direction: column;
             box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5);
@@ -371,7 +372,9 @@
         .fw-body {
             flex: 1;
             padding: 24px;
-            overflow-y: auto;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         #mobile-blocker {
@@ -408,9 +411,12 @@
                 <div class="nav-item active" data-app="dashboard" data-i18n="nav.dashboard">Dashboard</div>
                 
                 <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.mapControls">Map Controls</div>
-                <div class="nav-item" data-app="ortho" data-i18n="nav.ortho">Orthomosaic View</div>
                 <div class="nav-item" data-app="points" data-i18n="nav.points">Point Calibration</div>
                 <div class="nav-item" data-app="zones" data-i18n="nav.zones">Zone Management</div>
+
+                <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.sandbox">Sandbox</div>
+                <div class="nav-item" data-app="ortho" data-i18n="nav.ortho">Orthomosaic View</div>
+                <div class="nav-item" data-app="recon" data-i18n="nav.recon">Reconstruction View</div>
             </div>
 
             <div class="profile-container">

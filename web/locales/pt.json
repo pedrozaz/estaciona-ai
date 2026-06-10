@@ -3,9 +3,11 @@
     "overview": "Visão Geral",
     "dashboard": "Painel de Controle",
     "mapControls": "Controles do Mapa",
-    "ortho": "Visualização Ortomosaico",
     "points": "Calibração de Pontos",
-    "zones": "Gestão de Zonas"
+    "zones": "Gestão de Zonas",
+    "sandbox": "Sandbox",
+    "ortho": "Visualização Ortomosaico",
+    "recon": "Reconstrução 3D"
   },
   "profile": {
     "role": "Administrador",

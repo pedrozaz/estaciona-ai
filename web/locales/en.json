@@ -3,9 +3,11 @@
     "overview": "Overview",
     "dashboard": "Dashboard",
     "mapControls": "Map Controls",
-    "ortho": "Orthomosaic View",
     "points": "Point Calibration",
-    "zones": "Zone Management"
+    "zones": "Zone Management",
+    "sandbox": "Sandbox",
+    "ortho": "Orthomosaic View",
+    "recon": "Reconstruction View"
   },
   "profile": {
     "role": "Administrator",
