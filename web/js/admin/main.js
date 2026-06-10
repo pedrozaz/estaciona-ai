@@ -7,6 +7,7 @@ import './modules/points.js';
 import './modules/camera.js';
 import './modules/spots.js';
 import './modules/path.js';
+import './modules/analytics.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     window.i18n = new I18nManager('en');
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     bus.on('ui:all-closed', () => {
         if (homeWidget) homeWidget.style.display = 'flex';
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        document.querySelector('.nav-item[data-app="dashboard"]').classList.add('active');
+        document.querySelector('.nav-item[data-app="home"]').classList.add('active');
     });
 
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             e.currentTarget.classList.add('active');
 
-            if (appId === 'dashboard') {
+            if (appId === 'home') {
                 const windows = Array.from(window.wm.activeWindows.keys());
                 windows.forEach(id => bus.emit('app:close', id));
             } else {
