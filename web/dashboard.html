@@ -358,14 +358,14 @@
         #tiling-container.tiling-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
 
         .tiling-window {
-            background: rgba(12, 14, 18, 0.7);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
+            background: rgba(12, 14, 18, 0.85);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             overflow: hidden;
             animation: tile-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transition: all 0.3s ease;
@@ -376,39 +376,50 @@
             to { opacity: 1; transform: scale(1); }
         }
 
+        .tiling-window.fullscreen {
+            position: fixed !important;
+            top: 16px !important;
+            left: 16px !important;
+            right: 16px !important;
+            bottom: 16px !important;
+            width: calc(100vw - 32px) !important;
+            height: calc(100vh - 32px) !important;
+            z-index: 9999 !important;
+        }
+
         .fw-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border-subtle);
-            background: rgba(255, 255, 255, 0.02);
+            padding: 0 16px;
+            height: 44px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            background: transparent;
             flex-shrink: 0;
         }
 
-        .fw-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: var(--text-primary);
-        }
-
-        .fw-btn-close {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            transition: 0.2s;
+        .fw-controls-mac {
             display: flex;
+            gap: 8px;
+            align-items: center;
+            width: 60px;
         }
 
-        .fw-btn-close:hover {
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
+        .mac-btn {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mac-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .mac-close { 
+            background: #ed6a5e; 
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) inset; 
         }
 
         .fw-body {

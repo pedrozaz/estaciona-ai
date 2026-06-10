@@ -25,17 +25,16 @@ export class WindowManager {
 
         winEl.innerHTML = `
             <div class="fw-header">
-                <div class="fw-title">${title}</div>
-                <div class="fw-controls">
-                    <button class="fw-btn fw-close" data-id="${id}" style="background: none; border: none; color: #94a3b8; cursor: pointer;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
+                <div class="fw-controls-mac">
+                    <button class="mac-btn mac-close" data-id="${id}"></button>
                 </div>
+                <div class="fw-title">${title}</div>
+                <div style="width: 60px;"></div>
             </div>
             <div class="fw-body">${content}</div>
         `;
 
-        winEl.querySelector('.fw-close').addEventListener('click', () => bus.emit('app:close', id));
+        winEl.querySelector('.mac-close').addEventListener('click', () => bus.emit('app:close', id));
         
         this.activeWindows.set(id, winEl);
         this.workspace.appendChild(winEl);
