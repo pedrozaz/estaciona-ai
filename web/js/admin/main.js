@@ -2,6 +2,7 @@ import { I18nManager } from './i18n.js';
 import { bus } from './bus.js';
 import { WindowManager } from './window-manager.js';
 import './modules/ortho.js';
+import './modules/recon.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     window.i18n = new I18nManager('en');
