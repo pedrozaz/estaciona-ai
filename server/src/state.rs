@@ -20,6 +20,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast, mpsc};
+use std::sync::Mutex;
 use uuid::Uuid;
 
 use crate::pathfinding::ParkingGraph;
@@ -31,6 +32,7 @@ pub struct AppState {
     pub graph: RwLock<ParkingGraph>,
     pub jwt_secret: String,
     pub plate_pepper: String,
+    pub last_trend_prediction: Mutex<Option<String>>,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -148,5 +150,6 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
         graph: RwLock::new(graph),
         jwt_secret,
         plate_pepper,
+        last_trend_prediction: Mutex::new(None),
     })
 }

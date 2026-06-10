@@ -239,6 +239,15 @@ async fn handle_dashboard_socket(mut socket: WebSocket, state: SharedState) {
         }
     }
 
+    let cached_trend = state
+        .last_trend_prediction
+        .lock()
+        .ok()
+        .and_then(|c| c.clone());
+    if let Some(json_str) = cached_trend {
+        let _ = socket.send(Message::Text(json_str.into())).await;
+    }
+
     while let Ok(broadcast_msg) = broadcast_rx.recv().await {
         if socket
             .send(Message::Text(broadcast_msg.into()))

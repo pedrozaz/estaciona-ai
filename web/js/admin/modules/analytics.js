@@ -266,8 +266,9 @@ class AnalyticsModule {
 
         setTimeout(() => {
             this.initCharts();
-            this.initCalculator();
             this.loadOrthoHeatmap();
+            this.initCalculator();
+            this.initWebSocket();
         }, 100);
     }
 
@@ -298,7 +299,8 @@ class AnalyticsModule {
             grid: { borderColor: '#18181b', strokeDashArray: 2 },
             tooltip: { theme: 'dark' }
         };
-        new ApexCharts(document.querySelector("#chart-occupancy"), occOptions).render();
+        this.occChart = new ApexCharts(document.querySelector("#chart-occupancy"), occOptions);
+        this.occChart.render();
 
         // 2. Stay Duration Histogram
         const durOptions = {
@@ -328,7 +330,8 @@ class AnalyticsModule {
             legend: { show: false },
             tooltip: { theme: 'dark', y: { formatter: function (val) { return val + " vehicles" } } }
         };
-        new ApexCharts(document.querySelector("#chart-duration"), durOptions).render();
+        this.durChart = new ApexCharts(document.querySelector("#chart-duration"), durOptions);
+        this.durChart.render();
     }
 
     async loadOrthoHeatmap() {
@@ -386,8 +389,63 @@ class AnalyticsModule {
         input.addEventListener('input', updateResult);
     }
 
+    initWebSocket() {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const wsUrl = isLocal ? 'ws://localhost:8000/ws/dashboard' : 'wss://api.estaciona.tech/ws/dashboard';
+        this.ws = new WebSocket(wsUrl);
+
+        this.ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'TREND_PREDICTION') {
+                    this.updateAnalyticsUI(data);
+                }
+            } catch (err) {
+                console.error("Error parsing WS message:", err);
+            }
+        };
+
+        this.ws.onclose = () => {
+            if (this.active) {
+                setTimeout(() => this.initWebSocket(), 3000);
+            }
+        };
+    }
+
+    updateAnalyticsUI(data) {
+        if (data.model_health) {
+            const healthValues = document.querySelectorAll('.m-value');
+            if (healthValues.length >= 4) {
+                healthValues[0].textContent = data.model_health.r2_score.toFixed(3);
+                healthValues[1].textContent = data.model_health.mae.toFixed(1) + '%';
+                healthValues[2].textContent = data.model_health.rmse.toFixed(1) + '%';
+                healthValues[3].textContent = data.model_health.inference_time_ms.toFixed(1) + 'ms';
+            }
+        }
+
+        if (window.ApexCharts) {
+            if (data.next_24h_occupancy && this.occChart) {
+                const occData = data.next_24h_occupancy.map(o => o.occupancy);
+                const occTimes = data.next_24h_occupancy.map(o => {
+                    const d = new Date(o.timestamp);
+                    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                });
+                this.occChart.updateSeries([{ name: 'Predicted Occupancy', data: occData }]);
+                this.occChart.updateOptions({ xaxis: { categories: occTimes } });
+            }
+
+            if (data.stay_duration_distribution && this.durChart) {
+                this.durChart.updateSeries([{ name: 'Vehicles', data: data.stay_duration_distribution }]);
+            }
+        }
+    }
+
     cleanup() {
         this.active = false;
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
     }
 }
 

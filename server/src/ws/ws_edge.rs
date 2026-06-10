@@ -192,6 +192,9 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                         next_24h_occupancy,
                     };
                     if let Ok(json_str) = serde_json::to_string(&broadcast_msg) {
+                        if let Ok(mut cache) = state.last_trend_prediction.lock() {
+                            *cache = Some(json_str.clone());
+                        }
                         let _ = state.tx.send(json_str);
                     }
                 }
