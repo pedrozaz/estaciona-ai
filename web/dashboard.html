@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Estaciona AI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script type="importmap">
       {
@@ -21,24 +21,23 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg-base: #0a0b0e;
-            --bg-surface: #12141a;
+            --bg-base: #000000;
+            --bg-surface: #09090b;
             --primary-green: #10b981;
             --primary-green-dim: rgba(16, 185, 129, 0.15);
             --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --border-subtle: rgba(255, 255, 255, 0.05);
+            --text-secondary: #71717a;
+            --border-subtle: #27272a;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
             background-color: var(--bg-base);
             color: var(--text-primary);
             overflow: hidden;
             width: 100vw;
             height: 100vh;
             -webkit-font-smoothing: antialiased;
-            background-image: radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
         }
 
         #desktop-environment {
@@ -51,9 +50,7 @@
 
         #sidebar {
             width: 280px;
-            background: rgba(12, 14, 18, 0.65);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            background: #050505;
             border-right: 1px solid var(--border-subtle);
             display: flex;
             flex-direction: column;
@@ -90,25 +87,19 @@
         }
 
         .brand-text {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 700;
-            font-size: 24px;
-            letter-spacing: -1px;
+            font-size: 20px;
+            letter-spacing: 2px;
             color: var(--text-primary);
+            text-transform: uppercase;
         }
 
         .brand-highlight {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 500;
-            font-size: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 20px;
             color: var(--primary-green);
-            text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
-            animation: text-breathe 3s ease-in-out infinite alternate;
-        }
-
-        @keyframes text-breathe {
-            0% { text-shadow: 0 0 8px rgba(16, 185, 129, 0.1); }
-            100% { text-shadow: 0 0 24px rgba(16, 185, 129, 0.9); }
         }
 
         .nav-menu {
@@ -119,43 +110,64 @@
         }
 
         .nav-label {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: #64748b;
-            font-weight: 600;
-            margin-bottom: 12px;
+            color: #52525b;
+            font-weight: 700;
+            margin-bottom: 8px;
             padding-left: 16px;
+            margin-top: 24px;
+        }
+        
+        .nav-label::before {
+            content: '// ';
+            color: #27272a;
         }
 
         .nav-item {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 500;
-            font-size: 14px;
-            letter-spacing: 0.2px;
-            padding: 12px 16px;
-            border-radius: 8px;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            padding: 8px 16px;
+            border-radius: 0;
             color: var(--text-secondary);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             gap: 12px;
             position: relative;
         }
+        
+        .nav-item::before {
+            content: '>';
+            color: #27272a;
+            font-weight: 700;
+            transition: color 0.2s;
+        }
 
         .nav-item:hover {
             color: var(--text-primary);
-            background-color: rgba(255, 255, 255, 0.03);
-            transform: translateX(4px);
+            background-color: #18181b;
+        }
+        
+        .nav-item:hover::before {
+            color: var(--primary-green);
         }
 
         .nav-item.active {
             color: var(--primary-green);
-            background-color: rgba(16, 185, 129, 0.05);
+            background-color: #18181b;
             font-weight: 600;
-            box-shadow: inset 3px 0 0 var(--primary-green);
+            border-left: 2px solid var(--primary-green);
+            padding-left: 14px;
+        }
+        
+        .nav-item.active::before {
+            color: var(--primary-green);
         }
 
         .profile-container {
@@ -182,16 +194,15 @@
         .avatar {
             width: 36px;
             height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: #fff;
-            font-family: 'Space Grotesk', sans-serif;
+            border-radius: 0;
+            background: var(--primary-green);
+            color: #000;
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 700;
             font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
         }
 
         .profile-info {
@@ -201,17 +212,18 @@
         }
 
         .p-name {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 600;
-            font-size: 14px;
-            letter-spacing: -0.3px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             color: var(--text-primary);
         }
 
         .p-role {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 11px;
-            letter-spacing: 0.5px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
             text-transform: uppercase;
             color: var(--text-secondary);
         }
@@ -284,24 +296,22 @@
         }
 
         .hw-greeting {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 700;
-            font-size: 64px;
-            letter-spacing: -3px;
+            font-size: 48px;
+            letter-spacing: 2px;
             color: var(--text-primary);
             line-height: 1;
-            text-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
         }
 
         .hw-greeting span.hollow-text {
-            color: transparent;
-            -webkit-text-stroke: 1px var(--primary-green);
+            color: var(--primary-green);
         }
 
         .hw-time {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 14px;
-            letter-spacing: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 4px;
             color: var(--text-secondary);
             text-transform: uppercase;
         }
@@ -314,9 +324,9 @@
         }
 
         .hw-value {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 11px;
             letter-spacing: 2px;
             color: var(--primary-green);
             display: flex;
@@ -369,14 +379,12 @@
         #tiling-container.calibration-mode #win-points { grid-column: 2 !important; grid-row: 2 !important; }
 
         .tiling-window {
-            background: rgba(12, 14, 18, 0.85);
-            backdrop-filter: blur(32px);
-            -webkit-backdrop-filter: blur(32px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
+            background: rgba(9, 9, 11, 0.95);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             overflow: hidden;
             animation: tile-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transition: all 0.3s ease;

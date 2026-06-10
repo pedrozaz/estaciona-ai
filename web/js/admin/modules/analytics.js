@@ -21,103 +21,98 @@ class AnalyticsModule {
 
         const content = `
             <style>
+                @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
                 .ml-container {
                     display: grid;
                     grid-template-columns: repeat(12, 1fr);
-                    gap: 24px;
-                    padding: 8px;
+                    gap: 16px;
+                    padding: 24px;
                     height: 100%;
                     overflow-y: auto;
+                    background-color: #050505;
+                    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+                    background-size: 24px 24px;
                     color: #fff;
                     font-family: 'Inter', sans-serif;
                 }
                 
-                /* Enhanced Premium Glassmorphism */
+                /* High-End Technical Card */
                 .ml-card {
-                    background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 16px;
-                    padding: 24px;
-                    backdrop-filter: blur(20px);
-                    -webkit-backdrop-filter: blur(20px);
-                    box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    background: rgba(9, 9, 11, 0.85);
+                    border: 1px solid #27272a;
+                    border-radius: 4px;
+                    padding: 20px;
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
                     display: flex;
                     flex-direction: column;
                     position: relative;
-                    overflow: hidden;
-                    transition: transform 0.3s ease, box-shadow 0.3s ease;
                 }
-                
-                /* Subtle ambient glow behind cards */
+
                 .ml-card::before {
                     content: '';
-                    position: absolute;
-                    top: -50%; left: -50%;
-                    width: 200%; height: 200%;
-                    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 60%);
-                    pointer-events: none;
+                    position: absolute; top: 0; left: 0;
+                    width: 100%; height: 1px;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
                 }
 
                 .ml-card.col-span-12 { grid-column: span 12; }
                 .ml-card.col-span-8 { grid-column: span 8; }
                 .ml-card.col-span-7 { grid-column: span 7; }
-                .ml-card.col-span-6 { grid-column: span 6; }
                 .ml-card.col-span-5 { grid-column: span 5; }
                 .ml-card.col-span-4 { grid-column: span 4; }
                 
+                /* Micro-typography */
                 .ml-card-title {
-                    font-family: 'Space Grotesk', sans-serif;
-                    font-size: 15px;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 10px;
                     font-weight: 700;
-                    color: #e2e8f0;
-                    margin-bottom: 20px;
+                    color: #71717a;
+                    margin-bottom: 16px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px dashed #27272a;
                     text-transform: uppercase;
-                    letter-spacing: 1px;
+                    letter-spacing: 2px;
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    z-index: 1;
                 }
                 
                 .indicator-dot {
-                    width: 10px; height: 10px; border-radius: 50%;
-                    box-shadow: 0 0 12px currentColor;
+                    width: 6px; height: 6px; border-radius: 0;
                 }
                 
-                /* Metrics Highlight */
+                /* Metrics Readout */
                 .metric-row {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 16px;
-                    padding-bottom: 16px;
-                    border-bottom: 1px dashed rgba(255,255,255,0.1);
-                    z-index: 1;
+                    padding: 10px 0;
+                    border-bottom: 1px solid #18181b;
+                    font-family: 'JetBrains Mono', monospace;
                 }
-                .metric-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-                .m-label { font-size: 14px; color: #94a3b8; font-weight: 500; }
-                .m-value { font-size: 18px; font-weight: 700; font-family: 'Space Grotesk', monospace; color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+                .metric-row:last-child { border-bottom: none; }
+                .m-label { font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; }
+                .m-value { font-size: 13px; font-weight: 700; color: #e4e4e7; }
+                
                 
                 /* Profit Calculator */
-                .calc-input-group { margin-bottom: 20px; z-index: 1; }
-                .calc-input-group label { display: block; font-size: 13px; color: #cbd5e1; margin-bottom: 8px; font-weight: 500;}
+                .calc-input-group { margin-bottom: 0; flex: 1; }
+                .calc-input-group label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #71717a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
                 .calc-input {
-                    width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.3);
-                    color: #fff; padding: 12px 16px; border-radius: 10px; font-family: 'Space Grotesk', monospace; font-size: 16px;
-                    transition: all 0.3s;
-                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+                    width: 100%; background: #000; border: 1px solid #27272a;
+                    color: #fff; padding: 10px 14px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 14px;
+                    transition: border-color 0.2s;
                 }
-                .calc-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), inset 0 2px 4px rgba(0,0,0,0.2); }
+                .calc-input:focus { outline: none; border-color: #10b981; }
                 .calc-result {
-                    margin-top: auto; padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.2) 100%);
-                    border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.4);
-                    position: relative; overflow: hidden; z-index: 1;
+                    padding: 16px; background: #000; border: 1px solid #27272a;
+                    border-radius: 2px; display: flex; flex-direction: column; justify-content: center;
                 }
-                .calc-result::after {
-                    content: 'BRL'; position: absolute; right: 20px; bottom: 20px; font-size: 40px; font-family: 'Space Grotesk'; font-weight: 800; color: rgba(16, 185, 129, 0.1); pointer-events: none;
-                }
-                .calc-result-title { font-size: 13px; color: #34d399; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
-                .calc-result-value { font-size: 32px; font-weight: 800; color: #fff; font-family: 'Space Grotesk', sans-serif; text-shadow: 0 2px 10px rgba(0,0,0,0.3);}
+                .calc-result-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #10b981; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;}
+                .calc-result-value { font-size: 24px; font-weight: 700; color: #fff; font-family: 'JetBrains Mono', monospace;}
                 
                 /* Ortho Heatmap */
                 #ortho-heatmap-container {
@@ -158,44 +153,44 @@ class AnalyticsModule {
             </style>
 
             <div class="ml-container">
-                <!-- Row 1: Main Forecast & Metrics -->
+                <!-- Row 1: Forecast & Health -->
                 <div class="ml-card col-span-8">
                     <div class="ml-card-title">
-                        <div class="indicator-dot" style="color:#38bdf8; background:#38bdf8;"></div>
-                        24H Occupancy Forecast (Attention Engine)
+                        <div class="indicator-dot" style="background:#38bdf8;"></div>
+                        24H Occupancy Forecast
                     </div>
                     <div id="chart-occupancy" style="height: 250px; width: 100%; z-index: 1;"></div>
                 </div>
-                
+
                 <div class="ml-card col-span-4">
                     <div class="ml-card-title">
-                        <div class="indicator-dot" style="color:#a855f7; background:#a855f7;"></div>
-                        Model Health (PyTorch)
+                        <div class="indicator-dot" style="background:#a855f7;"></div>
+                        Model Health
                     </div>
                     <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
                         <div class="metric-row">
                             <span class="m-label">R² Score (Accuracy)</span>
-                            <span class="m-value" style="color: #a855f7; text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);">0.942</span>
+                            <span class="m-value" style="color: #a855f7;">0.942</span>
                         </div>
                         <div class="metric-row">
                             <span class="m-label">Mean Absolute Error</span>
-                            <span class="m-value" style="color: #a855f7; text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);">1.8%</span>
+                            <span class="m-value" style="color: #a855f7;">1.8%</span>
                         </div>
                         <div class="metric-row">
                             <span class="m-label">RMSE</span>
-                            <span class="m-value" style="color: #a855f7; text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);">2.4%</span>
+                            <span class="m-value" style="color: #a855f7;">2.4%</span>
                         </div>
                         <div class="metric-row">
                             <span class="m-label">Inference Time</span>
-                            <span class="m-value" style="color:#fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);">4.2ms</span>
+                            <span class="m-value" style="color:#fbbf24;">4.2ms</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Row 2: Ortho Heatmap & Duration -->
+                <!-- Row 2: Heatmap & Duration -->
                 <div class="ml-card col-span-5">
                     <div class="ml-card-title">
-                        <div class="indicator-dot" style="color:#ef4444; background:#ef4444;"></div>
+                        <div class="indicator-dot" style="background:#ef4444;"></div>
                         Physical Spot Heatmap
                     </div>
                     <div id="ortho-heatmap-container">
@@ -233,17 +228,17 @@ class AnalyticsModule {
 
                 <div class="ml-card col-span-7">
                     <div class="ml-card-title">
-                        <div class="indicator-dot" style="color:#f59e0b; background:#f59e0b;"></div>
-                        Stay Duration (LGBM)
+                        <div class="indicator-dot" style="background:#71717a;"></div>
+                        Stay Duration Distribution
                     </div>
-                    <div id="chart-duration" style="height: 250px; width: 100%; z-index: 1;"></div>
+                    <div id="chart-duration" style="height: 180px; width: 100%; z-index: 1;"></div>
                 </div>
 
-                <!-- Row 3: Profit Projection -->
+                <!-- Row 3: Profit Calculator -->
                 <div class="ml-card col-span-12" style="flex-direction: row; align-items: center; gap: 40px; padding: 20px 30px;">
                     <div style="flex: 1;">
                         <div class="ml-card-title" style="margin-bottom: 12px;">
-                            <div class="indicator-dot" style="color:#10b981; background:#10b981;"></div>
+                            <div class="indicator-dot" style="background:#10b981;"></div>
                             Profit Projection
                         </div>
                         <div class="calc-input-group" style="margin-bottom: 0;">
@@ -292,32 +287,46 @@ class AnalyticsModule {
         // 1. Occupancy Area Chart
         const occOptions = {
             series: [{ name: 'Predicted Occupancy %', data: [30, 40, 45, 50, 49, 60, 70, 91, 85, 60, 40, 30] }],
-            chart: { type: 'area', height: 250, toolbar: { show: false }, background: 'transparent' },
+            chart: { type: 'area', height: 250, toolbar: { show: false }, background: 'transparent', fontFamily: 'JetBrains Mono, monospace' },
             theme: { mode: 'dark' },
             colors: ['#38bdf8'],
-            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.6, opacityTo: 0.05, stops: [0, 100] } },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0.0, stops: [0, 100] } },
             dataLabels: { enabled: false },
-            stroke: { curve: 'smooth', width: 3 },
-            xaxis: { categories: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'], labels: { style: { colors: '#94a3b8', fontFamily: 'Inter' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-            yaxis: { max: 100, labels: { style: { colors: '#94a3b8', fontFamily: 'Inter' } } },
-            grid: { borderColor: 'rgba(255,255,255,0.08)', strokeDashArray: 4 },
+            stroke: { curve: 'straight', width: 2 },
+            xaxis: { categories: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'], labels: { style: { colors: '#71717a', fontSize: '10px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+            yaxis: { max: 100, labels: { style: { colors: '#71717a', fontSize: '10px' } } },
+            grid: { borderColor: '#18181b', strokeDashArray: 2 },
             tooltip: { theme: 'dark' }
         };
         new ApexCharts(document.querySelector("#chart-occupancy"), occOptions).render();
 
-        // 2. Stay Duration Bar Chart
+        // 2. Stay Duration Histogram
         const durOptions = {
-            series: [{ name: 'Avg Minutes', data: [120, 180, 150] }],
-            chart: { type: 'bar', height: 250, toolbar: { show: false }, background: 'transparent' },
+            series: [{ name: 'Vehicles', data: [145, 230, 85, 32] }],
+            chart: { type: 'bar', height: 180, toolbar: { show: false }, background: 'transparent', fontFamily: 'JetBrains Mono, monospace' },
             theme: { mode: 'dark' },
-            colors: ['#f59e0b', '#8b5cf6', '#10b981'],
-            plotOptions: { bar: { borderRadius: 6, distributed: true, dataLabels: { position: 'top' }, columnWidth: '60%' } },
-            dataLabels: { enabled: true, formatter: val => val + 'm', style: { colors: ['#fff'], fontFamily: 'Space Grotesk', fontSize: '14px' }, offsetY: -25 },
-            xaxis: { categories: ['Normal', 'Elderly', 'PCD'], labels: { style: { colors: '#94a3b8', fontFamily: 'Inter', fontSize: '13px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-            yaxis: { show: false },
-            grid: { show: false },
+            plotOptions: {
+                bar: {
+                    horizontal: false,
+                    borderRadius: 2,
+                    columnWidth: '40%',
+                    distributed: true
+                }
+            },
+            colors: ['#38bdf8', '#10b981', '#f59e0b', '#ef4444'],
+            dataLabels: { enabled: false },
+            xaxis: { 
+                categories: ['< 1h', '1-2h', '2-4h', '4h+'],
+                labels: { style: { colors: '#71717a', fontSize: '10px' } },
+                axisBorder: { show: false },
+                axisTicks: { show: false }
+            },
+            yaxis: {
+                labels: { style: { colors: '#71717a', fontSize: '10px' } }
+            },
+            grid: { borderColor: '#18181b', strokeDashArray: 2, xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
             legend: { show: false },
-            tooltip: { theme: 'dark' }
+            tooltip: { theme: 'dark', y: { formatter: function (val) { return val + " vehicles" } } }
         };
         new ApexCharts(document.querySelector("#chart-duration"), durOptions).render();
     }
