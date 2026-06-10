@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "overview": "Visão Geral",
+    "dashboard": "Painel de Controle",
+    "mapControls": "Controles do Mapa",
+    "points": "Calibração de Pontos",
+    "zones": "Gestão de Zonas",
+    "sandbox": "Sandbox",
+    "ortho": "Visualização Ortomosaico",
+    "recon": "Reconstrução 3D"
+  },
+  "profile": {
+    "role": "Administrador",
+    "access": "Acesso Total",
+    "logout": "Sair"
+  },
+  "home": {
+    "welcome": "BEM-VINDO,",
+    "admin": "ADMIN",
+    "serverStatus": "SERVIDOR ONLINE"
+  },
+  "mobile": {
+    "title": "Acesso Restrito",
+    "desc": "O painel de administração exige um ambiente desktop para visualização do mapa 3D e calibrações."
+  }
+}

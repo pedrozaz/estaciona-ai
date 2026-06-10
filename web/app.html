@@ -1169,6 +1169,22 @@
             .catch((err) =>
               console.error("Erro ao carregar config.json:", err),
             );
+
+          fetch("data/global_camera.json?v=" + Date.now())
+            .then((res) => { if (res.ok) return res.json(); else throw new Error(); })
+            .then((data) => {
+              if (data && data.position && data.target) {
+                globalCameraPos.set(data.position.x, data.position.y, data.position.z);
+                globalCameraTarget.set(data.target.x, data.target.y, data.target.z);
+                if (!currentFocusCamData) {
+                  targetCameraPos.copy(globalCameraPos);
+                  targetCameraLookAt.copy(globalCameraTarget);
+                  camera.position.copy(globalCameraPos);
+                  currentCameraTarget.copy(globalCameraTarget);
+                  camera.lookAt(currentCameraTarget);
+                }
+              }
+            }).catch(e => console.log('global_camera.json não configurado.'));
         },
         (xhr) => {
           if (xhr.lengthComputable) {
