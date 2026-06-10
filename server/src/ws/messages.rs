@@ -39,6 +39,14 @@ pub struct HourlyOccupancy {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ModelHealth {
+    pub r2_score: f64,
+    pub mae: f64,
+    pub rmse: f64,
+    pub inference_time_ms: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "type")]
 pub enum EdgeToServerMsg {
     #[serde(rename = "SPOT_UPDATE")]
@@ -65,6 +73,9 @@ pub enum EdgeToServerMsg {
     TrendPrediction {
         timestamp: DateTime<Utc>,
         avg_stay_duration_mins: f64,
+        stay_duration_distribution: Vec<i32>,
+        max_capacity: i32,
+        model_health: ModelHealth,
         next_24h_occupancy: Vec<HourlyOccupancy>,
     },
 }
@@ -90,6 +101,9 @@ pub enum ServerToAppMsg {
     TrendPrediction {
         timestamp: DateTime<Utc>,
         avg_stay_duration_mins: f64,
+        stay_duration_distribution: Vec<i32>,
+        max_capacity: i32,
+        model_health: ModelHealth,
         next_24h_occupancy: Vec<HourlyOccupancy>,
     },
 }
@@ -300,5 +314,32 @@ mod tests {
         let json = r#"{"type": "SPOT_UPDATE", "spot_id": "A-01"}"#;
         let result = serde_json::from_str::<EdgeToServerMsg>(json);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn edge_trend_prediction_deserializes() {
+        let json = r#"{
+            "type": "TREND_PREDICTION",
+            "timestamp": "2026-06-10T18:00:00Z",
+            "avg_stay_duration_mins": 135.5,
+            "stay_duration_distribution": [145, 230, 85, 32],
+            "max_capacity": 40,
+            "model_health": {
+                "r2_score": 0.942,
+                "mae": 1.8,
+                "rmse": 2.4,
+                "inference_time_ms": 4.2
+            },
+            "next_24h_occupancy": []
+        }"#;
+        let msg: EdgeToServerMsg = serde_json::from_str(json).unwrap();
+        match msg {
+            EdgeToServerMsg::TrendPrediction { stay_duration_distribution, max_capacity, model_health, .. } => {
+                assert_eq!(stay_duration_distribution, vec![145, 230, 85, 32]);
+                assert_eq!(max_capacity, 40);
+                assert_eq!(model_health.r2_score, 0.942);
+            }
+            _ => panic!("wrong variant"),
+        }
     }
 }
