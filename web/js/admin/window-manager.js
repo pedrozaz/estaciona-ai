@@ -25,11 +25,11 @@ export class WindowManager {
 
         winEl.innerHTML = `
             <div class="fw-header">
-                <div class="fw-controls-mac">
+                <div style="width: 60px;"></div>
+                <div class="fw-title">${title}</div>
+                <div class="fw-controls-mac" style="justify-content: flex-end;">
                     <button class="mac-btn mac-close" data-id="${id}"></button>
                 </div>
-                <div class="fw-title">${title}</div>
-                <div style="width: 60px;"></div>
             </div>
             <div class="fw-body">${content}</div>
         `;
@@ -47,6 +47,9 @@ export class WindowManager {
         if (!this.activeWindows.has(id)) return;
         
         const winEl = this.activeWindows.get(id);
+        if (winEl.dataset.closing) return;
+        winEl.dataset.closing = "true";
+
         winEl.style.transform = 'scale(0.95)';
         winEl.style.opacity = '0';
         

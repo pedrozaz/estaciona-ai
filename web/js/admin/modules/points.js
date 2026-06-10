@@ -19,6 +19,7 @@ class PointsModule {
     }
 
     launch(data) {
+        this.isClosing = false;
         if (this.active) return;
         this.active = true;
         
@@ -200,8 +201,13 @@ class PointsModule {
     }
 
     cleanup() {
+        if (this.isClosing) return;
+        this.isClosing = true;
         this.active = false;
-        document.getElementById('tiling-container').classList.remove('calibration-mode');
+        setTimeout(() => {
+            const container = document.getElementById('tiling-container');
+            if (container) container.classList.remove('calibration-mode');
+        }, 200);
         bus.emit('app:close', 'ortho');
         bus.emit('app:close', 'recon');
     }

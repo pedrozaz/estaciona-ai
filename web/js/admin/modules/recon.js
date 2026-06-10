@@ -17,6 +17,7 @@ class ReconModule {
     }
 
     launch(data) {
+        this.isClosing = false;
         this.mode = data.mode || 'sandbox';
         const content = `
             <style> #win-${this.id} .fw-body { padding: 0 !important; } </style>
@@ -217,6 +218,19 @@ class ReconModule {
                 this.markers.push(sphere);
             });
         };
+        
+        this.isClosing = false;
+        bus.on('app:close', (id) => {
+            if (id === this.id) {
+                if (this.isClosing) return;
+                this.isClosing = true;
+                if (this.mode === 'calibrate') {
+                    bus.emit('app:close', 'points');
+                    bus.emit('app:close', 'ortho');
+                }
+                if (this.cleanup) this.cleanup();
+            }
+        });
         
         bus.on('calibrate:recon-load', (points) => {
             if (this.mode !== 'calibrate') return;
