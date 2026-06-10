@@ -16,7 +16,7 @@ class OrthoModule {
     launch(data) {
         const content = `
             <style> #win-${this.id} .fw-body { padding: 0 !important; } </style>
-            <div class="ortho-container" id="orthoContainer" style="flex: 1; width: 100%; overflow: hidden; background: transparent; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+            <div class="ortho-container" id="orthoContainer" style="flex: 1; width: 100%; overflow: hidden; background: #08090a; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
                 <div class="ortho-controls" style="position: absolute; bottom: 16px; right: 16px; z-index: 10; display: flex; gap: 8px;">
                     <button id="orthoZoomIn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: #fff; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: 0.2s; backdrop-filter: blur(8px);">+</button>
                     <button id="orthoZoomOut" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: #fff; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: 0.2s; backdrop-filter: blur(8px);">-</button>
@@ -47,35 +47,17 @@ class OrthoModule {
         };
 
         const fitImage = () => {
-            const winEl = document.getElementById(`win-${this.id}`);
+            const containerRect = container.getBoundingClientRect();
             const imgWidth = img.naturalWidth || img.clientWidth;
             const imgHeight = img.naturalHeight || img.clientHeight;
             
             if (imgWidth > 0 && imgHeight > 0) {
-                if (winEl) {
-                    const maxW = window.innerWidth * 0.8;
-                    const maxH = window.innerHeight * 0.8;
-                    const imgRatio = imgWidth / imgHeight;
-                    
-                    const headerHeight = 54;
-                    const availableH = maxH - headerHeight;
-                    
-                    if (imgRatio > (maxW / availableH)) {
-                        winEl.style.width = '80vw';
-                        winEl.style.height = (maxW / imgRatio) + headerHeight + 'px';
-                    } else {
-                        winEl.style.height = '80vh';
-                        winEl.style.width = (availableH * imgRatio) + 'px';
-                    }
-                }
-
                 requestAnimationFrame(() => {
-                    const newRect = container.getBoundingClientRect();
-                    const scaleX = newRect.width / imgWidth;
-                    const scaleY = newRect.height / imgHeight;
+                    const scaleX = containerRect.width / imgWidth;
+                    const scaleY = containerRect.height / imgHeight;
                     this.scale = Math.min(scaleX, scaleY); 
-                    this.panX = (newRect.width - (imgWidth * this.scale)) / 2;
-                    this.panY = (newRect.height - (imgHeight * this.scale)) / 2;
+                    this.panX = (containerRect.width - (imgWidth * this.scale)) / 2;
+                    this.panY = (containerRect.height - (imgHeight * this.scale)) / 2;
                     updateTransform();
                 });
             }
@@ -83,6 +65,7 @@ class OrthoModule {
 
         img.onload = fitImage;
         if (img.complete) fitImage();
+        window.addEventListener('resize', fitImage);
 
         btnIn.addEventListener('click', () => { this.scale *= 1.2; updateTransform(); });
         btnOut.addEventListener('click', () => { this.scale /= 1.2; updateTransform(); });

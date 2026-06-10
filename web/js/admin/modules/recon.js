@@ -37,12 +37,6 @@ class ReconModule {
         const container = document.getElementById('reconContainer');
         if (!container) return;
         
-        const winEl = document.getElementById(`win-${this.id}`);
-        if (winEl) {
-            winEl.style.width = '85vw';
-            winEl.style.height = '85vh';
-        }
-
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0f1117);
         scene.fog = new THREE.FogExp2(0x0f1117, 0.002);
