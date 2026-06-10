@@ -12,7 +12,8 @@
           "three": "/lib/three/three.module.js",
           "three/addons/loaders/GLTFLoader.js": "/lib/three/GLTFLoader.js",
           "three/addons/loaders/DRACOLoader.js": "/lib/three/DRACOLoader.js",
-          "three/addons/controls/OrbitControls.js": "/lib/three/OrbitControls.js"
+          "three/addons/controls/OrbitControls.js": "/lib/three/OrbitControls.js",
+          "three/addons/controls/DragControls.js": "/lib/three/DragControls.js"
         }
       }
     </script>
@@ -471,12 +472,14 @@
             </div>
 
             <div class="nav-menu">
-                <div class="nav-label" data-i18n="nav.overview">Overview</div>
+                <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.overview">Overview</div>
                 <div class="nav-item active" data-app="dashboard" data-i18n="nav.dashboard">Dashboard</div>
                 
                 <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.mapControls">Map Controls</div>
                 <div class="nav-item" data-app="points" data-i18n="nav.points">Point Calibration</div>
-                <div class="nav-item" data-app="zones" data-i18n="nav.zones">Zone Management</div>
+                <div class="nav-item" data-app="camera" data-i18n="nav.camera">Camera & Pinpoints</div>
+                <div class="nav-item" data-app="spots" data-i18n="nav.zones">Zone Management</div>
+                <div class="nav-item" data-app="path" data-i18n="nav.path">Path Configurator</div>
 
                 <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.sandbox">Sandbox</div>
                 <div class="nav-item" data-app="ortho" data-i18n="nav.ortho">Orthomosaic View</div>

@@ -26,6 +26,7 @@ class OrthoModule {
                 </div>
                 <div id="orthoViewport" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.1s ease-out; cursor: grab;">
                     <img id="orthoImage" src="/assets/images/uniube_ortho_projection.png" style="display: block; pointer-events: none; opacity: 0.95;" alt="Orthomosaic">
+                    <div id="orthoSvgContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
                 </div>
             </div>
         `;
@@ -92,7 +93,7 @@ class OrthoModule {
         container.addEventListener('mousemove', () => isDragging = true);
         
         container.addEventListener('click', (event) => {
-            if (this.mode === 'calibrate' && !isDragging) {
+            if ((this.mode === 'calibrate' || this.mode === 'parking') && !isDragging) {
                 const rect = container.getBoundingClientRect();
                 const clickX = event.clientX - rect.left;
                 const clickY = event.clientY - rect.top;
@@ -100,19 +101,21 @@ class OrthoModule {
                 const imgX = (clickX - this.panX) / this.scale;
                 const imgY = (clickY - this.panY) / this.scale;
                 
-                const dot = document.createElement('div');
-                dot.style.position = 'absolute';
-                dot.style.width = '12px';
-                dot.style.height = '12px';
-                dot.style.background = '#ed6a5e';
-                dot.style.borderRadius = '50%';
-                dot.style.transform = 'translate(-50%, -50%)';
-                dot.style.border = '2px solid #fff';
-                dot.style.boxShadow = '0 0 8px rgba(0,0,0,0.5)';
-                markersLayer.appendChild(dot);
-                
-                markers.push({ x: imgX, y: imgY, el: dot });
-                updateTransform();
+                if (this.mode === 'calibrate') {
+                    const dot = document.createElement('div');
+                    dot.style.position = 'absolute';
+                    dot.style.width = '12px';
+                    dot.style.height = '12px';
+                    dot.style.background = '#ed6a5e';
+                    dot.style.borderRadius = '50%';
+                    dot.style.transform = 'translate(-50%, -50%)';
+                    dot.style.border = '2px solid #fff';
+                    dot.style.boxShadow = '0 0 8px rgba(0,0,0,0.5)';
+                    markersLayer.appendChild(dot);
+                    
+                    markers.push({ x: imgX, y: imgY, el: dot });
+                    updateTransform();
+                }
 
                 bus.emit('calibrate:ortho-click', { x: imgX, y: imgY });
             }
@@ -138,6 +141,37 @@ class OrthoModule {
                 markersLayer.appendChild(dot);
                 markers.push({ el: dot, origX: pt.x, origY: pt.y });
             });
+        });
+
+        bus.on('ortho:render-parking', (data) => {
+            const svgContainer = document.getElementById('orthoSvgContainer');
+            const img = document.getElementById('orthoImage');
+            if (!svgContainer || !img) return;
+            
+            const w = img.naturalWidth || 1920;
+            const h = img.naturalHeight || 1080;
+            
+            let svgHtml = `<svg viewBox="0 0 ${w} ${h}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;" xmlns="http://www.w3.org/2000/svg">`;
+            
+            data.spots.forEach(spot => {
+                if (!spot.pixels || spot.pixels.length === 0) return;
+                const pts = spot.pixels.map(p => `${p.x},${p.y}`).join(' ');
+                svgHtml += `<polygon points="${pts}" fill="rgba(28, 167, 69, 0.3)" stroke="#1ca745" stroke-width="2"/>`;
+                const cx = spot.pixels.reduce((sum, p) => sum + p.x, 0) / spot.pixels.length;
+                const cy = spot.pixels.reduce((sum, p) => sum + p.y, 0) / spot.pixels.length;
+                svgHtml += `<text x="${cx}" y="${cy}" fill="white" font-size="20" font-weight="bold" font-family="Outfit, sans-serif" text-anchor="middle" dominant-baseline="middle" stroke="black" stroke-width="4" paint-order="stroke">${spot.id}</text>`;
+            });
+
+            if (data.activePolygon && data.activePolygon.length > 0) {
+                const pts = data.activePolygon.map(p => `${p.x},${p.y}`).join(' ');
+                svgHtml += `<polyline points="${pts}" fill="none" stroke="#f59e0b" stroke-width="3"/>`;
+                data.activePolygon.forEach(pt => {
+                    svgHtml += `<circle cx="${pt.x}" cy="${pt.y}" r="6" fill="#f59e0b"/>`;
+                });
+            }
+            
+            svgHtml += `</svg>`;
+            svgContainer.innerHTML = svgHtml;
         });
 
         this.isClosing = false;

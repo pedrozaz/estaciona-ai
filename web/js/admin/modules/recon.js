@@ -19,6 +19,7 @@ class ReconModule {
     launch(data) {
         this.isClosing = false;
         this.mode = data.mode || 'sandbox';
+        this.silentClicks = data.silentClicks || false;
         const content = `
             <style> #win-${this.id} .fw-body { padding: 0 !important; } </style>
             <div id="reconContainer" style="flex: 1; width: 100%; height: 100%; overflow: hidden; background: #08090a; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
@@ -248,6 +249,54 @@ class ReconModule {
             }
         });
 
+        bus.on('recon:clear-markers', () => {
+            if (this.markers) {
+                this.markers.forEach(m => this.activeScene.remove(m));
+                this.markers = [];
+            }
+        });
+
+        bus.on('recon:render-parking', (data) => {
+            if (!this.parkingMeshes) {
+                this.parkingMeshes = new THREE.Group();
+                this.activeScene.add(this.parkingMeshes);
+            }
+            this.parkingMeshes.clear();
+
+            data.pinpoints.forEach(pt => {
+                const geo = new THREE.SphereGeometry(0.2, 16, 16);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(pt.x, pt.y, pt.z);
+                this.parkingMeshes.add(mesh);
+            });
+
+            data.paths.forEach(path => {
+                if (path.length > 1) {
+                    const points = path.map(p => new THREE.Vector3(p.x, p.y + 0.1, p.z));
+                    const geo = new THREE.BufferGeometry().setFromPoints(points);
+                    const mat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
+                    this.parkingMeshes.add(new THREE.Line(geo, mat));
+                }
+                path.forEach((pt, i) => {
+                    const geo = new THREE.SphereGeometry(i === 0 ? 0.2 : 0.1, 16, 16);
+                    const mat = new THREE.MeshStandardMaterial({ color: i === 0 ? 0xef4444 : 0xf59e0b, emissive: i === 0 ? 0xef4444 : 0xf59e0b });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(pt.x, pt.y + 0.1, pt.z);
+                    this.parkingMeshes.add(mesh);
+                });
+            });
+        });
+
+        bus.on('recon:request-camera', () => {
+            if (this.activeCamera && this.controls) {
+                bus.emit('recon:camera-info', {
+                    position: { x: this.activeCamera.position.x, y: this.activeCamera.position.y, z: this.activeCamera.position.z },
+                    target: { x: this.controls.target.x, y: this.controls.target.y, z: this.controls.target.z }
+                });
+            }
+        });
+
         const animate = () => {
             if (!document.getElementById('reconContainer')) {
                 cancelAnimationFrame(this.animationFrameId);
@@ -268,7 +317,7 @@ class ReconModule {
         container.addEventListener('mousemove', () => isDragging = true);
         
         container.addEventListener('click', (event) => {
-            if (this.mode === 'calibrate' && !isDragging && this.activeScene) {
+            if ((this.mode === 'calibrate' || this.mode === 'parking') && !isDragging && this.activeScene) {
                 const rect = container.getBoundingClientRect();
                 mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
                 mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -279,12 +328,14 @@ class ReconModule {
                 if (intersects.length > 0) {
                     const pt = intersects[0].point;
                     
-                    const sphereGeo = new THREE.SphereGeometry(0.06, 16, 16);
-                    const sphereMat = new THREE.MeshBasicMaterial({ color: 0xed6a5e });
-                    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-                    sphere.position.copy(pt);
-                    this.activeScene.add(sphere);
-                    this.markers.push(sphere);
+                    if (!this.silentClicks) {
+                        const sphereGeo = new THREE.SphereGeometry(0.06, 16, 16);
+                        const sphereMat = new THREE.MeshBasicMaterial({ color: 0xed6a5e });
+                        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                        sphere.position.copy(pt);
+                        this.activeScene.add(sphere);
+                        this.markers.push(sphere);
+                    }
 
                     bus.emit('calibrate:recon-click', { x: pt.x, y: pt.y, z: pt.z });
                 }
