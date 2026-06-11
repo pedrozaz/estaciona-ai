@@ -362,7 +362,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       const isLoggedIn = localStorage.getItem('estaciona_logged_in') || sessionStorage.getItem('estaciona_logged_in');
       if (isLoggedIn === 'true') {
-        window.location.href = 'app.html';
+        window.location.href = '/app';
       }
     });
 
@@ -417,7 +417,7 @@
           localStorage.removeItem('estaciona_token');
         }
         
-        window.location.href = 'app.html';
+        window.location.href = '/app';
       })
       .catch(err => {
         btn.classList.remove('loading');
