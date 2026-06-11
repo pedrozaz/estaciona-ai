@@ -388,34 +388,6 @@ pub async fn recommend_spot(
         ));
     }
 
-    let popular_spot = sqlx::query!(
-        r#"
-        SELECT h.spot_id, COUNT(*) as uses 
-        FROM user_occupancy_history h 
-        JOIN spots s ON s.id = h.spot_id
-        WHERE s.status = 'free' 
-          AND s.id NOT IN ('A-01', 'A-02', 'A-03', 'A-04')
-        GROUP BY h.spot_id
-        ORDER BY uses DESC
-        LIMIT 1
-        "#
-    )
-    .fetch_optional(&state.pool)
-    .await
-    .unwrap_or(None);
-
-    if let Some(pop) = popular_spot {
-        let graph = state.graph.read().await;
-        let route = graph.calculate_route("cam-01", &pop.spot_id);
-        return Ok((
-            StatusCode::OK,
-            Json(serde_json::json!({
-                "recommended_spot": pop.spot_id,
-                "route": route
-            })),
-        ));
-    }
-
     let free_spots = sqlx::query!(
         r#"
         SELECT id 

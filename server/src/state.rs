@@ -19,8 +19,8 @@ use dashmap::DashMap;
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tokio::sync::{RwLock, broadcast, mpsc};
 use std::sync::Mutex;
+use tokio::sync::{RwLock, broadcast, mpsc};
 use uuid::Uuid;
 
 use crate::pathfinding::ParkingGraph;
@@ -123,23 +123,52 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
 
         let spot_node = graph.add_node(&spot.id, spot.center_3d.x as f32, spot.center_3d.z as f32);
 
-        let mut closest_node_id = None;
-        let mut min_dist = f64::MAX;
+        if let Some(parking) = parkings.first() {
+            let mut closest_node_id = None;
+            let mut min_proj_dist = f64::MAX;
 
-        for (n_id, n_x, n_z) in &config_nodes {
-            let dx = n_x - spot.center_3d.x;
-            let dz = n_z - spot.center_3d.z;
-            let dist = (dx * dx + dz * dz).sqrt();
-            if dist < min_dist {
-                min_dist = dist;
-                if let Some(&g_node) = node_map.get(n_id) {
-                    closest_node_id = Some(g_node);
+            for i in 0..parking.path.len() - 1 {
+                let p1 = &parking.path[i];
+                let p2 = &parking.path[i + 1];
+
+                let ab_x = p2.x - p1.x;
+                let ab_z = p2.z - p1.z;
+                let as_x = spot.center_3d.x - p1.x;
+                let as_z = spot.center_3d.z - p1.z;
+
+                let ab_len_sq = ab_x * ab_x + ab_z * ab_z;
+                let mut t = if ab_len_sq > 0.0 {
+                    (as_x * ab_x + as_z * ab_z) / ab_len_sq
+                } else {
+                    0.0
+                };
+                t = t.clamp(0.0, 1.0);
+
+                let proj_x = p1.x + t * ab_x;
+                let proj_z = p1.z + t * ab_z;
+
+                let dist = ((proj_x - spot.center_3d.x).powi(2)
+                    + (proj_z - spot.center_3d.z).powi(2))
+                .sqrt();
+
+                if dist < min_proj_dist {
+                    min_proj_dist = dist;
+                    let n_id = if i == 0 {
+                        "cam-01".to_string()
+                    } else {
+                        format!("path_node_{}", i)
+                    };
+                    if let Some(&g_node) = node_map.get(&n_id) {
+                        closest_node_id = Some(g_node);
+                    }
                 }
             }
-        }
 
-        if let Some(closest) = closest_node_id {
-            graph.add_edge(closest, spot_node, min_dist.max(1.0) as u32, true);
+            if let Some(closest) = closest_node_id {
+                // The true cost would include distance from the node to the projection point,
+                // but for simple routing, min_proj_dist + 1 is sufficient.
+                graph.add_edge(closest, spot_node, min_proj_dist.max(1.0) as u32, true);
+            }
         }
     }
 

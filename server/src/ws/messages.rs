@@ -334,7 +334,12 @@ mod tests {
         }"#;
         let msg: EdgeToServerMsg = serde_json::from_str(json).unwrap();
         match msg {
-            EdgeToServerMsg::TrendPrediction { stay_duration_distribution, max_capacity, model_health, .. } => {
+            EdgeToServerMsg::TrendPrediction {
+                stay_duration_distribution,
+                max_capacity,
+                model_health,
+                ..
+            } => {
                 assert_eq!(stay_duration_distribution, vec![145, 230, 85, 32]);
                 assert_eq!(max_capacity, 40);
                 assert_eq!(model_health.r2_score, 0.942);
