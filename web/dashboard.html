@@ -4,25 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Estaciona AI</title>
-    <script>
-        function checkAdminAccess() {
-            const token = localStorage.getItem('estaciona_token') || sessionStorage.getItem('estaciona_token');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                if (payload.role !== 'admin') {
-                    alert('Acesso Negado: Esta área é restrita para administradores.');
-                    window.location.href = '/app';
-                }
-            } catch (e) {
-                window.location.href = '/login';
-            }
-        }
-        checkAdminAccess();
-    </script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script type="importmap">

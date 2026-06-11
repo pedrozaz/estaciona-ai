@@ -96,7 +96,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health_check))
-        .route("/", get(|| async { Redirect::to("/app") }))
+        .route("/", get(serve_index))
         .route("/app", get(serve_app))
         .route("/login", get(serve_login))
         .route("/dashboard", get(serve_dashboard))
@@ -241,6 +241,13 @@ async fn serve_login() -> Result<impl IntoResponse, (StatusCode, String)> {
             StatusCode::INTERNAL_SERVER_ERROR,
             "File not found".to_string(),
         )),
+    }
+}
+
+async fn serve_index() -> Result<impl IntoResponse, (StatusCode, String)> {
+    match std::fs::read_to_string("../web/index.html") {
+        Ok(content) => Ok(Html(content).into_response()),
+        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, "File not found".to_string())),
     }
 }
 
