@@ -153,13 +153,39 @@ class AnalyticsModule {
             </style>
 
             <div class="ml-container">
-                <!-- Forecast Chart (Full width) -->
-                <div class="ml-card col-span-12" style="height: 100%;">
+                <!-- Forecast Chart -->
+                <div class="ml-card col-span-8" style="height: 100%;">
                     <div class="ml-card-title">
                         <div class="indicator-dot" style="background:#38bdf8;"></div>
                         24H Occupancy Forecast
                     </div>
                     <div id="chart-occupancy" style="height: 500px; width: 100%; z-index: 1;"></div>
+                </div>
+
+                <!-- Model Health -->
+                <div class="ml-card col-span-4">
+                    <div class="ml-card-title">
+                        <div class="indicator-dot" style="background:#a855f7;"></div>
+                        Model Health
+                    </div>
+                    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <div class="metric-row">
+                            <span class="m-label">R² Score</span>
+                            <span class="m-value" style="color: #a855f7;">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="m-label">MAE</span>
+                            <span class="m-value" style="color: #a855f7;">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="m-label">RMSE</span>
+                            <span class="m-value" style="color: #a855f7;">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="m-label">Inference Time</span>
+                            <span class="m-value" style="color:#fbbf24;">-</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -281,6 +307,16 @@ class AnalyticsModule {
     }
 
     updateAnalyticsUI(data) {
+        if (data.model_health) {
+            const healthValues = document.querySelectorAll('.m-value');
+            if (healthValues.length >= 4) {
+                healthValues[0].textContent = data.model_health.r2_score.toFixed(3);
+                healthValues[1].textContent = data.model_health.mae.toFixed(1);
+                healthValues[2].textContent = data.model_health.rmse.toFixed(1);
+                healthValues[3].textContent = data.model_health.inference_time_ms.toFixed(1) + 'ms';
+            }
+        }
+
         if (window.ApexCharts) {
             if (data.next_24h_occupancy && this.occChart) {
                 const occData = data.next_24h_occupancy.map(o => o.occupancy);
