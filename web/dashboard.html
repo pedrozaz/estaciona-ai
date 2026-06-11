@@ -590,8 +590,20 @@
 
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.stopPropagation();
-            localStorage.removeItem('estaciona_token');
-            sessionStorage.removeItem('estaciona_token');
+            sessionStorage.removeItem("estaciona_logged_in");
+            sessionStorage.removeItem("estaciona_user");
+            sessionStorage.removeItem("estaciona_name");
+            sessionStorage.removeItem("estaciona_id");
+            sessionStorage.removeItem("estaciona_token");
+
+            localStorage.removeItem("estaciona_logged_in");
+            localStorage.removeItem("estaciona_user");
+            localStorage.removeItem("estaciona_name");
+            localStorage.removeItem("estaciona_id");
+            localStorage.removeItem("estaciona_token");
+
+            document.cookie = "estaciona_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
             window.location.href = '/';
         });
 

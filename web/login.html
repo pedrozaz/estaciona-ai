@@ -362,7 +362,19 @@
     window.addEventListener('DOMContentLoaded', () => {
       const isLoggedIn = localStorage.getItem('estaciona_logged_in') || sessionStorage.getItem('estaciona_logged_in');
       if (isLoggedIn === 'true') {
-        window.location.href = '/app';
+        const token = localStorage.getItem('estaciona_token') || sessionStorage.getItem('estaciona_token');
+        let role = 'viewer';
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            role = payload.role;
+          } catch(e) {}
+        }
+        if (role === 'admin') {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/app';
+        }
       }
     });
 
