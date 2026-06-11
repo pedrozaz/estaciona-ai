@@ -826,6 +826,7 @@
           return;
         }
         activePinpointPath = pathData;
+        let serverRoute = null;
 
         fetch(`${apiUrl}/reservations/recommend?user_id=${simulatedUserId}`)
           .then((res) => {
@@ -833,6 +834,7 @@
             return res.json();
           })
           .then((data) => {
+            serverRoute = data.route;
             const spotId = data.recommended_spot;
             const expiresAt = new Date(Date.now() + 120 * 1000).toISOString();
 
@@ -875,62 +877,71 @@
                 spotObj.data.center3D.z,
               );
 
-              if (pathData.length > 1) {
-                let closestSegmentIndex = 0;
-                let minDistance = Infinity;
-                let bestProjectedPoint = null;
-
-                for (let i = 0; i < pathData.length - 1; i++) {
-                  const A = new THREE.Vector3(
-                    pathData[i].x,
-                    pathData[i].y,
-                    pathData[i].z,
-                  );
-                  const B = new THREE.Vector3(
-                    pathData[i + 1].x,
-                    pathData[i + 1].y,
-                    pathData[i + 1].z,
-                  );
-
-                  const ab = new THREE.Vector3().subVectors(B, A);
-                  const as = new THREE.Vector3().subVectors(spotPos, A);
-
-                  const abLenSq = ab.lengthSq();
-                  let t = abLenSq > 0 ? as.dot(ab) / abLenSq : 0;
-                  t = Math.max(0, Math.min(1, t));
-
-                  const P = new THREE.Vector3()
-                    .copy(A)
-                    .add(ab.multiplyScalar(t));
-                  const dist = P.distanceTo(spotPos);
-
-                  if (dist < minDistance) {
-                    minDistance = dist;
-                    closestSegmentIndex = i;
-                    bestProjectedPoint = P;
+              if (serverRoute && serverRoute.length > 0) {
+                let routePoints = [];
+                let lastIdx = 0;
+                for (const nodeId of serverRoute) {
+                  if (nodeId === "cam-01") {
+                    if (pathData[0]) {
+                      routePoints.push({x: pathData[0].x, y: pathData[0].y, z: pathData[0].z});
+                      lastIdx = 0;
+                    }
+                  } else if (nodeId.startsWith("path_node_")) {
+                    const idx = parseInt(nodeId.split("_")[2], 10);
+                    if (pathData[idx]) {
+                      routePoints.push({x: pathData[idx].x, y: pathData[idx].y, z: pathData[idx].z});
+                      lastIdx = idx;
+                    }
                   }
                 }
 
-                const truncatedPath = pathData.slice(
-                  0,
-                  closestSegmentIndex + 1,
-                );
-                activeCarPath = [
-                  ...truncatedPath,
-                  {
-                    x: bestProjectedPoint.x,
-                    y: bestProjectedPoint.y,
-                    z: bestProjectedPoint.z,
-                  },
-                  { x: spotPos.x, y: spotPos.y, z: spotPos.z },
-                ];
-              } else if (pathData.length === 1) {
-                activeCarPath = [
-                  { x: pathData[0].x, y: pathData[0].y, z: pathData[0].z },
-                  { x: spotPos.x, y: spotPos.y, z: spotPos.z },
-                ];
+                if (pathData[lastIdx + 1]) {
+                  const p = pathData[lastIdx + 1];
+                  routePoints.push({x: p.x, y: p.y, z: p.z});
+                }
+
+                if (routePoints.length > 1) {
+                  let closestSegmentIndex = 0;
+                  let minDistance = Infinity;
+                  let bestProjectedPoint = null;
+
+                  for (let i = 0; i < routePoints.length - 1; i++) {
+                    const A = new THREE.Vector3(routePoints[i].x, routePoints[i].y, routePoints[i].z);
+                    const B = new THREE.Vector3(routePoints[i + 1].x, routePoints[i + 1].y, routePoints[i + 1].z);
+
+                    const ab = new THREE.Vector3().subVectors(B, A);
+                    const as = new THREE.Vector3().subVectors(spotPos, A);
+
+                    const abLenSq = ab.lengthSq();
+                    let t = abLenSq > 0 ? as.dot(ab) / abLenSq : 0;
+                    t = Math.max(0, Math.min(1, t));
+
+                    const P = new THREE.Vector3().copy(A).add(ab.multiplyScalar(t));
+                    const dist = P.distanceTo(spotPos);
+
+                    if (dist < minDistance) {
+                      minDistance = dist;
+                      closestSegmentIndex = i;
+                      bestProjectedPoint = P;
+                    }
+                  }
+
+                  const truncatedPath = routePoints.slice(0, closestSegmentIndex + 1);
+                  activeCarPath = [
+                    ...truncatedPath,
+                    { x: bestProjectedPoint.x, y: bestProjectedPoint.y, z: bestProjectedPoint.z },
+                    { x: spotPos.x, y: spotPos.y, z: spotPos.z },
+                  ];
+                } else if (routePoints.length === 1) {
+                  activeCarPath = [
+                    { x: routePoints[0].x, y: routePoints[0].y, z: routePoints[0].z },
+                    { x: spotPos.x, y: spotPos.y, z: spotPos.z },
+                  ];
+                } else {
+                  activeCarPath = pathData;
+                }
               } else {
-                activeCarPath = [];
+                activeCarPath = pathData;
               }
             } else {
               activeCarPath = pathData;
