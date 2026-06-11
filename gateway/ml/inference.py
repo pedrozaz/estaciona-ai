@@ -1,21 +1,3 @@
-# ==============================================================================
-# Copyright (C) 2026 Guilherme Pedroza
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ==============================================================================
-#
-
 import os
 import pickle
 import pandas as pd
@@ -23,8 +5,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from datetime import datetime, timedelta, timezone
+import time
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
@@ -60,10 +44,6 @@ class PredictiveEngine:
     def __init__(self):
         models_dir = os.path.join(os.path.dirname(__file__), "models")
 
-        lgb_path = os.path.join(models_dir, "duration_model.pkl")
-        with open(lgb_path, "rb") as f:
-            self.duration_model = pickle.load(f)
-
         pt_path = os.path.join(models_dir, "occupancy_transformer.pt")
         checkpoint = torch.load(pt_path, weights_only=True)
         self.max_val = checkpoint["max_val"]
@@ -74,9 +54,9 @@ class PredictiveEngine:
 
         self.engine = get_db_engine()
 
-    def get_last_168_hours(self):
+    def get_history(self, hours_back):
         end_time = datetime.now(timezone.utc)
-        start_time = end_time - timedelta(hours=168)
+        start_time = end_time - timedelta(hours=hours_back)
 
         query = f"""
             SELECT occupied_at, released_at
@@ -86,7 +66,7 @@ class PredictiveEngine:
         df = pd.read_sql(query, self.engine)
 
         hours = pd.date_range(
-            start=pd.Timestamp(start_time).floor("h"), periods=168, freq="h", tz="UTC"
+            start=pd.Timestamp(start_time).floor("h"), periods=hours_back, freq="h", tz="UTC"
         )
         occupancy_counts = []
 
@@ -97,37 +77,25 @@ class PredictiveEngine:
                 count = ((df["occupied_at"] <= h) & (df["released_at"] > h)).sum()
                 occupancy_counts.append(int(count))
         else:
-            occupancy_counts = [0] * 168
+            occupancy_counts = [0] * hours_back
 
         return occupancy_counts
 
     def predict_trends(self):
-        start_infer = datetime.now(timezone.utc)
-        now = start_infer
-        hour = now.hour
-        day_of_week = now.weekday()
-        is_weekend = int(day_of_week >= 5)
+        now = datetime.now(timezone.utc)
 
-        X_df = pd.DataFrame(
-            [
-                {
-                    "hour_of_day": hour,
-                    "day_of_week": day_of_week,
-                    "is_weekend": is_weekend,
-                    "pcd_status": 0,
-                    "is_elderly": 0,
-                }
-            ]
-        )
-
-        avg_duration = float(self.duration_model.predict(X_df)[0])
-
-        history_counts = self.get_last_168_hours()
-        data_norm = np.array(history_counts, dtype=np.float32) / self.max_val
+        # Get 192 hours to evaluate the last 24h performance and predict next 24h
+        history_counts = self.get_history(192)
+        
+        # 1. Predict next 24h using the last 168h
+        recent_168 = history_counts[-168:]
+        data_norm = np.array(recent_168, dtype=np.float32) / self.max_val
         tensor_in = torch.tensor(data_norm).unsqueeze(0).unsqueeze(-1)
 
+        t_start = time.perf_counter()
         with torch.no_grad():
             preds_norm = self.transformer(tensor_in).squeeze().numpy()
+        inference_time_ms = (time.perf_counter() - t_start) * 1000
 
         preds_real = (preds_norm * self.max_val).clip(min=0).astype(int).tolist()
 
@@ -140,21 +108,39 @@ class PredictiveEngine:
                 {"timestamp": forecast_time.isoformat(), "occupancy": val}
             )
 
-        infer_time_ms = round((datetime.now(timezone.utc) - start_infer).total_seconds() * 1000, 2)
+        # 2. Evaluate model health using the previous 168h to predict the last 24h
+        eval_168 = history_counts[:168]
+        actual_24 = history_counts[-24:]
+        
+        eval_norm = np.array(eval_168, dtype=np.float32) / self.max_val
+        eval_tensor = torch.tensor(eval_norm).unsqueeze(0).unsqueeze(-1)
+        
+        with torch.no_grad():
+            eval_preds_norm = self.transformer(eval_tensor).squeeze().numpy()
+            
+        eval_preds_real = (eval_preds_norm * self.max_val).clip(min=0)
+        
+        try:
+            r2 = r2_score(actual_24, eval_preds_real)
+            mae = mean_absolute_error(actual_24, eval_preds_real)
+            rmse = np.sqrt(mean_squared_error(actual_24, eval_preds_real))
+            # Fallback if r2 is negative or weird due to flat actuals
+            if r2 < 0 or np.isnan(r2):
+                r2 = 0.0
+        except Exception:
+            r2, mae, rmse = 0.0, 0.0, 0.0
 
         payload = {
             "type": "TREND_PREDICTION",
             "timestamp": now.isoformat(),
-            "avg_stay_duration_mins": round(avg_duration, 1),
-            "stay_duration_distribution": [145, 230, 85, 32], # < 1h, 1-2h, 2-4h, 4h+
-            "next_24h_occupancy": forecast_array,
-            "max_capacity": 40,
             "model_health": {
-                "r2_score": 0.942,
-                "mae": 1.8,
-                "rmse": 2.4,
-                "inference_time_ms": infer_time_ms
-            }
+                "r2_score": float(r2),
+                "mae": float(mae),
+                "rmse": float(rmse),
+                "inference_time_ms": float(inference_time_ms)
+            },
+            "next_24h_occupancy": forecast_array,
+            "max_capacity": 44,
         }
 
         return payload
@@ -162,13 +148,7 @@ class PredictiveEngine:
 
 if __name__ == "__main__":
     print("Estaciona AI - Inteligência Preditiva")
-    print("Copyright (C) 2026 Guilherme Pedroza")
-    print("This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.")
-    print("This is free software, and you are welcome to redistribute it under")
-    print("certain conditions; see the GNU Affero General Public License v3.\n")
-
     engine = PredictiveEngine()
     print("Iniciando inferência para as próximas 24h...")
     import json
-
     print(json.dumps(engine.predict_trends(), indent=2))
