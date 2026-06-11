@@ -228,7 +228,7 @@
 <body>
   <nav class="navbar" style="position: absolute;">
     <div class="container nav-container">
-      <a href="index.html" class="logo">
+      <a href="/" class="logo">
         <span class="logo-text">Estaciona</span>
         <div class="logo-pin"><span>AI</span></div>
       </a>
@@ -362,7 +362,19 @@
     window.addEventListener('DOMContentLoaded', () => {
       const isLoggedIn = localStorage.getItem('estaciona_logged_in') || sessionStorage.getItem('estaciona_logged_in');
       if (isLoggedIn === 'true') {
-        window.location.href = 'app.html';
+        const token = localStorage.getItem('estaciona_token') || sessionStorage.getItem('estaciona_token');
+        let role = 'viewer';
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            role = payload.role;
+          } catch(e) {}
+        }
+        if (role === 'admin') {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/app';
+        }
       }
     });
 
@@ -416,8 +428,11 @@
           localStorage.removeItem('estaciona_id');
           localStorage.removeItem('estaciona_token');
         }
-        
-        window.location.href = 'app.html';
+        if (data.role === 'admin') {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/app';
+        }
       })
       .catch(err => {
         btn.classList.remove('loading');

@@ -542,7 +542,7 @@
 
   <body>
     <nav class="dashboard-nav">
-      <a href="index.html" class="logo">
+      <a href="/" class="logo">
         <span class="logo-text">Estaciona</span>
         <div class="logo-pin"><span>AI</span></div>
       </a>
@@ -601,6 +601,24 @@
                 >Configurações</span
               >
             </div>
+            <a
+              id="adminPanelLink"
+              href="/dashboard"
+              style="
+                display: none;
+                color: #10b981;
+                text-decoration: none;
+                font-size: 0.85rem;
+                padding: 0.6rem 0.8rem;
+                border-radius: 6px;
+                margin-bottom: 0.2rem;
+                transition: background 0.2s;
+              "
+              onmouseover="this.style.background='rgba(16, 185, 129, 0.1)'"
+              onmouseout="this.style.background='transparent'"
+            >
+              Painel Gerencial
+            </a>
             <button
               class="btn-logout"
               id="logoutBtn"
@@ -705,7 +723,7 @@
         sessionStorage.getItem("estaciona_logged_in") === "true" ||
         localStorage.getItem("estaciona_logged_in") === "true";
       if (!isLoggedIn) {
-        window.location.href = "login.html";
+        window.location.href = "/login";
       }
 
       const userEmail =
@@ -720,6 +738,16 @@
       document.getElementById("userAvatar").textContent = initial;
       document.getElementById("userName").textContent = userName;
 
+      const token = sessionStorage.getItem("estaciona_token") || localStorage.getItem("estaciona_token");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.role === 'admin') {
+            const adminLink = document.getElementById("adminPanelLink");
+            if (adminLink) adminLink.style.display = 'block';
+          }
+        } catch(e) {}
+      }
       window.wakeUpAudio = function() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!window.audioCtx) window.audioCtx = new AudioContext();
@@ -2019,7 +2047,9 @@
         localStorage.removeItem("estaciona_id");
         localStorage.removeItem("estaciona_token");
 
-        window.location.href = "index.html";
+        document.cookie = "estaciona_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+        window.location.href = "/";
       };
 
       window.toggleUserMenu = function () {

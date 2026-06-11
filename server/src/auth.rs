@@ -70,12 +70,16 @@ pub async fn login_dashboard(
     })?;
 
     let response = LoginResponse {
-        token,
+        token: token.clone(),
         role: user_record.role,
         name: user_record.name.unwrap_or_default(),
         id: user_record.id,
     };
-    Ok((StatusCode::OK, Json(response)))
+
+    let cookie_header = format!("estaciona_token={}; Path=/;", token);
+    let headers = axum::response::AppendHeaders([(axum::http::header::SET_COOKIE, cookie_header)]);
+
+    Ok((StatusCode::OK, headers, Json(response)))
 }
 
 #[cfg(test)]
