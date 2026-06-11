@@ -1,5 +1,4 @@
 import os
-import pickle
 import pandas as pd
 import numpy as np
 import torch
@@ -66,7 +65,10 @@ class PredictiveEngine:
         df = pd.read_sql(query, self.engine)
 
         hours = pd.date_range(
-            start=pd.Timestamp(start_time).floor("h"), periods=hours_back, freq="h", tz="UTC"
+            start=pd.Timestamp(start_time).floor("h"),
+            periods=hours_back,
+            freq="h",
+            tz="UTC",
         )
         occupancy_counts = []
 
@@ -86,7 +88,7 @@ class PredictiveEngine:
 
         # Get 192 hours to evaluate the last 24h performance and predict next 24h
         history_counts = self.get_history(192)
-        
+
         # 1. Predict next 24h using the last 168h
         recent_168 = history_counts[-168:]
         data_norm = np.array(recent_168, dtype=np.float32) / self.max_val
@@ -111,15 +113,15 @@ class PredictiveEngine:
         # 2. Evaluate model health using the previous 168h to predict the last 24h
         eval_168 = history_counts[:168]
         actual_24 = history_counts[-24:]
-        
+
         eval_norm = np.array(eval_168, dtype=np.float32) / self.max_val
         eval_tensor = torch.tensor(eval_norm).unsqueeze(0).unsqueeze(-1)
-        
+
         with torch.no_grad():
             eval_preds_norm = self.transformer(eval_tensor).squeeze().numpy()
-            
+
         eval_preds_real = (eval_preds_norm * self.max_val).clip(min=0)
-        
+
         try:
             r2 = r2_score(actual_24, eval_preds_real)
             mae = mean_absolute_error(actual_24, eval_preds_real)
@@ -139,7 +141,7 @@ class PredictiveEngine:
                 "r2_score": float(r2),
                 "mae": float(mae),
                 "rmse": float(rmse),
-                "inference_time_ms": float(inference_time_ms)
+                "inference_time_ms": float(inference_time_ms),
             },
             "next_24h_occupancy": forecast_array,
             "max_capacity": 44,
@@ -153,4 +155,5 @@ if __name__ == "__main__":
     engine = PredictiveEngine()
     print("Iniciando inferência para as próximas 24h...")
     import json
+
     print(json.dumps(engine.predict_trends(), indent=2))

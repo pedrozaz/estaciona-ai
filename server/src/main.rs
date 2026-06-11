@@ -247,7 +247,10 @@ async fn serve_login() -> Result<impl IntoResponse, (StatusCode, String)> {
 async fn serve_index() -> Result<impl IntoResponse, (StatusCode, String)> {
     match std::fs::read_to_string("../web/index.html") {
         Ok(content) => Ok(Html(content).into_response()),
-        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, "File not found".to_string())),
+        Err(_) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "File not found".to_string(),
+        )),
     }
 }
 
