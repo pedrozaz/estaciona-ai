@@ -416,8 +416,11 @@
           localStorage.removeItem('estaciona_id');
           localStorage.removeItem('estaciona_token');
         }
-        
-        window.location.href = '/app';
+        if (data.role === 'admin') {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/app';
+        }
       })
       .catch(err => {
         btn.classList.remove('loading');
