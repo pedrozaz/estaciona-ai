@@ -133,6 +133,8 @@ class PredictiveEngine:
         payload = {
             "type": "TREND_PREDICTION",
             "timestamp": now.isoformat(),
+            "avg_stay_duration_mins": 0.0,
+            "stay_duration_distribution": [],
             "model_health": {
                 "r2_score": float(r2),
                 "mae": float(mae),
