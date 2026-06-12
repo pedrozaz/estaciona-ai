@@ -135,16 +135,18 @@ def save_metric(
     conn.close()
 
 
-def update_metric_forwarded(db_path, spot_id, gateway_forwarded_ts):
+def update_metrics_forwarded_batch(db_path, updates):
+    if not updates:
+        return
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute(
+    cursor.executemany(
         """
         UPDATE metrics
         SET gateway_forwarded_ts = ?, cloud_ack = 1
         WHERE spot_id = ? AND cloud_ack = 0
         """,
-        (gateway_forwarded_ts, spot_id),
+        updates,
     )
     conn.commit()
     conn.close()
@@ -272,6 +274,7 @@ async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
                 )
 
             synced_ids = []
+            metrics_updates = []
             for event_id, message_text in events:
                 payload = json.loads(message_text)
                 now_str = (
@@ -285,7 +288,7 @@ async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
                 synced_ids.append(event_id)
 
                 spot_id = payload.get("spot_id") or "unknown"
-                update_metric_forwarded(metrics_path, spot_id, now_str)
+                metrics_updates.append((now_str, spot_id))
 
                 try:
                     t1 = datetime.datetime.fromisoformat(now_str.replace("Z", "+00:00"))
@@ -303,6 +306,7 @@ async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
                     flush=True,
                 )
 
+            update_metrics_forwarded_batch(metrics_path, metrics_updates)
             mark_events_as_synced(db_path, synced_ids)
             print(
                 f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] SYNC_BATCH count={len(events)}",
