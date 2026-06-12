@@ -182,7 +182,7 @@ async def handler(websocket, db_path, metrics_path, expected_key, sync_event):
                 try:
                     msg = await asyncio.wait_for(websocket.recv(), timeout=0.01)
                     messages.append(msg)
-                except (asyncio.TimeoutError, Exception):
+                except asyncio.TimeoutError, Exception:
                     break
 
             events_to_insert = []
