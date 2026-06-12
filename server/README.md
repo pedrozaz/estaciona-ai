@@ -95,8 +95,7 @@ The `/reservations/recommend` endpoint applies a strict priority chain:
 
 1. **Accessibility** — spots designated for disabled and elderly individuals are unconditionally prioritized when the requesting user holds an accessibility credential.
 2. **Personal history** — if the user has ≥ 3 prior occupations of a given spot, that spot is returned directly (preference routing).
-3. **Collective popularity** — the spot with the highest aggregate occupancy count across all users is selected.
-4. **Shortest path** — Dijkstra over the `ParkingGraph` returns the minimum-cost reachable free spot from the user's current position.
+3. **Shortest path** — Dijkstra over the `ParkingGraph` returns the minimum-cost reachable free spot from the user's current position.
 
 ---
 
