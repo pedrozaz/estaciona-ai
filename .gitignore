@@ -36,3 +36,7 @@ reconstruction/colmap/
 *.pt
 *.pkl
 *.db
+
+# Experiments
+**/experiments/
+
