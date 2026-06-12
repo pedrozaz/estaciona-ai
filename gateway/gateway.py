@@ -169,50 +169,76 @@ async def handler(websocket, db_path, metrics_path, expected_key, sync_event):
         f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] EDGE_CONNECTED",
         flush=True,
     )
+    db_conn = sqlite3.connect(db_path)
+    metrics_conn = sqlite3.connect(metrics_path)
+
     try:
         while True:
-            message = await websocket.recv()
-            payload = json.loads(message)
-            now_str = (
-                datetime.datetime.now(datetime.UTC)
-                .isoformat(timespec="milliseconds")
-                .replace("+00:00", "Z")
-            )
-            payload["gateway_received_at"] = now_str
+            messages = [await websocket.recv()]
 
-            save_event(db_path, json.dumps(payload))
+            while True:
+                try:
+                    msg = await asyncio.wait_for(websocket.recv(), timeout=0.01)
+                    messages.append(msg)
+                except asyncio.TimeoutError:
+                    break
 
-            edge_id = payload.get("camera_id") or "unknown"
-            spot_id = payload.get("spot_id") or "unknown"
-            status = payload.get("status") or "unknown"
-            detection_ts = payload.get("timestamp") or ""
-            edge_sent_ts = (
-                payload.get("edge_sent_at") or payload.get("edge_sent_ts") or ""
-            )
+            events_to_insert = []
+            metrics_to_insert = []
 
-            save_metric(
-                metrics_path,
-                edge_id,
-                spot_id,
-                status,
-                detection_ts,
-                edge_sent_ts,
-                now_str,
-            )
-
-            try:
-                t1 = datetime.datetime.fromisoformat(now_str.replace("Z", "+00:00"))
-                t0 = datetime.datetime.fromisoformat(
-                    edge_sent_ts.replace("Z", "+00:00")
+            for message in messages:
+                payload = json.loads(message)
+                now_str = (
+                    datetime.datetime.now(datetime.UTC)
+                    .isoformat(timespec="milliseconds")
+                    .replace("+00:00", "Z")
                 )
-                latency_ms = (t1 - t0).total_seconds() * 1000
-            except Exception:
-                latency_ms = 0.0
+                payload["gateway_received_at"] = now_str
 
-            print(
-                f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] MSG_RECEIVED edge_id={edge_id} spot_id={spot_id} latency_ms={latency_ms:.1f}",
-                flush=True,
-            )
+                events_to_insert.append((json.dumps(payload),))
+
+                edge_id = payload.get("camera_id") or "unknown"
+                spot_id = payload.get("spot_id") or "unknown"
+                status = payload.get("status") or "unknown"
+                detection_ts = payload.get("timestamp") or ""
+                edge_sent_ts = (
+                    payload.get("edge_sent_at") or payload.get("edge_sent_ts") or ""
+                )
+                metrics_to_insert.append(
+                    (edge_id, spot_id, status, detection_ts, edge_sent_ts, now_str)
+                )
+
+                try:
+                    t1 = datetime.datetime.fromisoformat(now_str.replace("Z", "+00:00"))
+                    t0 = datetime.datetime.fromisoformat(
+                        edge_sent_ts.replace("Z", "+00:00")
+                    )
+                    latency_ms = (t1 - t0).total_seconds() * 1000
+                except Exception:
+                    latency_ms = 0.0
+
+                print(
+                    f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] MSG_RECEIVED edge_id={edge_id} spot_id={spot_id} latency_ms={latency_ms:.1f}",
+                    flush=True,
+                )
+
+            if events_to_insert:
+                db_conn.executemany(
+                    "INSERT INTO fallback_events (message_text) VALUES (?)",
+                    events_to_insert,
+                )
+                db_conn.commit()
+
+            if metrics_to_insert:
+                metrics_conn.executemany(
+                    """
+                    INSERT INTO metrics (
+                        edge_id, spot_id, status, detection_ts, edge_sent_ts, gateway_received_ts
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                    metrics_to_insert,
+                )
+                metrics_conn.commit()
 
             sync_event.set()
     except Exception as e:
@@ -220,6 +246,9 @@ async def handler(websocket, db_path, metrics_path, expected_key, sync_event):
             f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] EDGE_DISCONNECTED reason={e}",
             flush=True,
         )
+    finally:
+        db_conn.close()
+        metrics_conn.close()
 
 
 async def sync_loop(db_path, metrics_path, cloud_url, api_key, sync_event):
