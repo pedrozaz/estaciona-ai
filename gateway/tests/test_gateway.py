@@ -10,7 +10,7 @@ from gateway import (
     get_unsynced_events,
     mark_events_as_synced,
     save_metric,
-    update_metric_forwarded,
+    update_metrics_forwarded_batch,
     is_authorized,
     handler,
     sync_loop,
@@ -85,7 +85,7 @@ def test_save_and_update_metrics(tmp_path):
     assert row == ("cam_01", "A-01", "occupied", 0)
     conn.close()
 
-    update_metric_forwarded(db_path, "A-01", "2026-06-05T12:00:03Z")
+    update_metrics_forwarded_batch(db_path, [("2026-06-05T12:00:03Z", "A-01")])
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(
