@@ -28,6 +28,8 @@ from ml.inference import PredictiveEngine
 def init_db(db_path):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.execute("PRAGMA synchronous=NORMAL;")
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS fallback_events (
@@ -45,6 +47,8 @@ def init_db(db_path):
 def init_metrics_db(db_path):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.execute("PRAGMA synchronous=NORMAL;")
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS metrics (
