@@ -22,6 +22,7 @@ import os
 import sys
 import time
 import asyncio
+import glob
 import websockets
 from dotenv import load_dotenv
 
@@ -37,8 +38,8 @@ import torch
 WS_URL = os.environ.get("LOCAL_WS_URL", "ws://localhost:8001/ws/edge")
 EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or "secret_edge_key"
 
-MODEL_PATH = "yolo26x-seg.pt"
-VIDEO_PATH = "data/test_metade.mp4"
+MODEL_PATH = os.environ.get("VISION_MODEL_PATH", "yolo26x-seg.pt")
+VIDEO_PATH = os.environ.get("VISION_STREAM_URL", "data/test_metade.mp4")
 SPOTS_PATH = "data/spots.json"
 
 VEHICLE_CLASSES = [2, 7]
@@ -155,10 +156,21 @@ async def main():
         )
 
     model = YOLO(MODEL_PATH)
-    cap = cv2.VideoCapture(VIDEO_PATH)
+    
+    video_list = []
+    if os.path.isdir(VIDEO_PATH):
+        video_list = sorted(glob.glob(os.path.join(VIDEO_PATH, "*.mp4")))
+        if not video_list:
+            print(f"Nenhum video .mp4 encontrado em {VIDEO_PATH}")
+            return
+    else:
+        video_list = [VIDEO_PATH]
+
+    current_video_idx = 0
+    cap = cv2.VideoCapture(video_list[current_video_idx])
 
     if not cap.isOpened():
-        print(f"Error: could not open {VIDEO_PATH}")
+        print(f"Error: could not open {video_list[current_video_idx]}")
         return
 
     ret, frame = cap.read()
@@ -181,8 +193,11 @@ async def main():
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("End of video.")
-            break
+            cap.release()
+            current_video_idx = (current_video_idx + 1) % len(video_list)
+            print(f"[VISION] Fim do video. Trocando para: {video_list[current_video_idx]}")
+            cap = cv2.VideoCapture(video_list[current_video_idx])
+            continue
 
         inference_frame = preprocess_frame(
             frame, gamma=GAMMA_CORRECTION, clahe_enabled=CLAHE_ENABLED

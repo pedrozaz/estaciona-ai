@@ -2198,6 +2198,211 @@
         document.getElementById("infoPanel").classList.add("visible");
         updateInfoPanel();
       };
+
+      let pointerStartX = 0;
+      let pointerStartY = 0;
+
+      viewport.addEventListener("pointerdown", (e) => {
+        pointerStartX = e.clientX;
+        pointerStartY = e.clientY;
+      });
+
+      viewport.addEventListener("pointerup", (e) => {
+        const dx = e.clientX - pointerStartX;
+        const dy = e.clientY - pointerStartY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        // Se arrastou a câmera (distância maior que 5 pixels), ignora
+        if (dist > 5) return;
+        
+        // Apenas processa se houver uma reserva ativa
+        if (!currentReservation) return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        const mouse = new THREE.Vector2(
+          ((e.clientX - rect.left) / rect.width) * 2 - 1,
+          -((e.clientY - rect.top) / rect.height) * 2 + 1
+        );
+
+        const clickRaycaster = new THREE.Raycaster();
+        clickRaycaster.setFromCamera(mouse, camera);
+
+        const spotMeshList = Object.values(spotsMeshes).map((obj) => obj.mesh);
+        const intersects = clickRaycaster.intersectObjects(spotMeshList, true);
+
+        if (intersects.length > 0) {
+          const clickedMesh = intersects[0].object;
+          const spotId = clickedMesh.userData.spotId;
+          if (spotId) {
+            const spotObj = spotsMeshes[spotId];
+            // Verifica se a vaga está livre (não ocupada e não reservada)
+            if (spotObj && spotObj.status !== "occupied" && spotObj.status !== "reserved") {
+              handleSwitchReservation(spotId);
+            }
+          }
+        }
+      });
+
+      function handleSwitchReservation(newSpotId) {
+        if (!currentReservation) return;
+        if (currentReservation.spot_id === newSpotId) return;
+
+        const oldReservationId = currentReservation.id;
+        const oldSpotId = currentReservation.spot_id;
+
+        // Cancela a reserva antiga em background
+        fetch(`${apiUrl}/reservations/${oldReservationId}/cancel`, {
+          method: "PUT",
+        }).catch((err) => console.error("Erro ao cancelar reserva antiga:", err));
+
+        // Cria a nova reserva
+        const expiresAt = new Date(Date.now() + 120 * 1000).toISOString();
+        fetch(`${apiUrl}/reservations`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: simulatedUserId,
+            spot_id: newSpotId,
+            expires_at: expiresAt,
+          }),
+        })
+          .then((res) => {
+            if (!res.ok) throw new Error("Falha ao reservar nova vaga");
+            return res.json();
+          })
+          .then((reservation) => {
+            // Libera a vaga antiga visualmente
+            window.toggleSpot(oldSpotId, "free", false);
+
+            // Atualiza os dados da reserva localmente
+            currentReservation = {
+              id: reservation.id,
+              spot_id: reservation.spot_id,
+            };
+
+            // Marca a nova vaga como reservada visualmente
+            window.toggleSpot(newSpotId, "reserved", false);
+
+            // Reseta o tempo/timer
+            hasExtended = false;
+            startReservationTimer(90);
+
+            // Calcula a nova rota do carro a partir da posição atual dele
+            const spotObj = spotsMeshes[newSpotId];
+            const actualY = spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
+            const spotPos = new THREE.Vector3(
+              spotObj.data.center3D.x,
+              actualY,
+              spotObj.data.center3D.z
+            );
+
+            let closestSegmentIndex = 0;
+            let minDistance = Infinity;
+            let bestProjectedPoint = null;
+
+            if (activePinpointPath && activePinpointPath.length > 1) {
+              for (let i = 0; i < activePinpointPath.length - 1; i++) {
+                const A = new THREE.Vector3(
+                  activePinpointPath[i].x,
+                  activePinpointPath[i].y,
+                  activePinpointPath[i].z
+                );
+                const B = new THREE.Vector3(
+                  activePinpointPath[i + 1].x,
+                  activePinpointPath[i + 1].y,
+                  activePinpointPath[i + 1].z
+                );
+
+                const ab = new THREE.Vector3().subVectors(B, A);
+                const as = new THREE.Vector3().subVectors(spotPos, A);
+
+                const abLenSq = ab.lengthSq();
+                let t = abLenSq > 0 ? as.dot(ab) / abLenSq : 0;
+                t = Math.max(0, Math.min(1, t));
+
+                const P = new THREE.Vector3().copy(A).add(ab.multiplyScalar(t));
+                const dist = P.distanceTo(spotPos);
+
+                if (dist < minDistance) {
+                  minDistance = dist;
+                  closestSegmentIndex = i;
+                  bestProjectedPoint = P;
+                }
+              }
+
+              // Encontra o nó do caminho mais próximo da posição atual do carro
+              let carNodeIdx = 0;
+              let minCarDist = Infinity;
+              for (let i = 0; i < activePinpointPath.length; i++) {
+                const nodePos = new THREE.Vector3(
+                  activePinpointPath[i].x,
+                  activePinpointPath[i].y,
+                  activePinpointPath[i].z
+                );
+                const dist = carGroup.position.distanceTo(nodePos);
+                if (dist < minCarDist) {
+                  minCarDist = dist;
+                  carNodeIdx = i;
+                }
+              }
+
+              let newPath = [];
+              // Posição atual do carro
+              newPath.push({
+                x: carGroup.position.x,
+                y: carGroup.position.y,
+                z: carGroup.position.z,
+              });
+
+              if (carNodeIdx <= closestSegmentIndex) {
+                // Segue o restante da rua até o ponto de projeção da nova vaga
+                for (let idx = carNodeIdx + 1; idx <= closestSegmentIndex; idx++) {
+                  newPath.push({
+                    x: activePinpointPath[idx].x,
+                    y: activePinpointPath[idx].y,
+                    z: activePinpointPath[idx].z,
+                  });
+                }
+                newPath.push({
+                  x: bestProjectedPoint.x,
+                  y: bestProjectedPoint.y,
+                  z: bestProjectedPoint.z,
+                });
+              } else {
+                // Vaga ficou para trás, vai direto para a projeção na rua dela
+                newPath.push({
+                  x: bestProjectedPoint.x,
+                  y: bestProjectedPoint.y,
+                  z: bestProjectedPoint.z,
+                });
+              }
+              // Entrada final na vaga
+              newPath.push({ x: spotPos.x, y: spotPos.y, z: spotPos.z });
+
+              activeCarPath = newPath;
+            } else {
+              // Fallback se não houver caminho de pinpoints
+              activeCarPath = [
+                { x: carGroup.position.x, y: carGroup.position.y, z: carGroup.position.z },
+                { x: spotPos.x, y: spotPos.y, z: spotPos.z },
+              ];
+            }
+
+            createStaticPathLine(activeCarPath);
+            currentPathIndex = 0;
+            carFinishedRoute = false;
+
+            // Feedback sonoro e UI
+            window.sounds.playPop();
+            updateInfoPanel();
+          })
+          .catch((err) => {
+            console.error("Erro ao redirecionar vaga:", err);
+            alert("Erro ao redirecionar: " + err.message);
+          });
+      }
     </script>
   </body>
 </html>
