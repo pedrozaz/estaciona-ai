@@ -2212,10 +2212,7 @@
         const dy = e.clientY - pointerStartY;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        // Se arrastou a câmera (distância maior que 5 pixels), ignora
         if (dist > 5) return;
-        
-        // Apenas processa se houver uma reserva ativa
         if (!currentReservation) return;
 
         const rect = renderer.domElement.getBoundingClientRect();
@@ -2235,7 +2232,6 @@
           const spotId = clickedMesh.userData.spotId;
           if (spotId) {
             const spotObj = spotsMeshes[spotId];
-            // Verifica se a vaga está livre (não ocupada e não reservada)
             if (spotObj && spotObj.status !== "occupied" && spotObj.status !== "reserved") {
               handleSwitchReservation(spotId);
             }
@@ -2250,12 +2246,10 @@
         const oldReservationId = currentReservation.id;
         const oldSpotId = currentReservation.spot_id;
 
-        // Cancela a reserva antiga em background
         fetch(`${apiUrl}/reservations/${oldReservationId}/cancel`, {
           method: "PUT",
         }).catch((err) => console.error("Erro ao cancelar reserva antiga:", err));
 
-        // Cria a nova reserva
         const expiresAt = new Date(Date.now() + 120 * 1000).toISOString();
         fetch(`${apiUrl}/reservations`, {
           method: "POST",
@@ -2273,23 +2267,18 @@
             return res.json();
           })
           .then((reservation) => {
-            // Libera a vaga antiga visualmente
             window.toggleSpot(oldSpotId, "free", false);
 
-            // Atualiza os dados da reserva localmente
             currentReservation = {
               id: reservation.id,
               spot_id: reservation.spot_id,
             };
 
-            // Marca a nova vaga como reservada visualmente
             window.toggleSpot(newSpotId, "reserved", false);
 
-            // Reseta o tempo/timer
             hasExtended = false;
             startReservationTimer(90);
 
-            // Calcula a nova rota do carro a partir da posição atual dele
             const spotObj = spotsMeshes[newSpotId];
             const actualY = spotObj.data.terrainY !== undefined ? spotObj.data.terrainY : -6.0;
             const spotPos = new THREE.Vector3(
@@ -2332,69 +2321,43 @@
                 }
               }
 
-              // Encontra o nó do caminho mais próximo da posição atual do carro
-              let carNodeIdx = 0;
-              let minCarDist = Infinity;
-              for (let i = 0; i < activePinpointPath.length; i++) {
-                const nodePos = new THREE.Vector3(
-                  activePinpointPath[i].x,
-                  activePinpointPath[i].y,
-                  activePinpointPath[i].z
-                );
-                const dist = carGroup.position.distanceTo(nodePos);
-                if (dist < minCarDist) {
-                  minCarDist = dist;
-                  carNodeIdx = i;
-                }
-              }
+              carGroup.position.set(activePinpointPath[0].x, activePinpointPath[0].y, activePinpointPath[0].z);
 
               let newPath = [];
-              // Posição atual do carro
-              newPath.push({
-                x: carGroup.position.x,
-                y: carGroup.position.y,
-                z: carGroup.position.z,
-              });
-
-              if (carNodeIdx <= closestSegmentIndex) {
-                // Segue o restante da rua até o ponto de projeção da nova vaga
-                for (let idx = carNodeIdx + 1; idx <= closestSegmentIndex; idx++) {
-                  newPath.push({
-                    x: activePinpointPath[idx].x,
-                    y: activePinpointPath[idx].y,
-                    z: activePinpointPath[idx].z,
-                  });
-                }
+              for (let idx = 0; idx <= closestSegmentIndex; idx++) {
                 newPath.push({
-                  x: bestProjectedPoint.x,
-                  y: bestProjectedPoint.y,
-                  z: bestProjectedPoint.z,
-                });
-              } else {
-                // Vaga ficou para trás, vai direto para a projeção na rua dela
-                newPath.push({
-                  x: bestProjectedPoint.x,
-                  y: bestProjectedPoint.y,
-                  z: bestProjectedPoint.z,
+                  x: activePinpointPath[idx].x,
+                  y: activePinpointPath[idx].y,
+                  z: activePinpointPath[idx].z,
                 });
               }
-              // Entrada final na vaga
+              newPath.push({
+                x: bestProjectedPoint.x,
+                y: bestProjectedPoint.y,
+                z: bestProjectedPoint.z,
+              });
               newPath.push({ x: spotPos.x, y: spotPos.y, z: spotPos.z });
 
               activeCarPath = newPath;
             } else {
-              // Fallback se não houver caminho de pinpoints
-              activeCarPath = [
-                { x: carGroup.position.x, y: carGroup.position.y, z: carGroup.position.z },
-                { x: spotPos.x, y: spotPos.y, z: spotPos.z },
-              ];
+              if (activePinpointPath && activePinpointPath[0]) {
+                carGroup.position.set(activePinpointPath[0].x, activePinpointPath[0].y, activePinpointPath[0].z);
+                activeCarPath = [
+                  { x: activePinpointPath[0].x, y: activePinpointPath[0].y, z: activePinpointPath[0].z },
+                  { x: spotPos.x, y: spotPos.y, z: spotPos.z },
+                ];
+              } else {
+                activeCarPath = [
+                  { x: carGroup.position.x, y: carGroup.position.y, z: carGroup.position.z },
+                  { x: spotPos.x, y: spotPos.y, z: spotPos.z },
+                ];
+              }
             }
 
             createStaticPathLine(activeCarPath);
             currentPathIndex = 0;
             carFinishedRoute = false;
 
-            // Feedback sonoro e UI
             window.sounds.playPop();
             updateInfoPanel();
           })
