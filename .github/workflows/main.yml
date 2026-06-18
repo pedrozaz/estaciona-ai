@@ -2,9 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ "main", "feat/web-app" ]
-    paths: [ 'web/**' ]
-    
+    branches: ["main", "feat/**", "develop"]
+    paths: ["web/**"]
+
 permissions:
   contents: read
   pages: write
@@ -23,7 +23,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-         path: './web'
+          path: "./web"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

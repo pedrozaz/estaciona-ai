@@ -1,0 +1,42 @@
+# Python
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+**/*.so
+__pycache__/
+.venv/
+*.pyc   
+**/pytest_cache
+
+# Rust
+target/
+
+# General
+.env
+.env.local
+.DS_Store
+Thumbs.db
+**/.idea/
+**/.vscode/
+**/.venv/
+
+# Datasets
+datasets/
+**/db/
+**/data/
+!web/data/
+# COLMAP
+reconstruction/photos/
+reconstruction/colmap/
+**/sparse/
+
+# Models / AI
+**/models/
+**/yolo**
+*.pt
+*.pkl
+*.db
+
+# Experiments
+**/experiments/
+

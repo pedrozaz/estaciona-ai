@@ -1,0 +1,6 @@
+ALTER TABLE users
+DROP COLUMN IF EXISTS date_of_birth,
+DROP COLUMN IF EXISTS pcd_status;
+
+ALTER TABLE users ALTER COLUMN plate SET NOT NULL;
+

@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS user_occupancy_history;
+
+ALTER TABLE spots DROP COLUMN IF EXISTS parking_lot;
+
+ALTER TABLE users 
+DROP COLUMN IF EXISTS email,
+DROP COLUMN IF EXISTS password_hash,
+DROP COLUMN IF EXISTS name;
+

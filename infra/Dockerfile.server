@@ -1,0 +1,36 @@
+### BUILDER ###
+
+FROM rust:1.95.0-slim AS builder
+
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  pkg-config \
+  libssl-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY server/ ./server/
+WORKDIR /build/server
+
+ENV SQLX_OFFLINE=true
+RUN cargo build --release
+
+### RUNTIME ###
+
+FROM debian:bookworm-slim
+
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  libssl3 \
+  libpq5 \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=builder /build/server/target/release/estaciona-ai-rust-server ./server
+COPY web/data/spots_3d.json /web/data/spots_3d.json
+
+ENV RUST_LOG=info
+EXPOSE 8000
+
+CMD ["./server"]

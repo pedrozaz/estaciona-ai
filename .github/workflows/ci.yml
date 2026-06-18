@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [ "develop", "main", "feat/**", "feats/**" ]
+  pull_request:
+    branches: [ "develop" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: true
+
+jobs:
+  rust-ci:
+    name: Rust CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+      - name: Clippy Lint
+        run: cargo clippy -- -D warnings
+
+      - name: Run Rust Tests
+        run: cargo test --all-features
+
+  gateway-ci:
+    name: Python Gateway CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./gateway
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "gateway/uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Run Ruff Check
+        run: uv run ruff check
+
+      - name: Run Ruff Format Check
+        run: uv run ruff format --check
+
+      - name: Run Pytest
+        run: uv run pytest
+
+  vision-ci:
+    name: Python Vision CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./vision
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCV system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libglib2.0-0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "vision/uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Run Ruff Check
+        run: uv run ruff check
+
+      - name: Run Ruff Format Check
+        run: uv run ruff format --check
+
+      - name: Run Pytest
+        run: uv run pytest

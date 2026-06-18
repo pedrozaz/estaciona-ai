@@ -1,6 +1,23 @@
 [project]
 name = "estaciona-ai-vision"
 version = "0.1.0"
-description = "Vision service for Estaciona-AI"
-requires-python = ">=3.11"
-dependencies = []
+description = "Computer vision module for Estaciona AI"
+requires-python = ">=3.14"
+dependencies = [
+    "opencv-python>=4.13.0.92",
+    "ultralytics>=8.4.53",
+    "websockets>=16.0",
+    "python-dotenv>=1.0.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.16",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.ruff.lint]
+ignore = ["E402", "E741"]

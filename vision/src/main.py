@@ -1,1 +1,0 @@
-print("Estaciona-AI Vision")

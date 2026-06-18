@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE spots SET status = 'occupied', last_updated = NOW() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "76b819d2ba479641825bb11af7eaf18cf299417d149607adc1181adbe90e2b7e"
+}
