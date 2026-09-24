@@ -158,6 +158,24 @@ def test_handler_auth_fail(tmp_path):
     asyncio.run(run())
 
 
+def test_malformed_frame_does_not_discard_valid_batch(tmp_path):
+    async def run():
+        db_path = str(tmp_path / "fallback.db")
+        metrics_path = str(tmp_path / "metrics.db")
+        init_db(db_path)
+        init_metrics_db(metrics_path)
+        mock_ws = AsyncMock()
+        mock_ws.request.headers = {"Authorization": "Bearer secret_key"}
+        valid = json.dumps({"type": "SPOT_UPDATE", "spot_id": "A-01", "status": "free"})
+        mock_ws.recv.side_effect = [valid, "{invalid", valid, Exception("Closed")]
+
+        await handler(mock_ws, db_path, metrics_path, "secret_key", asyncio.Event())
+
+        assert len(get_unsynced_events(db_path)) == 2
+
+    asyncio.run(run())
+
+
 def test_sync_loop_sends_to_cloud(tmp_path):
     async def run():
         db_path = str(tmp_path / "fallback.db")
@@ -225,16 +243,17 @@ def test_sync_loop_sends_to_cloud(tmp_path):
     asyncio.run(run())
 
 
-def test_main_startup():
+def test_main_startup(monkeypatch):
+    monkeypatch.setenv("EDGE_API_KEY", "secret_key")
+
     async def run():
         with (
             patch("websockets.serve") as mock_serve,
-            patch("asyncio.Future", new_callable=AsyncMock) as mock_future,
             patch("gateway.init_db") as mock_init_db,
             patch("gateway.init_metrics_db") as mock_init_metrics,
             patch("gateway.sync_loop", new_callable=AsyncMock) as mock_sync_loop,
+            patch("gateway.prediction_loop", new_callable=AsyncMock),
         ):
-            mock_future.return_value = AsyncMock()
             mock_serve.return_value.__aenter__ = AsyncMock()
             mock_serve.return_value.__aexit__ = AsyncMock()
 

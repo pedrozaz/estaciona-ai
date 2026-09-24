@@ -189,7 +189,13 @@ async def handler(websocket, db_path, metrics_path, expected_key, sync_event):
             metrics_to_insert = []
 
             for message in messages:
-                payload = json.loads(message)
+                try:
+                    payload = json.loads(message)
+                    if not isinstance(payload, dict):
+                        continue
+                except json.JSONDecodeError, TypeError:
+                    print("[WARN] INVALID_JSON dropped", flush=True)
+                    continue
                 now_str = (
                     datetime.datetime.now(datetime.UTC)
                     .isoformat(timespec="milliseconds")
@@ -337,7 +343,7 @@ async def prediction_loop(db_path, sync_event):
         flush=True,
     )
     try:
-        engine = PredictiveEngine()
+        engine = await asyncio.to_thread(PredictiveEngine)
         print(
             f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] PREDICTIVE_MODELS_READY",
             flush=True,
@@ -351,8 +357,8 @@ async def prediction_loop(db_path, sync_event):
 
     while True:
         try:
-            payload = engine.predict_trends()
-            save_event(db_path, json.dumps(payload))
+            payload = await asyncio.to_thread(engine.predict_trends)
+            await asyncio.to_thread(save_event, db_path, json.dumps(payload))
             sync_event.set()
             print(
                 f"{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')} [INFO] TREND_PREDICTION_QUEUED",
@@ -380,7 +386,7 @@ async def main():
     init_metrics_db(metrics_path)
 
     cloud_url = os.environ.get("SERVER_WS_URL", "wss://api.estaciona.tech/ws/edge")
-    api_key = os.environ.get("EDGE_API_KEY", "secret_edge_key")
+    api_key = os.environ["EDGE_API_KEY"]
     port = int(os.environ.get("GATEWAY_PORT", "8001"))
 
     print(

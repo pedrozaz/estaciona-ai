@@ -58,9 +58,9 @@ class PredictiveEngine:
         start_time = end_time - timedelta(hours=hours_back)
 
         query = f"""
-            SELECT occupied_at, released_at
+            SELECT occupied_at, COALESCE(released_at, NOW()) AS released_at
             FROM user_occupancy_history
-            WHERE released_at > '{start_time.isoformat()}'
+            WHERE released_at IS NULL OR released_at > '{start_time.isoformat()}'
         """
         df = pd.read_sql(query, self.engine)
 
