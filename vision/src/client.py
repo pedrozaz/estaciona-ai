@@ -23,6 +23,7 @@ import sys
 import time
 import asyncio
 import glob
+from collections import deque
 import websockets
 from dotenv import load_dotenv
 
@@ -36,11 +37,12 @@ from ultralytics import YOLO
 import torch
 
 WS_URL = os.environ.get("LOCAL_WS_URL", "ws://localhost:8001/ws/edge")
-EDGE_API_KEY = os.environ.get("EDGE_API_KEY") or "secret_edge_key"
+EDGE_API_KEY = os.environ.get("EDGE_API_KEY")
 
 MODEL_PATH = os.environ.get("VISION_MODEL_PATH", "yolo26x-seg.pt")
 VIDEO_PATH = os.environ.get("VISION_STREAM_URL", "data/test_metade.mp4")
 SPOTS_PATH = "data/spots.json"
+PENDING_UPDATES = deque()
 
 VEHICLE_CLASSES = [2, 7]
 
@@ -126,14 +128,22 @@ async def connect_ws(headers):
 
 
 async def safe_send(ws, payload_str, headers):
+    if payload_str is not None:
+        PENDING_UPDATES.append(payload_str)
     try:
-        await ws.send(payload_str)
+        if ws is None:
+            ws = await connect_ws(headers)
+        while PENDING_UPDATES:
+            await ws.send(PENDING_UPDATES[0])
+            PENDING_UPDATES.popleft()
         return ws
     except Exception:
         print("[CONN] Conexao perdida, reconectando...")
         try:
             ws = await connect_ws(headers)
-            await ws.send(payload_str)
+            while PENDING_UPDATES:
+                await ws.send(PENDING_UPDATES[0])
+                PENDING_UPDATES.popleft()
             return ws
         except Exception as e:
             print(f"[CONN] Falha ao reenviar ({e})")
@@ -141,6 +151,8 @@ async def safe_send(ws, payload_str, headers):
 
 
 async def main():
+    if not EDGE_API_KEY:
+        raise RuntimeError("EDGE_API_KEY is required")
     spots_path = sys.argv[1] if len(sys.argv) > 1 else SPOTS_PATH
 
     headers = {"Authorization": f"Bearer {EDGE_API_KEY}"}
@@ -156,7 +168,7 @@ async def main():
         )
 
     model = YOLO(MODEL_PATH)
-    
+
     video_list = []
     if os.path.isdir(VIDEO_PATH):
         video_list = sorted(glob.glob(os.path.join(VIDEO_PATH, "*.mp4")))
@@ -189,13 +201,19 @@ async def main():
     print(f"Loaded {len(spots)} parking spots from {spots_path}")
 
     prev_time = time.time()
+    last_retry_time = 0.0
 
     while True:
+        if PENDING_UPDATES and time.monotonic() - last_retry_time >= 5:
+            last_retry_time = time.monotonic()
+            websocket = await safe_send(websocket, None, headers)
         ret, frame = cap.read()
         if not ret:
             cap.release()
             current_video_idx = (current_video_idx + 1) % len(video_list)
-            print(f"[VISION] Fim do video. Trocando para: {video_list[current_video_idx]}")
+            print(
+                f"[VISION] Fim do video. Trocando para: {video_list[current_video_idx]}"
+            )
             cap = cv2.VideoCapture(video_list[current_video_idx])
             continue
 

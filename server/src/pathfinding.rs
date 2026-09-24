@@ -24,7 +24,9 @@ pub struct NodeId(pub usize);
 #[derive(Debug, Clone)]
 pub struct Node {
     pub name: String,
+    #[allow(dead_code)] // Coordinates remain available to diagnostics and future graph display.
     pub x: f32,
+    #[allow(dead_code)]
     pub y: f32,
 }
 
@@ -127,15 +129,6 @@ impl ParkingGraph {
         }
     }
 
-    fn heuristic(&self, a: NodeId, b: NodeId) -> u32 {
-        let node_a = self.nodes.get(&a).unwrap();
-        let node_b = self.nodes.get(&b).unwrap();
-
-        let dx = node_a.x - node_b.x;
-        let dy = node_a.y - node_b.y;
-        ((dx * dx + dy * dy).sqrt() * 10.0) as u32
-    }
-
     pub fn calculate_cost(&self, start_name: &str, end_name: &str) -> Option<u32> {
         let start = *self.name_to_id.get(start_name)?;
         let goal = *self.name_to_id.get(end_name)?;
@@ -167,7 +160,7 @@ impl ParkingGraph {
                         || new_cost < *cost_so_far.get(&next).unwrap()
                     {
                         cost_so_far.insert(next, new_cost);
-                        let priority = new_cost + self.heuristic(next, goal);
+                        let priority = new_cost;
 
                         frontier.push(State {
                             cost: priority,
@@ -216,7 +209,7 @@ impl ParkingGraph {
                         || new_cost < *cost_so_far.get(&next).unwrap()
                     {
                         cost_so_far.insert(next, new_cost);
-                        let priority = new_cost + self.heuristic(next, goal);
+                        let priority = new_cost;
 
                         frontier.push(State {
                             cost: priority,
@@ -278,6 +271,23 @@ mod tests {
         assert!(graph.edges.is_empty());
         assert!(graph.name_to_id.is_empty());
         assert_eq!(graph.next_id, 0);
+    }
+
+    #[test]
+    fn shortest_path_uses_edge_cost_even_when_coordinates_are_misleading() {
+        let mut graph = ParkingGraph::new();
+        let start = graph.add_node("start", 0.0, 0.0);
+        let waypoint = graph.add_node("waypoint", 100.0, 100.0);
+        let goal = graph.add_node("goal", 1.0, 0.0);
+        graph.add_edge(start, goal, 10, false);
+        graph.add_edge(start, waypoint, 1, false);
+        graph.add_edge(waypoint, goal, 1, false);
+
+        assert_eq!(graph.calculate_cost("start", "goal"), Some(2));
+        assert_eq!(
+            graph.calculate_route("start", "goal"),
+            Some(vec!["start".into(), "waypoint".into(), "goal".into()])
+        );
     }
 
     #[test]

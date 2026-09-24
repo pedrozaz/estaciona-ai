@@ -32,8 +32,7 @@ pub async fn ws_edge_handler(
     headers: axum::http::HeaderMap,
     State(state): State<SharedState>,
 ) -> axum::response::Response {
-    let api_key = std::env::var("EDGE_API_KEY").unwrap_or_else(|_| "secret_edge_key".to_string());
-    let expected_auth = format!("Bearer {}", api_key);
+    let expected_auth = format!("Bearer {}", state.edge_api_key);
 
     let is_authorized = headers
         .get("Authorization")
@@ -81,13 +80,26 @@ async fn handle_edge_socket(mut socket: WebSocket, state: SharedState) {
                         continue;
                     }
 
-                    let _ = sqlx::query!(
-                        "UPDATE spots SET status = $1, last_updated = NOW() WHERE id = $2",
-                        status,
-                        spot_id
+                    let updated = sqlx::query(
+                        "UPDATE spots SET status = $1, last_updated = NOW() \
+                         WHERE id = $2 AND NOT (status = 'reserved' AND $1 = 'free')",
                     )
+                    .bind(&status)
+                    .bind(&spot_id)
                     .execute(&state.pool)
                     .await;
+                    if !matches!(updated, Ok(ref result) if result.rows_affected() > 0) {
+                        continue;
+                    }
+                    if status == "free" {
+                        let _ = sqlx::query(
+                            "UPDATE user_occupancy_history SET released_at = NOW() \
+                             WHERE spot_id = $1 AND released_at IS NULL",
+                        )
+                        .bind(&spot_id)
+                        .execute(&state.pool)
+                        .await;
+                    }
 
                     tracing::info!(
                         "[WS EDGE] Spot {} updated to {} (Confidence: {:.2})",
@@ -242,28 +254,40 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
         (res.spot_id, route)
     } else {
         // Fluxo sem reserva: Usa o Grafo para varrer todas as vagas livres e achar a rota mais curta
-        let mut best_spot: Option<String> = None;
-        let mut best_route: Option<Vec<String>> = None;
-        let mut min_route_length = usize::MAX;
-
-        let graph = state.graph.read().await;
-
         let free_spots = sqlx::query!("SELECT id FROM spots WHERE status = 'free'")
             .fetch_all(&state.pool)
             .await
             .unwrap_or_default();
 
-        for row in free_spots {
-            if let Some(route) = graph.calculate_route(&camera_id, &row.id)
-                && route.len() < min_route_length
-            {
-                min_route_length = route.len();
-                best_spot = Some(row.id);
-                best_route = Some(route);
-            }
-        }
+        let candidates = {
+            let graph = state.graph.read().await;
+            let mut candidates: Vec<_> = free_spots
+                .into_iter()
+                .filter_map(|row| {
+                    let cost = graph.calculate_cost(&camera_id, &row.id)?;
+                    let route = graph.calculate_route(&camera_id, &row.id)?;
+                    Some((cost, row.id, route))
+                })
+                .collect();
+            candidates.sort_by_key(|(cost, _, _)| *cost);
+            candidates
+        };
 
-        if let (Some(spot), Some(route)) = (best_spot, best_route) {
+        let mut claimed = None;
+        for (_, spot, route) in candidates {
+            let Ok(mut tx) = state.pool.begin().await else {
+                return;
+            };
+            let available = sqlx::query(
+                "UPDATE spots SET status = 'reserved', last_updated = NOW() \
+                 WHERE id = $1 AND status = 'free' RETURNING id",
+            )
+            .bind(&spot)
+            .fetch_optional(&mut *tx)
+            .await;
+            if !matches!(available, Ok(Some(_))) {
+                continue;
+            }
             let new_res_id = Uuid::new_v4();
             let expires_at = Utc::now() + Duration::minutes(15);
 
@@ -271,17 +295,14 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
                 "INSERT INTO reservations (id, user_id, spot_id, status, expires_at) VALUES ($1, $2, $3, 'active', $4)",
                 new_res_id, user_id, spot, expires_at
             )
-            .execute(&state.pool)
+            .execute(&mut *tx)
             .await;
 
             match insert_result {
                 Ok(res) if res.rows_affected() > 0 => {
-                    let _ = sqlx::query!(
-                        "UPDATE spots SET status = 'reserved', last_updated = NOW() WHERE id = $1",
-                        spot
-                    )
-                    .execute(&state.pool)
-                    .await;
+                    if tx.commit().await.is_err() {
+                        return;
+                    }
 
                     // Dispara broadcast de SPOT_UPDATE para os outros clientes saberem que a vaga foi ocupada
                     let update_msg = ServerToAppMsg::SpotUpdate {
@@ -292,14 +313,14 @@ async fn handle_car_detected(state: &SharedState, plate: String, camera_id: Stri
                         let _ = state.tx.send(json_str);
                     }
 
-                    (spot, route)
+                    claimed = Some((spot, route));
+                    break;
                 }
                 _ => return, // Falha de persistência
             }
-        } else {
-            // Nenhuma vaga livre alcançável encontrada
-            return;
         }
+        let Some((spot, route)) = claimed else { return };
+        (spot, route)
     };
 
     // 4. Envia o comando de navegação para a sessão do usuário

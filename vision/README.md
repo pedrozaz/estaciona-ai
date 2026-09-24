@@ -46,7 +46,7 @@ vision/
 VideoCapture frame
   → Gamma correction (γ = 1.4) + optional CLAHE
   → YOLO inference (classes: [2=car, 7=truck], conf=0.10, imgsz=1312)
-  → Bounding box shrink (BOX_SHRINK_FACTOR = 0.85)
+  → Bounding box shrink (BOX_SHRINK_FACTOR = 0.15 per side)
   → Per-spot mask overlap: IoU(spot_polygon, vehicle_mask)
   → Debounce filter (see below)
   → WebSocket publish (on state change only)
@@ -105,9 +105,10 @@ Polygon coordinates are camera-specific and must be recalibrated when the camera
 
 | Variable | Description |
 |----------|-------------|
-| `GATEWAY_WS_URL` | Gateway WebSocket URL (e.g., `ws://localhost:8001/ws/edge`) |
+| `LOCAL_WS_URL` | Gateway WebSocket URL (e.g., `ws://localhost:8001/ws/edge`) |
 | `EDGE_API_KEY` | Shared secret for gateway authentication |
-| `VIDEO_SOURCE` | OpenCV video capture source (path, RTSP URL, or device index) |
+| `VISION_STREAM_URL` | OpenCV video source (file, directory of .mp4, or RTSP URL) |
+| `VISION_MODEL_PATH` | YOLO checkpoint path |
 
 ---
 

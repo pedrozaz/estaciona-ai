@@ -741,7 +741,8 @@
       const token = sessionStorage.getItem("estaciona_token") || localStorage.getItem("estaciona_token");
       if (token) {
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
+          const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+          const payload = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')));
           if (payload.role === 'admin') {
             const adminLink = document.getElementById("adminPanelLink");
             if (adminLink) adminLink.style.display = 'block';
@@ -843,10 +844,12 @@
         host.startsWith("172.") ||
         host.endsWith(".local") ||
         isIP;
-      const apiHost = host.includes("ngrok") ? "localhost" : host;
-      const apiUrl = isLocal
+      const apiHost = host;
+      const apiUrl = host.includes("ngrok") ? window.location.origin : isLocal
         ? `http://${apiHost}:8000`
         : "https://api.estaciona.tech";
+      const authHeaders = () => ({ Authorization: `Bearer ${sessionStorage.getItem("estaciona_token") || localStorage.getItem("estaciona_token") || ""}` });
+      const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
       function requestRecommendationAndReserve(pathData) {
         if (!simulatedUserId) {
@@ -856,7 +859,7 @@
         activePinpointPath = pathData;
         let serverRoute = null;
 
-        fetch(`${apiUrl}/reservations/recommend?user_id=${simulatedUserId}`)
+        fetch(`${apiUrl}/reservations/recommend?user_id=${simulatedUserId}`, { headers: authHeaders() })
           .then((res) => {
             if (!res.ok) throw new Error("Estacionamento Lotado");
             return res.json();
@@ -870,9 +873,9 @@
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
+                ...authHeaders(),
               },
               body: JSON.stringify({
-                user_id: simulatedUserId,
                 spot_id: spotId,
                 expires_at: expiresAt,
               }),
@@ -1311,7 +1314,7 @@
               infoHTML += `
               <div class="info-row" style="margin-bottom: 12px;">
                 <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                  <span>${pin.name}</span>
+                  <span>${escapeHtml(pin.name)}</span>
                   <span class="highlight" style="color: #ef4444;">Indisponível</span>
                 </p>
               </div>
@@ -1354,7 +1357,7 @@
               infoHTML += `
               <div class="info-row" style="margin-bottom: 12px;">
                 <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                  <span>${pin.name}</span>
+                  <span>${escapeHtml(pin.name)}</span>
                   <span class="highlight" style="color: ${color};">${freeSpots} vagas</span>
                 </p>
                 <div class="detailed-vagas" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 0.72rem; font-weight: 600;">
@@ -1369,7 +1372,7 @@
             infoHTML += `
             <div class="info-row" style="margin-bottom: 12px;">
               <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span>${pin.name}</span>
+                <span>${escapeHtml(pin.name)}</span>
                 <span class="highlight" style="color: #ef4444;">Indisponível</span>
               </p>
             </div>
@@ -1378,7 +1381,7 @@
             infoHTML += `
             <div class="info-row" style="margin-bottom: 12px;">
               <p style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span>${pin.name}</span>
+                <span>${escapeHtml(pin.name)}</span>
                 <span class="highlight" style="color: #ef4444;">Indisponível</span>
               </p>
             </div>
@@ -1975,10 +1978,9 @@
             host.startsWith("172.") ||
             host.endsWith(".local") ||
             isIP;
-          const apiHost = host.includes("ngrok") ? "localhost" : host;
-          const wsUrl = isLocal
-            ? `ws://${apiHost}:8000/ws/dashboard`
-            : "wss://api.estaciona.tech/ws/dashboard";
+          const apiHost = host;
+          const wsBase = host.includes("ngrok") ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${host}` : isLocal ? `ws://${apiHost}:8000` : "wss://api.estaciona.tech";
+          const wsUrl = `${wsBase}/ws/app?user_id=${encodeURIComponent(simulatedUserId)}&token=${encodeURIComponent(token || "")}`;
 
           const ws = new WebSocket(wsUrl);
 
@@ -2083,6 +2085,7 @@
         if (response) {
           fetch(`${apiUrl}/reservations/${reservationToHandle.id}/confirm`, {
             method: "POST",
+            headers: authHeaders(),
           })
             .then(() => {
               window.resetCamera();
@@ -2094,17 +2097,10 @@
 
           fetch(`${apiUrl}/reservations/${reservationToHandle.id}/cancel`, {
             method: "PUT",
+            headers: authHeaders(),
           })
-            .then(() => {
-              return fetch(`${apiUrl}/spots/${intruderSpotId}/status`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ status: "occupied" }),
-              });
-            })
-            .then(() => {
+            .then((res) => {
+              if (!res.ok) throw new Error("Falha ao cancelar reserva");
               if (activePinpointPath) {
                 requestRecommendationAndReserve(activePinpointPath);
               }
@@ -2148,6 +2144,7 @@
         if (response) {
           fetch(`${apiUrl}/reservations/${currentReservation.id}/extend`, {
             method: "PUT",
+            headers: authHeaders(),
           })
             .then((res) => {
               if (!res.ok) throw new Error();
@@ -2174,6 +2171,7 @@
 
         fetch(`${apiUrl}/reservations/${reservationToHandle.id}/cancel`, {
           method: "PUT",
+          headers: authHeaders(),
         })
           .then(() => {
             window.toggleSpot(reservationToHandle.spot_id, "free", false);
@@ -2246,18 +2244,14 @@
         const oldReservationId = currentReservation.id;
         const oldSpotId = currentReservation.spot_id;
 
-        fetch(`${apiUrl}/reservations/${oldReservationId}/cancel`, {
-          method: "PUT",
-        }).catch((err) => console.error("Erro ao cancelar reserva antiga:", err));
-
         const expiresAt = new Date(Date.now() + 120 * 1000).toISOString();
         fetch(`${apiUrl}/reservations`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...authHeaders(),
           },
           body: JSON.stringify({
-            user_id: simulatedUserId,
             spot_id: newSpotId,
             expires_at: expiresAt,
           }),
@@ -2265,6 +2259,20 @@
           .then((res) => {
             if (!res.ok) throw new Error("Falha ao reservar nova vaga");
             return res.json();
+          })
+          .then(async (reservation) => {
+            const cancelled = await fetch(`${apiUrl}/reservations/${oldReservationId}/cancel`, {
+              method: "PUT",
+              headers: authHeaders(),
+            });
+            if (!cancelled.ok) {
+              await fetch(`${apiUrl}/reservations/${reservation.id}/cancel`, {
+                method: "PUT",
+                headers: authHeaders(),
+              });
+              throw new Error("Falha ao cancelar reserva antiga");
+            }
+            return reservation;
           })
           .then((reservation) => {
             window.toggleSpot(oldSpotId, "free", false);

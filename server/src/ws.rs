@@ -93,11 +93,15 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
     let mut send_task = tokio::spawn(async move {
         loop {
             tokio::select! {
-                Ok(broadcast_msg) = broadcast_rx.recv() => {
-                    if sender.send(Message::Text(broadcast_msg.into())).await.is_err() {
-                        break;
+                received = broadcast_rx.recv() => match received {
+                    Ok(broadcast_msg) => {
+                        if sender.send(Message::Text(broadcast_msg.into())).await.is_err() {
+                            break;
+                        }
                     }
-                }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                },
                 Some(private_msg) = private_rx.recv() => {
                     if sender.send(Message::Text(private_msg.into())).await.is_err() {
                         break;
@@ -115,11 +119,15 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                     AppToServerMsg::ReserveSpot { spot_id, .. } => {
                         let state_clone = value.clone();
 
+                        let Ok(mut tx) = state_clone.pool.begin().await else {
+                            continue;
+                        };
+
                         let reserved_spot = sqlx::query!(
                             "UPDATE spots SET status = 'reserved', last_updated = NOW() WHERE id = $1 AND status = 'free' RETURNING id",
                             spot_id
                         )
-                        .fetch_optional(&state_clone.pool)
+                        .fetch_optional(&mut *tx)
                         .await
                         .unwrap_or(None);
 
@@ -134,10 +142,10 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                                 VALUES ($1, $2, $3, 'active', $4)",
                                 res_id, user_id, spot_id, expires
                             )
-                            .execute(&state_clone.pool)
+                            .execute(&mut *tx)
                             .await;
 
-                            if db_result.is_ok() {
+                            if db_result.is_ok() && tx.commit().await.is_ok() {
                                 let confirm = ServerToAppMsg::ReservationConfirmed {
                                     reservation_id: res_id,
                                     spot_id: spot_id.clone(),
@@ -155,10 +163,6 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                                 if let Ok(json) = serde_json::to_string(&update) {
                                     let _ = state_clone.tx.send(json);
                                 }
-                            } else {
-                                let _ = sqlx::query!("UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1", spot_id)
-                                    .execute(&state_clone.pool)
-                                    .await;
                             }
                         } else {
                             let reject = ServerToAppMsg::ReservationRejected {
@@ -173,6 +177,10 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                     AppToServerMsg::CancelReservation { reservation_id } => {
                         let state_clone = value.clone();
 
+                        let Ok(mut tx) = state_clone.pool.begin().await else {
+                            continue;
+                        };
+
                         let res = sqlx::query!(
                             "UPDATE reservations SET status = 'cancelled'
                             WHERE id = $1 AND user_id = $2 AND status = 'active'
@@ -180,24 +188,33 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
                             reservation_id,
                             user_id
                         )
-                        .fetch_optional(&state_clone.pool)
+                        .fetch_optional(&mut *tx)
                         .await;
 
                         if let Ok(Some(row)) = res {
-                            let _ = sqlx::query!(
-                                "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
-                                row.spot_id
+                            let updated = sqlx::query(
+                                "UPDATE spots SET status = 'free', last_updated = NOW() \
+                                 WHERE id = $1 AND status = 'reserved'",
                             )
-                            .execute(&state_clone.pool)
+                            .bind(&row.spot_id)
+                            .execute(&mut *tx)
                             .await;
-
-                            let update = ServerToAppMsg::SpotUpdate {
-                                spot_id: row.spot_id,
-                                status: "free".to_string(),
+                            let Ok(updated) = updated else {
+                                continue;
                             };
+                            if tx.commit().await.is_err() {
+                                continue;
+                            }
 
-                            if let Ok(json) = serde_json::to_string(&update) {
-                                let _ = state_clone.tx.send(json);
+                            if updated.rows_affected() > 0 {
+                                let update = ServerToAppMsg::SpotUpdate {
+                                    spot_id: row.spot_id,
+                                    status: "free".to_string(),
+                                };
+
+                                if let Ok(json) = serde_json::to_string(&update) {
+                                    let _ = state_clone.tx.send(json);
+                                }
                             }
                         }
                     }
@@ -216,10 +233,26 @@ async fn handle_app_socket(socket: WebSocket, state: SharedState, user_id: Uuid)
 
 pub async fn ws_dashboard_handler(
     ws: WebSocketUpgrade,
+    Query(query): Query<DashboardQuery>,
+    headers: axum::http::HeaderMap,
     State(state): State<SharedState>,
 ) -> axum::response::Response {
+    let authorized = query
+        .token
+        .as_deref()
+        .and_then(|token| crate::security::verify_jwt(token, &state.jwt_secret).ok())
+        .or_else(|| crate::security::authenticated_claims(&headers, &state.jwt_secret).ok())
+        .is_some_and(|claims| claims.role == "admin");
+    if !authorized {
+        return (axum::http::StatusCode::UNAUTHORIZED, "Admin required").into_response();
+    }
     ws.on_upgrade(move |socket| handle_dashboard_socket(socket, state))
         .into_response()
+}
+
+#[derive(Deserialize)]
+pub struct DashboardQuery {
+    pub token: Option<String>,
 }
 
 async fn handle_dashboard_socket(mut socket: WebSocket, state: SharedState) {
@@ -248,13 +281,19 @@ async fn handle_dashboard_socket(mut socket: WebSocket, state: SharedState) {
         let _ = socket.send(Message::Text(json_str.into())).await;
     }
 
-    while let Ok(broadcast_msg) = broadcast_rx.recv().await {
-        if socket
-            .send(Message::Text(broadcast_msg.into()))
-            .await
-            .is_err()
-        {
-            break;
+    loop {
+        match broadcast_rx.recv().await {
+            Ok(broadcast_msg) => {
+                if socket
+                    .send(Message::Text(broadcast_msg.into()))
+                    .await
+                    .is_err()
+                {
+                    break;
+                }
+            }
+            Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+            Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
         }
     }
 }
