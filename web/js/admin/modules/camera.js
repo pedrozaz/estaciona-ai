@@ -83,6 +83,7 @@ class CameraModule {
                 this.pins = existing.map((lot, i) => ({
                     id: Date.now() + i,
                     name: lot.name,
+                    blocked: lot.blocked === true,
                     path: lot.path || [],
                     position: lot.position,
                     camera: lot.camera,
@@ -335,7 +336,7 @@ class CameraModule {
     exportJson() {
         const exported = this.pins.map((p, i) => ({
             name: p.name,
-            blocked: false,
+            blocked: p.blocked === true,
             path: p.path || [],
             position: p.position || null,
             camera: p.camera || null

@@ -139,7 +139,7 @@ class OrthoModule {
                 dot.style.border = '1px solid #fff';
                 dot.style.pointerEvents = 'none';
                 markersLayer.appendChild(dot);
-                markers.push({ el: dot, origX: pt.x, origY: pt.y });
+                markers.push({ el: dot, x: pt.x, y: pt.y });
             });
         });
 
