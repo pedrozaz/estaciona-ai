@@ -19,12 +19,14 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
 };
+use axum::http::{HeaderMap, StatusCode, header};
 use chrono::{Duration, Utc};
 use hmac::{Hmac, KeyInit, Mac};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
+use uuid::Uuid;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -112,9 +114,70 @@ pub fn verify_jwt(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::err
     Ok(token_data.claims)
 }
 
+pub type AuthError = (StatusCode, String);
+
+pub fn authenticated_claims(headers: &HeaderMap, secret: &str) -> Result<Claims, AuthError> {
+    let bearer = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "));
+    let cookie = headers
+        .get(header::COOKIE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| {
+            value
+                .split(';')
+                .find_map(|part| part.trim().strip_prefix("estaciona_token="))
+        });
+    let token = bearer
+        .or(cookie)
+        .ok_or((StatusCode::UNAUTHORIZED, "Missing token".to_string()))?;
+    verify_jwt(token, secret).map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid token".to_string()))
+}
+
+pub fn authenticated_user(headers: &HeaderMap, secret: &str) -> Result<Uuid, AuthError> {
+    let claims = authenticated_claims(headers, secret)?;
+    Uuid::parse_str(&claims.sub)
+        .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid user token".to_string()))
+}
+
+pub fn require_admin(headers: &HeaderMap, secret: &str) -> Result<(), AuthError> {
+    let claims = authenticated_claims(headers, secret)?;
+    if claims.role != "admin" {
+        return Err((StatusCode::FORBIDDEN, "Admin required".to_string()));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn authenticated_user_accepts_bearer_or_cookie_and_rejects_missing_token() {
+        let user_id = Uuid::new_v4();
+        let token = create_jwt(&user_id.to_string(), "user", "secret").unwrap();
+        let mut headers = HeaderMap::new();
+        assert_eq!(
+            authenticated_user(&headers, "secret").unwrap_err().0,
+            StatusCode::UNAUTHORIZED
+        );
+        headers.insert(
+            header::AUTHORIZATION,
+            format!("Bearer {token}").parse().unwrap(),
+        );
+        assert_eq!(authenticated_user(&headers, "secret").unwrap(), user_id);
+        headers.remove(header::AUTHORIZATION);
+        headers.insert(
+            header::COOKIE,
+            format!("estaciona_token={token}").parse().unwrap(),
+        );
+        assert_eq!(authenticated_user(&headers, "secret").unwrap(), user_id);
+        assert_eq!(
+            require_admin(&headers, "secret").unwrap_err().0,
+            StatusCode::FORBIDDEN
+        );
+    }
 
     #[test]
     fn hash_plate_is_deterministic() {

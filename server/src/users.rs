@@ -18,7 +18,7 @@
 use axum::{
     Json,
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
 };
 use chrono::{DateTime, NaiveDate, Utc};
@@ -124,7 +124,12 @@ pub async fn create_user(
 pub async fn get_user(
     State(state): State<SharedState>,
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let requester = crate::security::authenticated_claims(&headers, &state.jwt_secret)?;
+    if requester.role != "admin" && requester.sub != id.to_string() {
+        return Err((StatusCode::FORBIDDEN, "User access denied".to_string()));
+    }
     let record = sqlx::query_as!(
         UserResponse,
         r#"

@@ -32,12 +32,18 @@ pub struct AppState {
     pub graph: RwLock<ParkingGraph>,
     pub jwt_secret: String,
     pub plate_pepper: String,
+    pub edge_api_key: String,
     pub last_trend_prediction: Mutex<Option<String>>,
 }
 
 pub type SharedState = Arc<AppState>;
 
-pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) -> SharedState {
+pub async fn init_state(
+    pool: PgPool,
+    jwt_secret: String,
+    plate_pepper: String,
+    edge_api_key: String,
+) -> SharedState {
     let (tx, _) = broadcast::channel(100);
 
     let mut graph = ParkingGraph::new();
@@ -79,7 +85,8 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
                     (node_map.get(prev_id), node_map.get(&node_id))
             {
                 let prev_p = &parking.path[i - 1];
-                let dist = ((p.x - prev_p.x).powi(2) + (p.z - prev_p.z).powi(2)).sqrt() as u32;
+                let dist =
+                    (((p.x - prev_p.x).powi(2) + (p.z - prev_p.z).powi(2)).sqrt() * 1000.0) as u32;
                 graph.add_edge(from_node, to_node, dist.max(1), true);
             }
             prev_node_id = Some(node_id);
@@ -123,51 +130,24 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
 
         let spot_node = graph.add_node(&spot.id, spot.center_3d.x as f32, spot.center_3d.z as f32);
 
-        if let Some(parking) = parkings.first() {
-            let mut closest_node_id = None;
-            let mut min_proj_dist = f64::MAX;
-
-            for i in 0..parking.path.len() - 1 {
-                let p1 = &parking.path[i];
-                let p2 = &parking.path[i + 1];
-
-                let ab_x = p2.x - p1.x;
-                let ab_z = p2.z - p1.z;
-                let as_x = spot.center_3d.x - p1.x;
-                let as_z = spot.center_3d.z - p1.z;
-
-                let ab_len_sq = ab_x * ab_x + ab_z * ab_z;
-                let mut t = if ab_len_sq > 0.0 {
-                    (as_x * ab_x + as_z * ab_z) / ab_len_sq
-                } else {
-                    0.0
-                };
-                t = t.clamp(0.0, 1.0);
-
-                let proj_x = p1.x + t * ab_x;
-                let proj_z = p1.z + t * ab_z;
-
-                let dist = ((proj_x - spot.center_3d.x).powi(2)
-                    + (proj_z - spot.center_3d.z).powi(2))
-                .sqrt();
-
-                if dist < min_proj_dist {
-                    min_proj_dist = dist;
-                    let n_id = if i == 0 {
-                        "cam-01".to_string()
-                    } else {
-                        format!("path_node_{}", i)
-                    };
-                    if let Some(&g_node) = node_map.get(&n_id) {
-                        closest_node_id = Some(g_node);
-                    }
-                }
-            }
-
-            if let Some(closest) = closest_node_id {
-                // The true cost would include distance from the node to the projection point,
-                // but for simple routing, min_proj_dist + 1 is sufficient.
-                graph.add_edge(closest, spot_node, min_proj_dist.max(1.0) as u32, true);
+        if let Some(parking) = parkings.first()
+            && !parking.path.is_empty()
+        {
+            let nearest = config_nodes
+                .iter()
+                .filter_map(|(name, x, z)| {
+                    let distance =
+                        ((x - spot.center_3d.x).powi(2) + (z - spot.center_3d.z).powi(2)).sqrt();
+                    node_map.get(name).map(|node| (*node, distance))
+                })
+                .min_by(|a, b| a.1.total_cmp(&b.1));
+            if let Some((closest, distance)) = nearest {
+                graph.add_edge(
+                    closest,
+                    spot_node,
+                    ((distance * 1000.0) as u32).max(1),
+                    true,
+                );
             }
         }
     }
@@ -179,6 +159,7 @@ pub async fn init_state(pool: PgPool, jwt_secret: String, plate_pepper: String) 
         graph: RwLock::new(graph),
         jwt_secret,
         plate_pepper,
+        edge_api_key,
         last_trend_prediction: Mutex::new(None),
     })
 }
