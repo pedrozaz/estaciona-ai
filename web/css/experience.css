@@ -1,6 +1,6 @@
 /* Estaciona AI — Uniube-inspired navy, warm orange, and purposeful motion. */
 :root {
-  --brand: #f4763d;
+  --brand: #10b981;
   --brand-deep: #c55124;
   --brand-soft: #ffe0ce;
   --uniube-blue: #263065;
@@ -91,7 +91,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .floating-card-bottom { left: 4%; bottom: 10%; animation: card-float 6s ease-in-out infinite reverse; }
 .floating-card-bottom strong, .floating-card-bottom small { display: block; }
 .floating-card-bottom small { margin-top: 3px; font-size: 10px; color: var(--muted-on-dark); font-weight: 500; }
-.card-symbol { width: 33px; height: 33px; display: grid; place-items: center; border-radius: 9px; color: #ffb183; background: rgba(244,118,61,.16); font-size: 25px; }
+.card-symbol { width: 33px; height: 33px; display: grid; place-items: center; border-radius: 9px; color: #ffb183; background: rgba(16,185,129,.16); font-size: 25px; }
 .signal-strip { background: #ed7139; color: #2d2240; overflow: hidden; }
 .signal-strip .shell { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; white-space: nowrap; font-size: 11px; font-weight: 820; letter-spacing: .20em; }
 .signal-strip span:nth-child(even) { opacity: .54; font-size: 20px; }
@@ -145,7 +145,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .login-page .auth-tab.active { background: #29446e; color: #fff; box-shadow: 0 2px 8px rgba(0,5,20,.16); }
 .login-page .auth-tab:hover:not(.active) { color: #fff; }
 .login-page .form-control { border: 1px solid rgba(173,204,241,.25); background: rgba(4,17,39,.60); color: white; box-shadow: none; }
-.login-page .form-control:focus { border-color: #ff9c64; background: rgba(4,17,39,.83); box-shadow: 0 0 0 4px rgba(244,118,61,.16); }
+.login-page .form-control:focus { border-color: #ff9c64; background: rgba(4,17,39,.83); box-shadow: 0 0 0 4px rgba(16,185,129,.16); }
 .login-page .form-label { color: #b0c3db; }
 .login-page .form-control:focus ~ .form-label, .login-page .form-control:not(:placeholder-shown) ~ .form-label { color: #ffb07e; background: #102344; }
 .login-page .utilities-row label, .login-page .checkbox-group { color: #c7d5e7 !important; }
@@ -187,7 +187,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .app-page #logoutBtn { color: #d5e1f2; }
 
 /* Administrative control room. */
-.admin-page { --bg-base: #08142d; --bg-surface: #122747; --text-primary: #f6f8fd; --text-secondary: #b5c5df; --border-subtle: rgba(182,211,250,.16); --primary-green: #f4763d; --primary-green-dim: rgba(244,118,61,.16); background: var(--bg-base); color: var(--text-on-dark); font-family: var(--font-ui); }
+.admin-page { --bg-base: #08142d; --bg-surface: #122747; --text-primary: #f6f8fd; --text-secondary: #b5c5df; --border-subtle: rgba(182,211,250,.16); --primary-green: #10b981; --primary-green-dim: rgba(16,185,129,.16); background: var(--bg-base); color: var(--text-on-dark); font-family: var(--font-ui); }
 .admin-page #sidebar { width: 286px; padding: 27px 18px; background: linear-gradient(180deg, #121f43, #0c1937); border-right: 1px solid rgba(185,211,249,.17); box-shadow: 10px 0 40px rgba(0,5,20,.17); }
 .admin-page #sidebar.collapsed { transform: translateX(calc(-100% + 13px)); }
 .admin-page .brand-container { margin-bottom: 33px; padding-left: 12px; }
@@ -205,7 +205,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .admin-page .nav-icon { width: 19px; height: 19px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .92; }
 .admin-page .profile-btn { background: rgba(183,211,249,.07); border-color: rgba(183,211,249,.17); }
 .admin-page .profile-btn:hover { background: rgba(183,211,249,.13); }
-.admin-page .avatar { border-radius: 10px; background: #f4763d; color: #231a2c; }
+.admin-page .avatar { border-radius: 10px; background: #10b981; color: #231a2c; }
 .admin-page .p-name, .admin-page .p-role { font-family: var(--font-ui); text-transform: none; letter-spacing: 0; }
 .admin-page .p-name { font-size: 13px; color: #f3f7ff; }
 .admin-page .p-role { font-size: 11px; color: #a8bbd7; }
@@ -234,10 +234,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .admin-page .cam-sidebar, .admin-page .sp-sidebar, .admin-page .pt-sidebar { background: rgba(16,36,69,.96); border-left-color: rgba(185,211,249,.18); }
 .admin-page .cam-item, .admin-page .sp-item, .admin-page .pt-item { background: rgba(191,216,250,.06); border-color: rgba(185,211,249,.15); }
 .admin-page .cam-item:hover, .admin-page .sp-item:hover, .admin-page .pt-item:hover { background: rgba(191,216,250,.12); }
-.admin-page .cam-item.active, .admin-page .pt-item.active { border-color: rgba(255,164,109,.60); background: rgba(244,118,61,.13); }
+.admin-page .cam-item.active, .admin-page .pt-item.active { border-color: rgba(52,211,153,.60); background: rgba(16,185,129,.13); }
 .admin-page .cam-btn, .admin-page .sp-btn, .admin-page .pt-btn { color: #cfdef0; border-color: rgba(185,211,249,.22); }
-.admin-page .cam-btn-primary, .admin-page .sp-btn-primary, .admin-page .pt-btn-primary { background: #f4763d; border-color: #f4763d; color: #261b2c; }
-.admin-page .cam-btn-primary:hover, .admin-page .sp-btn-primary:hover, .admin-page .pt-btn-primary:hover { background: #ff965e; border-color: #ff965e; color: #261b2c; }
+.admin-page .cam-btn-primary, .admin-page .sp-btn-primary, .admin-page .pt-btn-primary { background: #10b981; border-color: #10b981; color: #261b2c; }
+.admin-page .cam-btn-primary:hover, .admin-page .sp-btn-primary:hover, .admin-page .pt-btn-primary:hover { background: #34d399; border-color: #34d399; color: #261b2c; }
 .admin-page .ortho-container { background: #091831 !important; }
 .admin-page #mobile-blocker { background: var(--navy-950); }
 .admin-page .m-title { font-family: var(--font-ui); color: white; }

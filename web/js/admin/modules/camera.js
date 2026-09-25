@@ -52,7 +52,7 @@ class CameraModule {
                     </div>
                     <div style="padding: 0 20px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);">
                         <div style="display: flex; gap: 6px;">
-                            <button class="cam-btn" style="flex: 1; padding: 10px; border-color: #f4763d; color: #ffad7d; background: rgba(244, 118, 61, 0.12);" id="cam-set-global">Definir câmera</button>
+                            <button class="cam-btn" style="flex: 1; padding: 10px; border-color: #10b981; color: #34d399; background: rgba(16, 185, 129, 0.12);" id="cam-set-global">Definir câmera</button>
                             <button class="cam-btn" style="flex: 1; padding: 10px;" id="cam-test-global">Testar visão</button>
                         </div>
                     </div>
@@ -300,7 +300,7 @@ class CameraModule {
                 ${posHtml}
                 <div style="font-size: 12px; color: #94a3b8; margin: 12px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Câmera do Carrinho</div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="cam-btn" style="flex: 1; padding: 8px; ${pin.camera ? 'background: rgba(244, 118, 61, 0.12); color: #ffad7d; border-color: #f4763d;' : ''}" data-action="cam">
+                    <button class="cam-btn" style="flex: 1; padding: 8px; ${pin.camera ? 'background: rgba(16, 185, 129, 0.12); color: #34d399; border-color: #10b981;' : ''}" data-action="cam">
                         ${pin.camera ? 'Câmera definida' : 'Definir câmera'}
                     </button>
                     <button class="cam-btn" style="flex: 1; padding: 8px;" data-action="test">Ver câmera</button>

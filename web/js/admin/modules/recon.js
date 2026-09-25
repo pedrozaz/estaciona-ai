@@ -24,8 +24,8 @@ class ReconModule {
             <style> #win-${this.id} .fw-body { padding: 0 !important; } </style>
             <div id="reconContainer" style="flex: 1; width: 100%; height: 100%; overflow: hidden; background: #091831; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
                 <div id="reconLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #091831; z-index: 10; transition: opacity 0.5s;">
-                    <div style="width: 48px; height: 48px; border: 3px solid rgba(255, 174, 114, 0.2); border-top-color: #ffae72; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
-                    <div id="reconProgress" style="color: #ffae72; font-size: 14px; font-weight: 600;">CARREGANDO MODELO 3D... 0%</div>
+                    <div style="width: 48px; height: 48px; border: 3px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
+                    <div id="reconProgress" style="color: #10b981; font-size: 14px; font-weight: 600;">CARREGANDO MODELO 3D... 0%</div>
                 </div>
             </div>
             <style> @keyframes spin { to { transform: rotate(360deg); } } </style>
@@ -115,7 +115,7 @@ class ReconModule {
 
         const gridMat = new THREE.PointsMaterial({
             size: 0.18,
-            color: 0xe28a55,
+            color: 0x10b981,
             transparent: true,
             opacity: 0.4,
             map: circleTexture,
