@@ -402,7 +402,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             overflow: hidden;
             animation: tile-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, opacity; transform: translateZ(0);
         }
 
         @keyframes tile-pop {

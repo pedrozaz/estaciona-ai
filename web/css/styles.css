@@ -10,7 +10,7 @@
   --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08); /* slight shadow for depth */
   --border-radius: 16px;
-  --font-main: 'Outfit', sans-serif;
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 * {
