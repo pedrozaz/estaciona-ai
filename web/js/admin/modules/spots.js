@@ -82,14 +82,14 @@ class SpotsModule {
         this.orthoImg = new Image();
         
         try {
-            const res = await fetch('/data/ortho_calibration.json');
+            const res = await fetch('./data/ortho_calibration.json');
             if (res.ok) {
                 const calData = await res.json();
                 this.calibrationTransform = calData.transform.imageToModel;
                 document.getElementById('sp-status').textContent = 'Matriz Carregada';
                 document.getElementById('sp-status').style.color = '#1ca745';
                 
-                this.orthoImg.src = '/assets/images/' + (calData.image ? calData.image.split('/').pop() : 'uniube_ortho_projection.png');
+                this.orthoImg.src = './assets/images/' + (calData.image ? calData.image.split('/').pop() : 'uniube_ortho_projection.png');
             }
         } catch(e) {
             document.getElementById('sp-status').textContent = 'Erro ao carregar calibração';
@@ -97,7 +97,7 @@ class SpotsModule {
         }
 
         try {
-            const spotsRes = await fetch('/data/spots_3d.json');
+            const spotsRes = await fetch('./data/spots_3d.json');
             if (spotsRes.ok) {
                 const existing = await spotsRes.json();
                 this.spots = existing.map(s => ({

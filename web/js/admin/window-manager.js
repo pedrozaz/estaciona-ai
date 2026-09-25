@@ -28,7 +28,7 @@ export class WindowManager {
                 <div style="width: 60px;"></div>
                 <div class="fw-title">${title}</div>
                 <div class="fw-controls-mac" style="justify-content: flex-end;">
-                    <button class="mac-btn mac-close" data-id="${id}"></button>
+                    <button class="mac-btn mac-close" data-id="${id}" aria-label="Fechar ${title}"></button>
                 </div>
             </div>
             <div class="fw-body">${content}</div>

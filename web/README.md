@@ -6,7 +6,7 @@
 
 ## Overview
 
-The web module delivers three distinct client interfaces, all served statically by the Rust backend's `ServeDir` middleware and communicating with the server exclusively via WebSocket and REST over HTTPS.
+The web module contains four static pages published through GitHub Pages at `estaciona.tech`. REST and WebSocket traffic goes to the separate API at `api.estaciona.tech`. The Rust server can also serve the same files locally.
 
 The user-facing application (`app.html`) presents a live-updated 3D visualization of the parking lot using a photogrammetry-derived `.glb` model, overlaid with real-time occupancy state and reservation controls. The dashboard (`dashboard.html`) provides operators with system-wide metrics, live spot status, and configuration management. Both interfaces maintain persistent WebSocket connections to receive server-pushed state updates without polling.
 
@@ -43,8 +43,8 @@ web/
 ├── dashboard.html       # Administrative panel
 ├── login.html           # Admin authentication
 ├── index.html           # Public landing page
-├── css/                 # Stylesheet modules
-├── js/                  # Application logic per interface
+├── css/                 # Base styles and the shared Uniube-inspired experience layer
+├── js/                  # Application logic and lightweight landing motion
 ├── lib/                 # Vendored libraries (Three.js + addons)
 ├── assets/              # Static assets (icons, images, .glb model)
 ├── locales/             # i18n string tables
@@ -61,7 +61,7 @@ All dynamic data flows over WebSocket or REST:
 
 | Interface | WebSocket Endpoint | REST Endpoints Used |
 |-----------|--------------------|---------------------|
-| `app.html` | `GET /ws/app` | `/reservations`, `/reservations/recommend` |
+| `app.html` | `GET /ws/dashboard` | `/reservations`, `/reservations/recommend` |
 | `dashboard.html` | `GET /ws/dashboard` | `POST /config` |
 | `login.html` | — | `POST /login` |
 
@@ -77,7 +77,7 @@ WebSocket messages received from the server follow the `ServerToAppMsg` schema d
 | [Three.js](https://threejs.org/) | WebGL 3D renderer for the parking lot digital twin |
 | GLTFLoader | Loads the photogrammetry `.glb` model |
 
-No bundler, transpiler, or package manager is involved. All libraries are vendored under `lib/` for offline and air-gapped deployment compatibility.
+No bundler, transpiler, or package manager is involved. Three.js and its addons are vendored under `lib/`; the interface uses the system font stack and does not require a font CDN. The landing page uses CSS and a small local script for motion, while the 3D views reuse the existing models. Page links and static asset paths are relative to the HTML document so they work on the root custom domain and in a GitHub Pages project preview path. API and WebSocket endpoints remain separate.
 
 ---
 

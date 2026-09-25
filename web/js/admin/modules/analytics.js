@@ -21,8 +21,6 @@ class AnalyticsModule {
 
         const content = `
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-
                 .ml-container {
                     display: grid;
                     grid-template-columns: repeat(12, 1fr);
@@ -157,7 +155,7 @@ class AnalyticsModule {
                 <div class="ml-card col-span-8" style="height: 100%;">
                     <div class="ml-card-title">
                         <div class="indicator-dot" style="background:#38bdf8;"></div>
-                        24H Occupancy Forecast
+                        PREVISÃO DE OCUPAÇÃO · 24H
                     </div>
                     <div id="chart-occupancy" style="height: 500px; width: 100%; z-index: 1;"></div>
                 </div>
@@ -166,7 +164,7 @@ class AnalyticsModule {
                 <div class="ml-card col-span-4">
                     <div class="ml-card-title">
                         <div class="indicator-dot" style="background:#a855f7;"></div>
-                        Model Health
+                        DESEMPENHO DO MODELO
                     </div>
                     <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
                         <div class="metric-row">
@@ -182,7 +180,7 @@ class AnalyticsModule {
                             <span class="m-value" style="color: #a855f7;">-</span>
                         </div>
                         <div class="metric-row">
-                            <span class="m-label">Inference Time</span>
+                            <span class="m-label">Tempo de inferência</span>
                             <span class="m-value" style="color:#fbbf24;">-</span>
                         </div>
                     </div>
@@ -192,7 +190,7 @@ class AnalyticsModule {
 
         bus.emit('app:open', { 
             id: this.id, 
-            title: 'Analytics', 
+            title: data.title || 'Análises',
             content, 
             width: 1100, 
             height: 750,
@@ -221,7 +219,7 @@ class AnalyticsModule {
 
         // 1. Premium 24H Occupancy Area Chart
         const occOptions = {
-            series: [{ name: 'Predicted Occupancy', data: [] }],
+            series: [{ name: 'Ocupação prevista', data: [] }],
             chart: { 
                 type: 'area', 
                 height: '100%', 
@@ -273,7 +271,7 @@ class AnalyticsModule {
                     label: {
                         borderColor: '#ef4444',
                         style: { color: '#fff', background: '#ef4444', fontFamily: 'JetBrains Mono' },
-                        text: 'MAX CAPACITY (44)'
+                        text: 'CAPACIDADE MÁXIMA (44)'
                     }
                 }]
             },
@@ -324,7 +322,7 @@ class AnalyticsModule {
                     const d = new Date(o.timestamp);
                     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 });
-                this.occChart.updateSeries([{ name: 'Predicted Occupancy', data: occData }]);
+                this.occChart.updateSeries([{ name: 'Ocupação prevista', data: occData }]);
                 this.occChart.updateOptions({ xaxis: { categories: occTimes } });
             }
         }

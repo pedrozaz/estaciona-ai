@@ -66,7 +66,7 @@ class PathModule {
         this.wrapper = document.getElementById('pt-canvas-wrapper');
         
         try {
-            const res = await fetch('/data/config.json');
+            const res = await fetch('./data/config.json');
             if (res.ok) {
                 const existing = await res.json();
                 this.pins = existing.map((lot, i) => ({
@@ -107,12 +107,12 @@ class PathModule {
         this.scene.add(dirLight);
 
         const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('/lib/draco/');
+        dracoLoader.setDecoderPath('./lib/draco/');
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
 
         loader.load(
-            '/assets/reconstruction/melhorresultado_otimizado.glb',
+            './assets/reconstruction/melhorresultado_otimizado.glb',
             (gltf) => {
                 this.loadedModel = gltf.scene;
                 const box = new THREE.Box3().setFromObject(this.loadedModel);

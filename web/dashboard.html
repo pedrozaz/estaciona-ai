@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Estaciona AI</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Painel administrativo — Estaciona AI</title>
+    <link rel="icon" href="data:,">
     
     <script>
         // Check for authentication token before rendering the dashboard
@@ -17,18 +17,18 @@
         
         const token = localStorage.getItem("estaciona_token") || sessionStorage.getItem("estaciona_token") || getCookie("estaciona_token");
         if (!token) {
-            window.location.href = '/login';
+            window.location.href = 'login.html';
         }
     </script>
 
     <script type="importmap">
       {
         "imports": {
-          "three": "/lib/three/three.module.js",
-          "three/addons/loaders/GLTFLoader.js": "/lib/three/GLTFLoader.js",
-          "three/addons/loaders/DRACOLoader.js": "/lib/three/DRACOLoader.js",
-          "three/addons/controls/OrbitControls.js": "/lib/three/OrbitControls.js",
-          "three/addons/controls/DragControls.js": "/lib/three/DragControls.js"
+          "three": "./lib/three/three.module.js",
+          "three/addons/loaders/GLTFLoader.js": "./lib/three/GLTFLoader.js",
+          "three/addons/loaders/DRACOLoader.js": "./lib/three/DRACOLoader.js",
+          "three/addons/controls/OrbitControls.js": "./lib/three/OrbitControls.js",
+          "three/addons/controls/DragControls.js": "./lib/three/DragControls.js"
         }
       }
     </script>
@@ -475,13 +475,14 @@
 
         @media (max-width: 1024px) { #desktop-environment { display: none !important; } #mobile-blocker { display: flex !important; } }
     </style>
+    <link rel="stylesheet" href="css/experience.css?v=3">
 </head>
-<body>
+<body class="admin-page">
 
     <div id="mobile-blocker">
         <div class="m-icon">🖥️</div>
-        <div class="m-title" data-i18n="mobile.title">Restricted Access</div>
-        <div class="m-desc" data-i18n="mobile.desc">The administration panel requires a desktop environment for 3D map visualization and calibration.</div>
+        <div class="m-title" data-i18n="mobile.title">Acesso restrito</div>
+        <div class="m-desc" data-i18n="mobile.desc">O painel administrativo requer uma tela maior para visualização 3D e calibração.</div>
     </div>
 
     <div id="desktop-environment">
@@ -495,27 +496,27 @@
             </div>
 
             <div class="nav-menu">
-                <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.overview">Overview</div>
-                <div class="nav-item active" data-app="home" data-i18n="nav.home">Home</div>
-                <div class="nav-item" data-app="analytics" data-i18n="nav.analytics">Analytics</div>
+                <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.overview">Visão geral</div>
+                <button type="button" class="nav-item active" data-app="home"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z"/><path d="M9 21v-7h6v7"/></svg><span data-i18n="nav.home">Início</span></button>
+                <button type="button" class="nav-item" data-app="analytics"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12m5 8V7m5 13v-5m5 5V4M2 20h20"/></svg><span data-i18n="nav.analytics">Análises</span></button>
                 
-                <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.mapControls">Map Controls</div>
-                <div class="nav-item" data-app="points" data-i18n="nav.points">Point Calibration</div>
-                <div class="nav-item" data-app="camera" data-i18n="nav.camera">Camera & Pinpoints</div>
-                <div class="nav-item" data-app="spots" data-i18n="nav.zones">Zone Management</div>
-                <div class="nav-item" data-app="path" data-i18n="nav.path">Path Configurator</div>
+                <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.mapControls">Controles do mapa</div>
+                <button type="button" class="nav-item" data-app="points"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg><span data-i18n="nav.points">Calibração de pontos</span></button>
+                <button type="button" class="nav-item" data-app="camera"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l2-2h6l2 2h4v12H3V7Z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="nav.camera">Câmera e marcadores</span></button>
+                <button type="button" class="nav-item" data-app="spots"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span data-i18n="nav.zones">Gestão de zonas</span></button>
+                <button type="button" class="nav-item" data-app="path"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h5a4 4 0 0 0 0-8h-1a4 4 0 0 1 0-4h6"/></svg><span data-i18n="nav.path">Configuração de rotas</span></button>
 
                 <div class="nav-label" style="margin-top: 16px;" data-i18n="nav.sandbox">Sandbox</div>
-                <div class="nav-item" data-app="ortho" data-i18n="nav.ortho">Orthomosaic View</div>
-                <div class="nav-item" data-app="recon" data-i18n="nav.recon">Reconstruction View</div>
+                <button type="button" class="nav-item" data-app="ortho"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 6-3 6 3 6-3v13l-6 3-6-3-6 3V7Zm6-3v13m6-10v13"/></svg><span data-i18n="nav.ortho">Visualização ortomosaico</span></button>
+                <button type="button" class="nav-item" data-app="recon"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm-9 5 9 5 9-5m-9 5v10"/></svg><span data-i18n="nav.recon">Reconstrução 3D</span></button>
             </div>
 
             <div class="profile-container">
                 <div class="profile-btn" id="adminProfileBtn">
                     <div class="avatar">A</div>
                     <div class="profile-info">
-                        <span class="p-name" data-i18n="profile.role">Administrator</span>
-                        <span class="p-role" data-i18n="profile.access">Full Access</span>
+                        <span class="p-name" data-i18n="profile.role">Administrador</span>
+                        <span class="p-role" data-i18n="profile.access">Acesso total</span>
                     </div>
                 </div>
                 
@@ -529,69 +530,99 @@
         </nav>
 
         <main id="workspace">
+            <div class="workspace-topline" aria-hidden="true"><span>ESTACIONA AI / CENTRO DE CONTROLE</span><span>CAMPUS UNIUBE · GÊMEO DIGITAL</span></div>
             <div id="canvas-layer"></div>
             
             <div class="home-widget" id="homeWidget">
-                <div class="hw-greeting"><span data-i18n="home.welcome">WELCOME,</span> <br><span class="hollow-text" data-i18n="home.admin">ADMIN</span></div>
-                <div class="hw-time" id="clockDisplay">00 JAN 0000 // 00:00:00</div>
-                
-                <div class="hw-status-container">
-                    <div class="hw-value"><div class="status-dot"></div> <span data-i18n="home.serverStatus">SERVER ONLINE</span></div>
+                <p class="hw-eyebrow">ESTACIONA AI / EXPERIÊNCIA ESPACIAL</p>
+                <div class="hw-greeting"><span data-i18n="home.welcome">O CAMPUS,</span><br><span class="hollow-text" data-i18n="home.admin">EM SUAS MÃOS.</span></div>
+                <p class="hw-description" data-i18n="home.description">Explore o campus em três dimensões, ajuste a leitura das vagas e acompanhe o que acontece em cada área.</p>
+                <div class="hw-meta">
+                    <div class="hw-status-container"><div class="hw-value"><div class="status-dot"></div><span data-i18n="home.serverStatus">PRONTO PARA EXPLORAR</span></div></div>
+                    <div class="hw-time" id="clockDisplay">00 JAN 0000 // 00:00:00</div>
+                </div>
+                <div class="quick-actions" aria-label="Acesso rápido">
+                    <button type="button" class="quick-action" data-launch-app="recon"><span data-i18n="home.action3d">Explorar modelo 3D</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+                    <button type="button" class="quick-action" data-launch-app="points"><span data-i18n="home.actionPoints">Calibrar pontos</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+                    <button type="button" class="quick-action" data-launch-app="analytics"><span data-i18n="home.actionAnalytics">Abrir análises</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
                 </div>
             </div>
         </main>
         
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script type="module" src="/js/admin/main.js?v=2"></script>
-    <script>
+    <script type="module" src="./js/admin/main.js?v=5"></script>
+    <script type="module">
+        import * as THREE from 'three';
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0a0b0e, 0.04);
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        scene.fog = new THREE.FogExp2(0x0b1b38, 0.038);
+        const workspace = document.getElementById('workspace');
+        const camera = new THREE.PerspectiveCamera(45, workspace.clientWidth / workspace.clientHeight, 0.1, 100);
         camera.position.set(0, 2, 14);
+        camera.lookAt(0, -1, 0);
         
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(workspace.clientWidth, workspace.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         document.getElementById('canvas-layer').appendChild(renderer.domElement);
 
-        const geometry = new THREE.PlaneGeometry(80, 80, 40, 40);
+        const geometry = new THREE.PlaneGeometry(80, 80, 24, 24);
         const material = new THREE.MeshBasicMaterial({ 
-            color: 0x10b981, 
+            color: 0x71a5df,
             wireframe: true, 
             transparent: true, 
-            opacity: 0.08 
+            opacity: 0.17
         });
 
         const plane = new THREE.Mesh(geometry, material);
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = -3;
+        plane.position.y = -3.5;
         scene.add(plane);
 
         let time = 0;
+        let pointerX = 0;
+        let pointerY = 0;
+        const backgroundClock = new THREE.Clock();
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        workspace.addEventListener('pointermove', (event) => {
+            const rect = workspace.getBoundingClientRect();
+            pointerX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+            pointerY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+        }, { passive: true });
+        workspace.addEventListener('pointerleave', () => { pointerX = 0; pointerY = 0; });
         function animate() {
             requestAnimationFrame(animate);
-            time += 0.003;
+            const delta = Math.min(backgroundClock.getDelta(), 0.05);
+            if (document.hidden) return;
+            if (reduceMotion.matches) {
+                renderer.render(scene, camera);
+                return;
+            }
+            time += delta * 0.26;
+            const blend = 1 - Math.exp(-2.2 * delta);
+            camera.position.x += (pointerX * 0.6 - camera.position.x) * blend;
+            camera.position.y += (2 - pointerY * 0.3 - camera.position.y) * blend;
+            camera.lookAt(0, -1, 0);
             
             const positions = plane.geometry.attributes.position.array;
             for(let i = 0; i < positions.length; i += 3) {
                 const x = positions[i];
                 const y = positions[i+1];
-                positions[i+2] = Math.sin(x * 0.2 + time) * 1.5 + Math.cos(y * 0.2 + time * 0.8) * 1.5;
+                positions[i+2] = Math.sin(x * 0.16 + time) * 1.2 + Math.cos(y * 0.18 + time * 0.72) * 1.2;
             }
             plane.geometry.attributes.position.needsUpdate = true;
-            plane.rotation.z += 0.0005;
             
             renderer.render(scene, camera);
         }
         animate();
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+        function resizeBackground() {
+            camera.aspect = workspace.clientWidth / workspace.clientHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+            renderer.setSize(workspace.clientWidth, workspace.clientHeight);
+        }
+        window.addEventListener('resize', resizeBackground);
+        new ResizeObserver(resizeBackground).observe(workspace);
 
         document.getElementById('adminProfileBtn').addEventListener('click', () => {
             document.getElementById('profileDropdown').classList.toggle('show');
@@ -619,13 +650,13 @@
 
             document.cookie = "estaciona_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-            window.location.href = '/';
+            window.location.href = 'index.html';
         });
 
         function updateClock() {
             const now = new Date();
             const time = now.toLocaleTimeString('pt-BR', { hour12: false });
-            const date = now.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+            const date = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
             document.getElementById('clockDisplay').textContent = `${date} // ${time}`;
         }
         setInterval(updateClock, 1000);

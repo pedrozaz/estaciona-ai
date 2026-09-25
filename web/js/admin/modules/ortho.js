@@ -25,7 +25,7 @@ class OrthoModule {
                     <button id="orthoReset" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: #fff; padding: 0 12px; height: 32px; border-radius: 6px; cursor: pointer; font-family: 'Space Grotesk'; font-size: 10px; text-transform: uppercase; transition: 0.2s; backdrop-filter: blur(8px);">Reset</button>
                 </div>
                 <div id="orthoViewport" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.1s ease-out; cursor: grab;">
-                    <img id="orthoImage" src="/assets/images/uniube_ortho_projection.png" style="display: block; pointer-events: none; opacity: 0.95;" alt="Orthomosaic">
+                    <img id="orthoImage" src="./assets/images/uniube_ortho_projection.png" style="display: block; pointer-events: none; opacity: 0.95;" alt="Orthomosaic">
                     <div id="orthoSvgContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
                 </div>
             </div>

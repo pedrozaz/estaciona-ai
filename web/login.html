@@ -6,9 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Acesso - Estaciona AI</title>
   <meta name="description" content="Acesse o painel do Estaciona AI">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <style>
     body {
@@ -223,12 +220,13 @@
       font-size: 0.9rem;
     }
   </style>
+  <link rel="stylesheet" href="css/experience.css?v=3">
 </head>
 
-<body>
+<body class="login-page">
   <nav class="navbar" style="position: absolute;">
     <div class="container nav-container">
-      <a href="/" class="logo">
+      <a href="index.html" class="logo">
         <span class="logo-text">Estaciona</span>
         <div class="logo-pin"><span>AI</span></div>
       </a>
@@ -239,7 +237,7 @@
     <div class="login-card">
       <div class="login-header">
         <h2>Bem-vindo</h2>
-        <p>Acesse o painel do Estaciona AI</p>
+        <p>Sua experiência no campus começa aqui.</p>
       </div>
       
       <div class="auth-tabs">
@@ -310,6 +308,7 @@
         </button>
       </form>
 
+      <p class="login-context">Pesquisa e tecnologia aplicadas à mobilidade na Uniube.</p>
     </div>
   </main>
 
@@ -371,9 +370,9 @@
           } catch(e) {}
         }
         if (role === 'admin') {
-          window.location.href = '/dashboard';
+          window.location.href = 'dashboard.html';
         } else {
-          window.location.href = '/app';
+          window.location.href = 'app.html';
         }
       }
     });
@@ -429,9 +428,9 @@
           localStorage.removeItem('estaciona_token');
         }
         if (data.role === 'admin') {
-          window.location.href = '/dashboard';
+          window.location.href = 'dashboard.html';
         } else {
-          window.location.href = '/app';
+          window.location.href = 'app.html';
         }
       })
       .catch(err => {

@@ -2,197 +2,81 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Estaciona AI - Simulação 3D de Estacionamento</title>
-    <meta
-      name="description"
-      content="Estaciona AI: Simulação 3D de estacionamento em tempo real potencializada por Inteligência Artificial. Em desenvolvimento."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="css/styles.css" />
-    <style>
-      /* Estilos minimalistas adicionais */
-      .hero-minimal {
-        padding-top: 8rem;
-        padding-bottom: 4rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-      }
-
-      .hero-minimal h1 {
-        max-width: 900px;
-        margin: 0 auto 1.5rem auto;
-        font-size: 3.5rem;
-        line-height: 1.1;
-      }
-
-      .hero-minimal p {
-        max-width: 650px;
-        margin: 0 auto 2.5rem auto;
-        font-size: 1.25rem;
-        line-height: 1.6;
-      }
-
-      .badge-center {
-        margin: 0 auto 1.5rem auto;
-        display: inline-block;
-      }
-
-      .nav-center {
-        justify-content: center !important;
-      }
-
-      @media (max-width: 768px) {
-        .navbar .nav-links {
-          display: flex !important;
-          align-items: center;
-        }
-        .logo-text {
-          font-size: 1.3rem !important;
-        }
-        .logo-pin {
-          transform: scale(0.8);
-          margin-left: 2px !important;
-        }
-        .nav-links .btn {
-          padding: 0.4rem 0.8rem !important;
-          font-size: 0.85rem !important;
-        }
-      }
-
-      .contact-section {
-        padding: 4rem 2rem;
-        text-align: center;
-        background-color: var(--white);
-        border-radius: 30px;
-        width: 90%;
-        max-width: 700px;
-        margin: 0 auto 5rem auto;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
-        border: 1px solid rgba(28, 167, 69, 0.05);
-      }
-
-      .footer-minimal {
-        padding: 2rem 0;
-        text-align: center;
-        background: transparent;
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
-      }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111b3f" />
+    <meta name="description" content="Estaciona AI: um gêmeo digital para entender, visualizar e melhorar a mobilidade no campus da Uniube." />
+    <title>Estaciona AI — Mobilidade inteligente no campus</title>
+    <link rel="stylesheet" href="css/experience.css?v=3" />
   </head>
-
-  <body>
-    <nav class="navbar">
-      <div class="container nav-container">
-        <div class="logo">
-          <span class="logo-text">Estaciona</span>
-          <div class="logo-pin"><span>AI</span></div>
+  <body class="landing-page">
+    <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+    <header class="site-header">
+      <nav class="site-nav shell" aria-label="Navegação principal">
+        <a class="brand" href="index.html" aria-label="Estaciona AI, início">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span>Estaciona<span class="brand-ai">AI</span></span>
+        </a>
+        <div class="nav-actions">
+          <a class="nav-link" href="#projeto">O projeto</a>
+          <a class="nav-link" href="#experiencia">Experiência</a>
+          <a class="button button-small" href="login.html">Acessar plataforma <span aria-hidden="true">↗</span></a>
         </div>
-        <div class="nav-links">
-          <a
-            href="/login"
-            class="btn btn-outline"
-            style="padding: 0.5rem 1.25rem"
-            >Login</a
-          >
-        </div>
-      </div>
-    </nav>
-
-    <header class="hero hero-minimal">
-      <div class="container">
-        <div class="badge badge-center">Em Desenvolvimento</div>
-        <h1>
-          Simulação 3D de Estacionamento <br />em
-          <span class="text-highlight">Tempo Real</span>
-        </h1>
-
-        <!-- Briefing -->
-        <p>
-          O <strong>Estaciona AI</strong> é focado em reimaginar a gestão de
-          pátios de estacionamento. Integramos um motor de renderização 3D e
-          modelagem inteligente de dados (IA) para criar um
-          <em>gêmeo digital</em> capaz de detectar ocupações e prever
-          engarrafamentos internos com precisão visual.
-        </p>
-
-        <div
-          class="hero-image"
-          style="margin-top: 3.5rem; display: flex; justify-content: center"
-        >
-          <div
-            class="abstract-shape"
-            style="width: 250px; height: 250px; box-shadow: none"
-          >
-            <div
-              class="blip"
-              style="
-                top: 25%;
-                left: 30%;
-                width: 24px;
-                height: 24px;
-                animation-delay: 0s;
-              "
-            ></div>
-            <div
-              class="blip"
-              style="
-                top: 60%;
-                right: 20%;
-                width: 18px;
-                height: 18px;
-                animation-delay: 0.5s;
-              "
-            ></div>
-            <div
-              class="blip"
-              style="
-                bottom: 15%;
-                left: 45%;
-                width: 14px;
-                height: 14px;
-                animation-delay: 1.2s;
-              "
-            ></div>
-            <div class="ring" style="width: 180px; height: 180px"></div>
-            <div class="car-icon" style="font-size: 3.5rem">🚙</div>
-          </div>
-        </div>
-      </div>
+      </nav>
     </header>
 
-    <!-- Parte de Contato -->
-    <section class="contact-section">
-      <h2 style="font-size: 2rem; margin-bottom: 1rem; color: var(--text-dark)">
-        Deseja saber mais?
-      </h2>
-      <p style="margin-bottom: 2rem; color: var(--text-light)">
-        Tem interesse na nossa pesquisa ou quer discutir como este experimento
-        irá mapear o futuro da mobilidade e IA preditiva? Entre em contato
-        conosco.
-      </p>
-      <a href="mailto:contato@pedroza.studio" class="btn btn-primary btn-large"
-        >Entrar em Contato por E-mail</a
-      >
-    </section>
+    <main id="conteudo">
+      <section class="hero shell" aria-labelledby="hero-title">
+        <div class="hero-copy reveal">
+          <p class="eyebrow"><span class="eyebrow-line"></span> Tecnologia aplicada à mobilidade no campus</p>
+          <h1 id="hero-title">O campus em uma <em>nova perspectiva.</em></h1>
+          <p class="hero-description">Um gêmeo digital que transforma dados de ocupação em uma experiência clara, visual e útil para quem vive a Uniube.</p>
+          <div class="hero-actions">
+            <a class="button" href="login.html">Explorar a plataforma <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="#projeto">Conheça o projeto <span aria-hidden="true">↓</span></a>
+          </div>
+          <div class="hero-footnote"><span class="live-dot" aria-hidden="true"></span> Pesquisa e desenvolvimento · Universidade de Uberaba</div>
+        </div>
+        <div class="hero-visual reveal" role="img" aria-label="Representação gráfica de um estacionamento digital com vagas e percurso destacados">
+          <div class="visual-topline"><span>ESTACIONA / CAMPUS</span><span>VISTA DIGITAL <span class="topline-icon">✳</span></span></div>
+          <div class="visual-stage">
+            <div class="visual-scan" aria-hidden="true"></div>
+            <div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div>
+            <div class="lot-card">
+              <div class="lot-road"><span>ACESSO</span><span>→</span></div>
+              <div class="lot-spaces" aria-hidden="true">
+                <i></i><i></i><i class="busy"></i><i></i><i></i><i class="busy"></i><i></i><i></i>
+                <i></i><i class="selected"></i><i></i><i></i><i class="busy"></i><i></i><i></i><i></i>
+              </div>
+              <div class="lot-axis"><span>SETOR A</span><span>SETOR B</span></div>
+            </div>
+            <div class="floating-card floating-card-top"><span class="mini-dot"></span><span>Leitura em tempo real</span></div>
+            <div class="floating-card floating-card-bottom"><span class="card-symbol">⌁</span><span><strong>Mais clareza.</strong><small>Melhores decisões.</small></span></div>
+          </div>
+          <div class="visual-bottomline"><span>VISUALIZAÇÃO ESPACIAL</span><span>01 / 03</span></div>
+        </div>
+      </section>
 
-    <footer class="footer-minimal">
-      <div class="container">
-        <p class="copyright" style="margin: 0">
-          &copy; 2026 Estaciona AI. Todos os direitos reservados.
-        </p>
-      </div>
-    </footer>
+      <div class="signal-strip" aria-hidden="true"><div class="shell"><span>MAPA 3D</span><span>✳</span><span>OCUPAÇÃO</span><span>✳</span><span>MOBILIDADE</span><span>✳</span><span>CAMPUS DIGITAL</span></div></div>
 
-    <script src="js/script.js"></script>
+      <section class="intro-section" id="projeto">
+        <div class="shell intro-grid">
+          <div class="reveal"><p class="eyebrow">01 / O projeto</p><h2>Inteligência que faz sentido no mundo real.</h2></div>
+          <div class="reveal"><p>O Estaciona AI conecta visão computacional, dados e visualização 3D para oferecer uma leitura mais intuitiva da ocupação do estacionamento. Uma pesquisa desenvolvida para aproximar tecnologia e experiência cotidiana.</p><a class="text-link" href="mailto:contato@pedroza.studio">Converse com a equipe <span aria-hidden="true">↗</span></a></div>
+        </div>
+      </section>
+
+      <section class="capabilities shell" id="experiencia" aria-labelledby="capabilities-title">
+        <div class="section-heading reveal"><div><p class="eyebrow">02 / Experiência</p><h2 id="capabilities-title">Do dado à decisão.</h2></div><p>Três camadas de uma mesma experiência.</p></div>
+        <div class="capability-grid">
+          <article class="capability-card reveal"><span class="capability-index">01 / VISUALIZAÇÃO</span><span class="capability-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M6 14 24 6l18 8v20l-18 8L6 34V14Z M6 14l18 9 18-9M24 23v19" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span><h3>Veja o campus</h3><p>Explore o espaço em um modelo 3D e entenda cada setor de forma visual.</p></article>
+          <article class="capability-card reveal"><span class="capability-index">02 / LEITURA</span><span class="capability-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><rect x="6" y="7" width="36" height="34" rx="5" stroke="currentColor" stroke-width="2"/><path d="M12 30l7-8 6 4 10-12M12 35h24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Acompanhe a ocupação</h3><p>Identifique o estado das vagas e acompanhe mudanças ao longo do tempo.</p></article>
+          <article class="capability-card reveal"><span class="capability-index">03 / ORIENTAÇÃO</span><span class="capability-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M10 38h18c6 0 10-4 10-10s-4-10-10-10H20c-4 0-7-3-7-7s3-7 7-7h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m32 2 6 2-6 3M15 38l-5-5-5 5 5 5 5-5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Encontre seu caminho</h3><p>Receba orientação para uma vaga adequada com base nas informações disponíveis.</p></article>
+        </div>
+      </section>
+
+      <section class="closing-section"><div class="shell closing-grid"><div class="reveal"><p class="eyebrow">Feito para evoluir</p><h2>Uma forma mais humana de pensar a mobilidade.</h2></div><div class="reveal"><p>Um projeto acadêmico em desenvolvimento, criado com a Universidade de Uberaba como cenário real de experimentação.</p><a class="button button-light" href="login.html">Conhecer o Estaciona AI <span aria-hidden="true">↗</span></a></div></div></section>
+    </main>
+    <footer class="site-footer shell"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"><span></span></span><span>Estaciona<span class="brand-ai">AI</span></span></a><span>Projeto acadêmico · Uniube</span><span>© 2026 Estaciona AI</span></footer>
+    <script src="js/landing.js?v=2" defer></script>
   </body>
 </html>
-

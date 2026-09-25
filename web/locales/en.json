@@ -1,10 +1,14 @@
 {
   "nav": {
     "overview": "Overview",
+    "home": "Home",
+    "analytics": "Analytics",
     "dashboard": "Dashboard",
     "mapControls": "Map Controls",
     "points": "Point Calibration",
+    "camera": "Camera & Pinpoints",
     "zones": "Zone Management",
+    "path": "Path Configurator",
     "sandbox": "Sandbox",
     "ortho": "Orthomosaic View",
     "recon": "Reconstruction View"
@@ -15,9 +19,13 @@
     "logout": "Log Out"
   },
   "home": {
-    "welcome": "WELCOME,",
-    "admin": "ADMIN",
-    "serverStatus": "SERVER ONLINE"
+    "welcome": "THE CAMPUS,",
+    "admin": "IN YOUR HANDS.",
+    "description": "Explore the campus in three dimensions, tune parking spot mapping, and follow activity across each area.",
+    "serverStatus": "READY TO EXPLORE",
+    "action3d": "Explore the 3D model",
+    "actionPoints": "Calibrate points",
+    "actionAnalytics": "Open analytics"
   },
   "mobile": {
     "title": "Restricted Access",

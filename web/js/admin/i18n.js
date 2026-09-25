@@ -11,7 +11,7 @@ export class I18nManager {
 
     async loadLanguage(lang) {
         try {
-            const response = await fetch(`/locales/${lang}.json`);
+            const response = await fetch(`./locales/${lang}.json`);
             if (!response.ok) throw new Error(`Could not load /locales/${lang}.json`);
             this.translations = await response.json();
             this.currentLang = lang;

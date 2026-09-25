@@ -22,10 +22,10 @@ class ReconModule {
         this.silentClicks = data.silentClicks || false;
         const content = `
             <style> #win-${this.id} .fw-body { padding: 0 !important; } </style>
-            <div id="reconContainer" style="flex: 1; width: 100%; height: 100%; overflow: hidden; background: #08090a; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
-                <div id="reconLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f1117; z-index: 10; transition: opacity 0.5s;">
-                    <div style="width: 48px; height: 48px; border: 3px solid rgba(28, 167, 69, 0.2); border-top-color: var(--primary-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
-                    <div id="reconProgress" style="color: #1ca745; font-family: 'Space Grotesk'; font-size: 14px; font-weight: 600;">LOADING 3D DATA... 0%</div>
+            <div id="reconContainer" style="flex: 1; width: 100%; height: 100%; overflow: hidden; background: #091831; position: relative; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <div id="reconLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #091831; z-index: 10; transition: opacity 0.5s;">
+                    <div style="width: 48px; height: 48px; border: 3px solid rgba(255, 174, 114, 0.2); border-top-color: #ffae72; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
+                    <div id="reconProgress" style="color: #ffae72; font-size: 14px; font-weight: 600;">CARREGANDO MODELO 3D... 0%</div>
                 </div>
             </div>
             <style> @keyframes spin { to { transform: rotate(360deg); } } </style>
@@ -41,30 +41,31 @@ class ReconModule {
         if (!container) return;
         
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f1117);
-        scene.fog = new THREE.FogExp2(0x0f1117, 0.002);
+        scene.background = new THREE.Color(0x091831);
+        scene.fog = new THREE.FogExp2(0x091831, 0.002);
 
         const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
         camera.position.set(20, 15, 20);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.toneMappingExposure = 1.08;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
         this.controls = new OrbitControls(camera, renderer.domElement);
         this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
+        this.controls.dampingFactor = 0.07;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.67);
         scene.add(ambientLight);
-        const keyLight = new THREE.DirectionalLight(0xfff4e6, 1.2);
+        scene.add(new THREE.HemisphereLight(0xd2e4ff, 0x162844, 0.52));
+        const keyLight = new THREE.DirectionalLight(0xfff4e9, 1.07);
         keyLight.position.set(10, 20, 10);
         scene.add(keyLight);
-        const fillLight = new THREE.DirectionalLight(0xc4d4f7, 0.5);
+        const fillLight = new THREE.DirectionalLight(0xb8d7ff, 0.57);
         fillLight.position.set(-10, 10, -10);
         scene.add(fillLight);
 
@@ -114,7 +115,7 @@ class ReconModule {
 
         const gridMat = new THREE.PointsMaterial({
             size: 0.18,
-            color: 0x1ca745,
+            color: 0xe28a55,
             transparent: true,
             opacity: 0.4,
             map: circleTexture,
@@ -124,11 +125,11 @@ class ReconModule {
         scene.add(particlesMesh);
 
         const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath("/lib/draco/");
+        dracoLoader.setDecoderPath("./lib/draco/");
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
         
-        const modelPath = "/assets/reconstruction/melhorresultado_otimizado.glb";
+        const modelPath = "./assets/reconstruction/melhorresultado_otimizado.glb";
         const progressEl = document.getElementById("reconProgress");
         const loadingOverlay = document.getElementById("reconLoading");
 
@@ -136,6 +137,17 @@ class ReconModule {
             modelPath,
             (gltf) => {
                 const model = gltf.scene;
+                const maxAnisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+                model.traverse((child) => {
+                    if (!child.isMesh) return;
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    materials.forEach((material) => {
+                        if (material?.map) {
+                            material.map.anisotropy = maxAnisotropy;
+                            material.map.needsUpdate = true;
+                        }
+                    });
+                });
                 
                 const box = new THREE.Box3().setFromObject(model);
                 const size = box.getSize(new THREE.Vector3());
@@ -165,7 +177,8 @@ class ReconModule {
                     camera.position.set(finalCenter.x, finalCenter.y + dist * 0.6, finalCenter.z);
                     this.controls.maxPolarAngle = 0.1;
                 } else {
-                    camera.position.set(finalCenter.x, finalCenter.y + dist * 0.5, finalCenter.z + dist);
+                    const viewDist = dist * 0.9;
+                    camera.position.set(finalCenter.x - viewDist * 0.72, finalCenter.y + viewDist * 0.56, finalCenter.z - viewDist * 0.72);
                 }
                 this.controls.target.copy(finalCenter);
                 this.controls.update();
@@ -178,13 +191,13 @@ class ReconModule {
             (xhr) => {
                 if (xhr.lengthComputable && progressEl) {
                     const pct = Math.round((xhr.loaded / xhr.total) * 100);
-                    progressEl.textContent = `LOADING 3D DATA... ${pct}%`;
+                    progressEl.textContent = `CARREGANDO MODELO 3D... ${pct}%`;
                 }
             },
             (error) => {
                 console.error("Error loading 3D model:", error);
                 if (progressEl) {
-                    progressEl.textContent = "ERROR LOADING MODEL";
+                    progressEl.textContent = "ERRO AO CARREGAR O MODELO";
                     progressEl.style.color = "#dc2626";
                 }
             }
@@ -304,6 +317,7 @@ class ReconModule {
                 return;
             }
             this.animationFrameId = requestAnimationFrame(animate);
+            if (document.hidden) return;
             this.controls.update();
             renderer.render(scene, camera);
         };
