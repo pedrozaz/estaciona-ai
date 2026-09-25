@@ -164,9 +164,9 @@ class OrthoModule {
 
             if (data.activePolygon && data.activePolygon.length > 0) {
                 const pts = data.activePolygon.map(p => `${p.x},${p.y}`).join(' ');
-                svgHtml += `<polyline points="${pts}" fill="none" stroke="#f59e0b" stroke-width="3"/>`;
+                svgHtml += `<polyline points="${pts}" fill="none" stroke="#10b981" stroke-width="3"/>`;
                 data.activePolygon.forEach(pt => {
-                    svgHtml += `<circle cx="${pt.x}" cy="${pt.y}" r="6" fill="#f59e0b"/>`;
+                    svgHtml += `<circle cx="${pt.x}" cy="${pt.y}" r="6" fill="#10b981"/>`;
                 });
             }
             

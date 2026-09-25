@@ -24,7 +24,7 @@ class PathModule {
                 .pt-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
                 .pt-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 16px; cursor: pointer; transition: 0.2s; }
                 .pt-item:hover { background: rgba(255,255,255,0.06); }
-                .pt-item.active { border-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
+                .pt-item.active { border-color: #10b981; background: rgba(16, 185, 129, 0.05); }
                 .pt-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
                 .pt-input { flex: 1; background: transparent; border: none; color: #fff; font-size: 16px; font-weight: 600; outline: none; width: 100%; font-family: inherit; }
                 .pt-del { background: none; border: none; color: #475569; cursor: pointer; font-size: 18px; font-family: inherit; padding: 4px; }
@@ -32,10 +32,10 @@ class PathModule {
                 .pt-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 10px; }
                 .pt-btn { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; }
                 .pt-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
-                .pt-btn-primary { background: #f59e0b; border-color: #f59e0b; color: #fff; font-size: 15px; }
-                .pt-btn-primary:hover { background: #d97706; }
+                .pt-btn-primary { background: #10b981; border-color: #10b981; color: #fff; font-size: 15px; }
+                .pt-btn-primary:hover { background: #059669; }
                 .pt-loading { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-                .pt-loader { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #f59e0b; border-radius: 50%; animation: pt-spin 1s linear infinite; margin-bottom: 16px; }
+                .pt-loader { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #10b981; border-radius: 50%; animation: pt-spin 1s linear infinite; margin-bottom: 16px; }
                 @keyframes pt-spin { to { transform: rotate(360deg); } }
             </style>
             <div style="display: flex; height: 100%; width: 100%;">
@@ -326,7 +326,7 @@ class PathModule {
 
             div.innerHTML = `
                 <div class="pt-row">
-                    <div style="width: 12px; height: 12px; border-radius: 50%; background: ${isActive ? '#f59e0b' : '#475569'}; flex-shrink: 0;"></div>
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: ${isActive ? '#10b981' : '#475569'}; flex-shrink: 0;"></div>
                     <input type="text" class="pt-input" value="${pin.name}">
                     <button class="pt-del">&times;</button>
                 </div>

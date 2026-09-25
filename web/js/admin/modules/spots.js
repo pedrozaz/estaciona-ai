@@ -177,14 +177,14 @@ class SpotsModule {
                 const pt = this.currentPolygon[i];
                 this.ctx.lineTo(this.imgOffX + pt.x * this.imgScale, this.imgOffY + pt.y * this.imgScale);
             }
-            this.ctx.strokeStyle = "#f59e0b";
+            this.ctx.strokeStyle = "#10b981";
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
 
             this.currentPolygon.forEach(pt => {
                 this.ctx.beginPath();
                 this.ctx.arc(this.imgOffX + pt.x * this.imgScale, this.imgOffY + pt.y * this.imgScale, 4, 0, Math.PI*2);
-                this.ctx.fillStyle = "#f59e0b";
+                this.ctx.fillStyle = "#10b981";
                 this.ctx.fill();
             });
         }
