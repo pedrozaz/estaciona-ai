@@ -224,6 +224,7 @@
 </head>
 
 <body class="login-page">
+    <canvas id="login-gl" style="position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none;"></canvas>
   <nav class="navbar" style="position: absolute;">
     <div class="container nav-container">
       <a href="index.html" class="logo">
@@ -501,5 +502,6 @@
       });
     }
   </script>
-</body>
+    <script type="module" src="js/login-webgl.js"></script>
+  </body>
 </html>

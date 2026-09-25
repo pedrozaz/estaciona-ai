@@ -37,7 +37,7 @@
           <div class="hero-footnote"><span class="live-dot" aria-hidden="true"></span> Pesquisa e desenvolvimento · Universidade de Uberaba</div>
         </div>
         <div class="hero-visual reveal" role="img" aria-label="Representação gráfica de um estacionamento digital com vagas e percurso destacados">
-          <div class="visual-topline"><span>ESTACIONA / CAMPUS</span><span>VISTA DIGITAL <span class="topline-icon">✳</span></span></div>
+          <canvas id="hero-gl" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;"></canvas><div class="visual-topline"><span>ESTACIONA / CAMPUS</span><span>VISTA DIGITAL <span class="topline-icon">✳</span></span></div>
           <div class="visual-stage">
             <div class="visual-scan" aria-hidden="true"></div>
             <div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div>
@@ -78,5 +78,6 @@
     </main>
     <footer class="site-footer shell"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"><span></span></span><span>Estaciona<span class="brand-ai">AI</span></span></a><span>Projeto acadêmico · Uniube</span><span>© 2026 Estaciona AI</span></footer>
     <script src="js/landing.js?v=2" defer></script>
+    <script type="module" src="js/landing-webgl.js"></script>
   </body>
 </html>
