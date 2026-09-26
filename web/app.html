@@ -806,9 +806,8 @@
         }
       };
 
-      const simulatedUserId =
-        sessionStorage.getItem("estaciona_id") ||
-        localStorage.getItem("estaciona_id");
+      const _token = sessionStorage.getItem("estaciona_token") || localStorage.getItem("estaciona_token");
+      const simulatedUserId = _token === "demo-token" ? "00000000-0000-0000-0000-000000000000" : (sessionStorage.getItem("estaciona_id") || localStorage.getItem("estaciona_id"));
       let activePinpointPath = null;
       let currentReservation = null;
       let reservationTimerId = null;
