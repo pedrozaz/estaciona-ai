@@ -42,11 +42,20 @@ infra/          ──Docker Compose + Caddy TLS──▶ api.estaciona.tech
 |--------|----------|-------------|
 | [`server/`](./server/) | Rust | Core backend — Axum HTTP/WebSocket server, Dijkstra-based routing, PostgreSQL via SQLx |
 | [`gateway/`](./gateway/) | Python | Edge gateway — store-and-forward reliability queue, ML inference, WebSocket bridge |
-| [`vision/`](./vision/) | Python | Computer vision — YOLO instance segmentation, per-spot occupancy detection with debounce |
+| [`vision/`](./vision/) | Python | Computer vision — YOLO object detection, per-spot occupancy logic with debounce and heartbeat |
 | [`reconstruction/`](./reconstruction/) | Python | 3D reconstruction — photogrammetry pipeline producing the parking lot digital twin |
 | [`web/`](./web/) | HTML/CSS/JS | Frontend — user app, admin dashboard, Three.js 3D visualizer |
 | [`infra/`](./infra/) | Docker | Infrastructure — Docker Compose, Caddy reverse proxy, PostgreSQL 15 |
 | [`experiments/`](./experiments/) | Python | Metric extraction and analysis scripts |
+
+---
+
+## Showcase Mode
+
+For live presentations and demonstrations, the system includes a `painel.html` control panel in the `web/` directory. This panel allows manual manipulation of parking spot states in the database to simulate vehicle entry/exit. 
+- It uses WebSocket synchronization to show real-time changes mirroring the 3D model.
+- Includes support for marking spots as **Reserved** (yellow) or **Occupied** (red).
+- Bypasses strict UUID user restrictions using a special `demo-token`.
 
 ---
 
