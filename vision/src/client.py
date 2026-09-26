@@ -221,7 +221,9 @@ async def main():
                         "camera_id": "cam_01",
                         "confidence": 1.0,
                         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                        "edge_sent_at": datetime.datetime.now(datetime.UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+                        "edge_sent_at": datetime.datetime.now(datetime.UTC)
+                        .isoformat(timespec="milliseconds")
+                        .replace("+00:00", "Z"),
                     }
                     websocket = await safe_send(websocket, json.dumps(payload), headers)
 
