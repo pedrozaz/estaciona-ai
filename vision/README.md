@@ -1,12 +1,12 @@
 # Computer Vision Edge Node
 
-> Real-time parking spot occupancy detection via instance segmentation. Runs a YOLO vehicle detector against a live video stream, computes per-spot mask overlap with configurable debounce hysteresis, and publishes binary occupancy state changes to the edge gateway over WebSocket.
+> Real-time parking spot occupancy detection via object detection. Runs a YOLO vehicle detector against a live video stream, computes per-spot bounding-box overlap with configurable debounce hysteresis, and publishes binary occupancy state changes to the edge gateway over WebSocket.
 
 ---
 
 ## Overview
 
-The vision module implements the perception layer of the Estaciona AI pipeline. A YOLO instance segmentation model processes video frames to produce per-vehicle segmentation masks. Each frame's mask set is intersected against a static map of parking spot polygons (`spots.json`), yielding a continuous occupancy confidence score per spot. A dual-threshold debounce filter — with independent trigger and release delays — translates the noisy signal into stable boolean state transitions that are then transmitted to the gateway.
+The vision module implements the perception layer of the Estaciona AI pipeline. A YOLO object detection model processes video frames to produce per-vehicle bounding boxes. Each frame's bounding boxes are intersected against a static map of parking spot polygons (`spots.json`), yielding a continuous occupancy confidence score per spot. A dual-threshold debounce filter — with independent trigger and release delays — translates the noisy signal into stable boolean state transitions that are then transmitted to the gateway. Additionally, the edge client implements a 30-second heartbeat to continuously resynchronize the confirmed state of all spots with the gateway.
 
 The module is designed to operate as a self-contained edge process on a camera-adjacent node (e.g., NVIDIA Jetson, desktop GPU), requiring only network reachability to the gateway.
 
@@ -22,7 +22,7 @@ vision/
 ├── data/
 │   └── spots.json       # Static polygon definitions for all 44 parking spots
 ├── sync_mappings.py     # Spot ID normalization between detector and server schemas
-├── yolo26x-seg.pt       # Default model checkpoint (YOLO v26 segmentation, 142 MB)
+├── yolo26x.pt           # Default model checkpoint (YOLO v26 Extra Large Detection, 138 MB)
 └── pyproject.toml
 ```
 
@@ -32,7 +32,7 @@ vision/
 
 | Dependency | Role |
 |------------|------|
-| `ultralytics` | YOLO model loading, inference, and segmentation mask decoding |
+| `ultralytics` | YOLO model loading and bounding box inference |
 | `opencv-python` | Video capture, frame preprocessing (gamma correction, CLAHE) |
 | `torch` | GPU tensor operations, half-precision inference |
 | `websockets` | Async WebSocket publisher to the gateway |
@@ -47,7 +47,7 @@ VideoCapture frame
   → Gamma correction (γ = 1.4) + optional CLAHE
   → YOLO inference (classes: [2=car, 7=truck], conf=0.10, imgsz=1312)
   → Bounding box shrink (BOX_SHRINK_FACTOR = 0.15 per side)
-  → Per-spot mask overlap: IoU(spot_polygon, vehicle_mask)
+  → Per-spot area overlap: IoU(spot_polygon, vehicle_bounding_box)
   → Debounce filter (see below)
   → WebSocket publish (on state change only)
 ```
