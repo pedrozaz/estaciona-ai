@@ -37,6 +37,8 @@ class ReconModule {
     }
 
     initThree() {
+        if (this.cleanup) this.cleanup();
+        this.loadedModel = null;
         const container = document.getElementById('reconContainer');
         if (!container) return;
         
@@ -209,6 +211,8 @@ class ReconModule {
 
         this.markers = [];
         this.pendingLoadPoints = [];
+        this.parkingMeshes = null;
+        const unsubscribers = [];
 
         this.applyPoints = (points) => {
             points.forEach(pt => {
@@ -234,7 +238,7 @@ class ReconModule {
         };
         
         this.isClosing = false;
-        bus.on('app:close', (id) => {
+        unsubscribers.push(bus.on('app:close', (id) => {
             if (id === this.id) {
                 if (this.isClosing) return;
                 this.isClosing = true;
@@ -244,32 +248,32 @@ class ReconModule {
                 }
                 if (this.cleanup) this.cleanup();
             }
-        });
+        }));
         
-        bus.on('calibrate:recon-load', (points) => {
+        unsubscribers.push(bus.on('calibrate:recon-load', (points) => {
             if (this.mode !== 'calibrate') return;
             if (!this.loadedModel) {
                 this.pendingLoadPoints = points;
             } else {
                 this.applyPoints(points);
             }
-        });
+        }));
 
-        bus.on('calibrate:undo:recon', () => {
+        unsubscribers.push(bus.on('calibrate:undo:recon', () => {
             if (this.markers && this.markers.length > 0) {
                 const last = this.markers.pop();
                 this.activeScene.remove(last);
             }
-        });
+        }));
 
-        bus.on('recon:clear-markers', () => {
+        unsubscribers.push(bus.on('recon:clear-markers', () => {
             if (this.markers) {
                 this.markers.forEach(m => this.activeScene.remove(m));
                 this.markers = [];
             }
-        });
+        }));
 
-        bus.on('recon:render-parking', (data) => {
+        unsubscribers.push(bus.on('recon:render-parking', (data) => {
             if (!this.parkingMeshes) {
                 this.parkingMeshes = new THREE.Group();
                 this.activeScene.add(this.parkingMeshes);
@@ -299,23 +303,22 @@ class ReconModule {
                     this.parkingMeshes.add(mesh);
                 });
             });
-        });
+        }));
 
-        bus.on('recon:request-camera', () => {
+        unsubscribers.push(bus.on('recon:request-camera', () => {
             if (this.activeCamera && this.controls) {
                 bus.emit('recon:camera-info', {
                     position: { x: this.activeCamera.position.x, y: this.activeCamera.position.y, z: this.activeCamera.position.z },
                     target: { x: this.controls.target.x, y: this.controls.target.y, z: this.controls.target.z }
                 });
             }
-        });
+        }));
 
         const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
         let lastFrame = performance.now();
         const animate = () => {
             if (!document.getElementById('reconContainer')) {
-                cancelAnimationFrame(this.animationFrameId);
-                renderer.dispose();
+                if (this.cleanup) this.cleanup();
                 return;
             }
             this.animationFrameId = requestAnimationFrame(animate);
@@ -373,6 +376,14 @@ class ReconModule {
             }
         });
         resizeObserver.observe(container);
+        this.cleanup = () => {
+            unsubscribers.forEach(unsubscribe => unsubscribe());
+            resizeObserver.disconnect();
+            cancelAnimationFrame(this.animationFrameId);
+            this.controls?.dispose();
+            renderer.dispose();
+            this.cleanup = null;
+        };
     }
 }
 

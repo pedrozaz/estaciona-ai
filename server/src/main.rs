@@ -50,6 +50,7 @@ async fn main() {
     let plate_pepper =
         std::env::var("PLATE_SECRET_PEPPER").expect("PLATE_SECRET_PEPPER missing in .env");
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET missing in .env");
+    let edge_api_key = std::env::var("EDGE_API_KEY").expect("EDGE_API_KEY missing in .env");
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -87,7 +88,7 @@ async fn main() {
         return;
     }
 
-    let parking_state: SharedState = init_state(pool, jwt_secret, plate_pepper).await;
+    let parking_state: SharedState = init_state(pool, jwt_secret, plate_pepper, edge_api_key).await;
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -152,12 +153,14 @@ async fn main() {
 
             if let Ok(records) = expired_records {
                 for record in records {
-                    let _ = sqlx::query!(
-                        "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1",
-                        record.spot_id
+                    let released = sqlx::query(
+                        "UPDATE spots SET status = 'free', last_updated = NOW() \
+                         WHERE id = $1 AND status = 'reserved'",
                     )
+                    .bind(&record.spot_id)
                     .execute(&state_for_bg_task.pool)
-                    .await;
+                    .await
+                    .is_ok_and(|result| result.rows_affected() > 0);
 
                     let expired_msg = ServerToAppMsg::ReservationExpired {
                         spot_id: record.spot_id.clone(),
@@ -168,12 +171,14 @@ async fn main() {
                     {
                         let _ = user_tx.send(json_str);
                     }
-                    let update_msg = ServerToAppMsg::SpotUpdate {
-                        spot_id: record.spot_id,
-                        status: "free".to_string(),
-                    };
-                    if let Ok(json_str) = serde_json::to_string(&update_msg) {
-                        let _ = state_for_bg_task.tx.send(json_str);
+                    if released {
+                        let update_msg = ServerToAppMsg::SpotUpdate {
+                            spot_id: record.spot_id,
+                            status: "free".to_string(),
+                        };
+                        if let Ok(json_str) = serde_json::to_string(&update_msg) {
+                            let _ = state_for_bg_task.tx.send(json_str);
+                        }
                     }
                 }
             }
@@ -255,8 +260,49 @@ async fn serve_index() -> Result<impl IntoResponse, (StatusCode, String)> {
 }
 
 async fn save_config(
+    State(state): State<SharedState>,
+    headers: HeaderMap,
     axum::Json(payload): axum::Json<serde_json::Value>,
 ) -> Result<&'static str, (axum::http::StatusCode, String)> {
+    crate::security::require_admin(&headers, &state.jwt_secret)?;
+    let lots = payload.as_array().ok_or((
+        StatusCode::BAD_REQUEST,
+        "Expected parking lots array".to_string(),
+    ))?;
+    if lots.is_empty()
+        || lots[0]
+            .get("path")
+            .and_then(|p| p.as_array())
+            .is_none_or(|p| p.len() < 2)
+    {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "First parking lot needs at least two path points".to_string(),
+        ));
+    }
+    for lot in lots {
+        let valid_name = lot
+            .get("name")
+            .and_then(|n| n.as_str())
+            .is_some_and(|name| {
+                !name.is_empty() && name.len() <= 100 && !name.contains(['<', '>', '&'])
+            });
+        let valid_path = lot
+            .get("path")
+            .and_then(|p| p.as_array())
+            .is_some_and(|path| {
+                path.iter().all(|point| {
+                    point.get("x").and_then(|v| v.as_f64()).is_some()
+                        && point.get("z").and_then(|v| v.as_f64()).is_some()
+                })
+            });
+        if !valid_name || !valid_path {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Invalid parking lot configuration".to_string(),
+            ));
+        }
+    }
     let path = std::path::Path::new("../web/data/config.json");
     let content = serde_json::to_string_pretty(&payload)
         .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, e.to_string()))?;

@@ -62,7 +62,12 @@ pub async fn login_dashboard(
         return Err((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()));
     }
 
-    let token = create_jwt(&payload.email, &user_record.role, &state.jwt_secret).map_err(|_| {
+    let token = create_jwt(
+        &user_record.id.to_string(),
+        &user_record.role,
+        &state.jwt_secret,
+    )
+    .map_err(|_| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed while generating access token".to_string(),
@@ -76,7 +81,10 @@ pub async fn login_dashboard(
         id: user_record.id,
     };
 
-    let cookie_header = format!("estaciona_token={}; Path=/;", token);
+    let cookie_header = format!(
+        "estaciona_token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400",
+        token
+    );
     let headers = axum::response::AppendHeaders([(axum::http::header::SET_COOKIE, cookie_header)]);
 
     Ok((StatusCode::OK, headers, Json(response)))

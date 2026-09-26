@@ -4,6 +4,13 @@ import pytest
 import client
 
 
+@pytest.fixture(autouse=True)
+def clear_pending_updates():
+    client.PENDING_UPDATES.clear()
+    yield
+    client.PENDING_UPDATES.clear()
+
+
 def test_connect_ws_cloud_success():
     async def run():
         with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
@@ -67,5 +74,24 @@ def test_safe_send_reconnect_fail():
             mock_connect.side_effect = Exception("Reconnect fail")
             ret = await client.safe_send(mock_ws, "payload", {"Auth": "Bearer"})
             assert ret is None
+
+    asyncio.run(run())
+
+
+def test_safe_send_retries_queued_update_after_reconnect_failure():
+    async def run():
+        failed_ws = AsyncMock()
+        failed_ws.send.side_effect = OSError("connection lost")
+        recovered_ws = AsyncMock()
+        with patch("client.connect_ws", new_callable=AsyncMock) as connect:
+            connect.side_effect = [OSError("offline"), recovered_ws]
+            assert await client.safe_send(failed_ws, "first", {}) is None
+            assert list(client.PENDING_UPDATES) == ["first"]
+            assert await client.safe_send(None, "second", {}) is recovered_ws
+            assert [call.args[0] for call in recovered_ws.send.call_args_list] == [
+                "first",
+                "second",
+            ]
+            assert not client.PENDING_UPDATES
 
     asyncio.run(run())

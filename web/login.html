@@ -356,8 +356,8 @@
     }
 
     const host = window.location.hostname || 'localhost';
-    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.includes('ngrok');
-    const apiUrl = isLocal ? 'http://localhost:8000' : 'https://api.estaciona.tech';
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    const apiUrl = isLocal ? 'http://localhost:8000' : host.includes('ngrok') ? window.location.origin : 'https://api.estaciona.tech';
 
     window.addEventListener('DOMContentLoaded', () => {
       const isLoggedIn = localStorage.getItem('estaciona_logged_in') || sessionStorage.getItem('estaciona_logged_in');
@@ -366,7 +366,8 @@
         let role = 'viewer';
         if (token) {
           try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')));
             role = payload.role;
           } catch(e) {}
         }

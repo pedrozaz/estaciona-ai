@@ -283,7 +283,9 @@ class AnalyticsModule {
 
     initWebSocket() {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const wsUrl = isLocal ? 'ws://localhost:8000/ws/dashboard' : 'wss://api.estaciona.tech/ws/dashboard';
+        const base = isLocal ? 'ws://localhost:8000' : 'wss://api.estaciona.tech';
+        const token = sessionStorage.getItem('estaciona_token') || localStorage.getItem('estaciona_token');
+        const wsUrl = `${base}/ws/dashboard?token=${encodeURIComponent(token || '')}`;
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onmessage = (event) => {

@@ -25,11 +25,19 @@ infra/
 
 | Service | Base Image | Exposed Port | Description |
 |---------|------------|--------------|-------------|
-| `db` | `postgres:15-alpine` | 5432 (internal) | Primary PostgreSQL database |
-| `server` | `Dockerfile.server` | 8000 (internal) | Rust/Axum application server |
+| `db` | `postgres:15-alpine` | 5432 (host localhost) | Primary PostgreSQL database |
+| `server` | `Dockerfile.server` | 8000 (host localhost) | Rust/Axum application server |
 | `caddy` | `caddy:2-alpine` | 80, 443 (public) | Reverse proxy with automatic TLS |
 
-All services communicate over the `estaciona_ai` bridge network. Only Caddy exposes ports to the host.
+All services communicate over the `estaciona_ai` bridge network. PostgreSQL and the direct HTTP API bind only to host localhost; Caddy exposes the public ports.
+
+When the gateway runs on another machine, forward PostgreSQL through SSH before starting prediction:
+
+```sh
+ssh -N -L 5432:127.0.0.1:5432 user@your-vm
+```
+
+Set the gateway's `ML_DATABASE_URL` host to `127.0.0.1` and keep the tunnel running. `SERVER_WS_URL` still points to the public HTTPS endpoint through Caddy.
 
 ---
 
@@ -82,7 +90,7 @@ Caddy automatically provisions and renews TLS certificates via Let's Encrypt (AC
 
 ## Environment Variables
 
-Production secrets are injected at runtime via a `.env` file co-located with `docker-compose.yml`. See `.env.example` in the repository root for the required variable reference.
+Production secrets are injected at runtime via `.env` in the repository root. See `.env.example` there for the required variable reference.
 
 | Variable | Consumer | Description |
 |----------|----------|-------------|

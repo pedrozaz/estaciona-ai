@@ -18,7 +18,7 @@
 use axum::{
     Json,
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
 };
 use chrono::{DateTime, Utc};
@@ -30,7 +30,6 @@ use crate::ws::messages::ServerToAppMsg;
 
 #[derive(Deserialize)]
 pub struct CreateReservation {
-    pub user_id: Uuid,
     pub spot_id: String,
     pub expires_at: DateTime<Utc>,
 }
@@ -51,11 +50,36 @@ pub struct UpdateSpotStatus {
     pub status: String,
 }
 
+async fn require_reservation_owner(
+    state: &SharedState,
+    headers: &HeaderMap,
+    reservation_id: Uuid,
+) -> Result<(), (StatusCode, String)> {
+    let requester = crate::security::authenticated_user(headers, &state.jwt_secret)?;
+    let owner: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM reservations WHERE id = $1")
+        .bind(reservation_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database error".to_string(),
+            )
+        })?
+        .flatten();
+    if owner != Some(requester) {
+        return Err((StatusCode::NOT_FOUND, "Reservation not found".to_string()));
+    }
+    Ok(())
+}
+
 pub async fn update_spot_status(
     State(state): State<SharedState>,
     Path(id): Path<String>,
+    headers: HeaderMap,
     Json(payload): Json<UpdateSpotStatus>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    crate::security::require_admin(&headers, &state.jwt_secret)?;
     if payload.status != "occupied" && payload.status != "free" && payload.status != "reserved" {
         return Err((StatusCode::BAD_REQUEST, "Invalid status".to_string()));
     }
@@ -75,6 +99,22 @@ pub async fn update_spot_status(
         )
     })?;
 
+    if payload.status == "free" {
+        sqlx::query(
+            "UPDATE user_occupancy_history SET released_at = NOW() \
+             WHERE spot_id = $1 AND released_at IS NULL",
+        )
+        .bind(&id)
+        .execute(&state.pool)
+        .await
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database error".to_string(),
+            )
+        })?;
+    }
+
     let update_msg = ServerToAppMsg::SpotUpdate {
         spot_id: id,
         status: payload.status,
@@ -88,14 +128,22 @@ pub async fn update_spot_status(
 
 pub async fn create_reservation(
     State(state): State<SharedState>,
+    headers: HeaderMap,
     Json(payload): Json<CreateReservation>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let user_id = crate::security::authenticated_user(&headers, &state.jwt_secret)?;
+    let mut tx = state.pool.begin().await.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error".to_string(),
+        )
+    })?;
     let updated_spot = sqlx::query!(
         "UPDATE spots SET status = 'reserved', last_updated = NOW()
         WHERE id = $1 AND status = 'free' RETURNING id",
         payload.spot_id
     )
-    .fetch_optional(&state.pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|_| {
         (
@@ -118,16 +166,23 @@ pub async fn create_reservation(
         "created_at?", expires_at as "expires_at?", completed_at as "completed_at?"
         "#,
         new_id,
-        payload.user_id,
+        user_id,
         payload.spot_id,
         payload.expires_at
     )
-    .fetch_one(&state.pool)
+    .fetch_one(&mut *tx)
     .await
     .map_err(|_| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed to create reservation".to_string(),
+        )
+    })?;
+
+    tx.commit().await.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error".to_string(),
         )
     })?;
 
@@ -152,7 +207,9 @@ pub async fn create_reservation(
 
 pub async fn get_reservations(
     State(state): State<SharedState>,
+    headers: HeaderMap,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    crate::security::require_admin(&headers, &state.jwt_secret)?;
     let records = sqlx::query_as!(
         ReservationResponse,
         r#"
@@ -184,7 +241,15 @@ pub async fn get_reservations(
 pub async fn cancel_reservation(
     State(state): State<SharedState>,
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    require_reservation_owner(&state, &headers, id).await?;
+    let mut tx = state.pool.begin().await.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error".to_string(),
+        )
+    })?;
     let result = sqlx::query!(
         r#"
         UPDATE reservations
@@ -194,7 +259,7 @@ pub async fn cancel_reservation(
         "#,
         id
     )
-    .fetch_optional(&state.pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
@@ -210,10 +275,18 @@ pub async fn cancel_reservation(
                 "UPDATE spots SET status = 'free', last_updated = NOW() WHERE id = $1 AND status = 'reserved' RETURNING id",
                 record.spot_id
             )
-            .fetch_optional(&state.pool)
-            .await;
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))?;
 
-            if let Ok(Some(_)) = updated_spot {
+            tx.commit().await.map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Database error".to_string(),
+                )
+            })?;
+
+            if updated_spot.is_some() {
                 let update_msg = ServerToAppMsg::SpotUpdate {
                     spot_id: record.spot_id.clone(),
                     status: "free".to_string(),
@@ -236,26 +309,40 @@ pub async fn cancel_reservation(
 pub async fn confirm_occupancy(
     State(state): State<SharedState>,
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    require_reservation_owner(&state, &headers, id).await?;
+    let mut tx = state.pool.begin().await.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error".to_string(),
+        )
+    })?;
     let reservation = sqlx::query!(
         "UPDATE reservations SET status = 'completed', completed_at = NOW() WHERE id = $1 AND status = 'active' RETURNING user_id, spot_id",
         id
     )
-    .fetch_optional(&state.pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error".to_string()))?;
 
     match reservation {
         Some(res) => {
-            let _ = sqlx::query!(
+            sqlx::query!(
                 "INSERT INTO user_occupancy_history (user_id, spot_id) VALUES ($1, $2)",
                 res.user_id,
                 res.spot_id
             )
-            .execute(&state.pool)
-            .await;
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to save occupancy".to_string(),
+                )
+            })?;
 
-            let _ = sqlx::query!(
+            sqlx::query!(
                 r#"
             DELETE FROM user_occupancy_history
             WHERE id IN (
@@ -267,8 +354,21 @@ pub async fn confirm_occupancy(
             "#,
                 res.user_id
             )
-            .execute(&state.pool)
-            .await;
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to prune occupancy history".to_string(),
+                )
+            })?;
+
+            tx.commit().await.map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Database error".to_string(),
+                )
+            })?;
 
             Ok((
                 StatusCode::OK,
@@ -285,7 +385,9 @@ pub async fn confirm_occupancy(
 pub async fn extend_reservation(
     State(state): State<SharedState>,
     Path(id): Path<Uuid>,
+    headers: HeaderMap,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    require_reservation_owner(&state, &headers, id).await?;
     let result = sqlx::query!(
         "UPDATE reservations SET expires_at = NOW() + INTERVAL '45 seconds' WHERE id = $1 AND status = 'active' RETURNING spot_id",
         id
@@ -321,8 +423,13 @@ pub struct RecommendQuery {
 
 pub async fn recommend_spot(
     State(state): State<SharedState>,
+    headers: HeaderMap,
     Query(query): Query<RecommendQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let requester = crate::security::authenticated_user(&headers, &state.jwt_secret)?;
+    if requester != query.user_id {
+        return Err((StatusCode::FORBIDDEN, "User access denied".to_string()));
+    }
     let priority_spot = sqlx::query!(
         r#"
         WITH user_data AS (
@@ -460,10 +567,7 @@ mod tests {
 
         let parsed: CreateReservation = serde_json::from_str(json_data).unwrap();
         assert_eq!(parsed.spot_id, "A-01");
-        assert_eq!(
-            parsed.user_id,
-            uuid::Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000").unwrap()
-        );
+        assert_eq!(parsed.expires_at.to_rfc3339(), "2026-10-10T10:00:00+00:00");
     }
 
     #[test]
