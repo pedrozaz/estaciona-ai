@@ -1,10 +1,14 @@
 {
   "nav": {
     "overview": "Visão Geral",
+    "home": "Início",
+    "analytics": "Análises",
     "dashboard": "Painel de Controle",
     "mapControls": "Controles do Mapa",
     "points": "Calibração de Pontos",
+    "camera": "Câmera e marcadores",
     "zones": "Gestão de Zonas",
+    "path": "Configuração de rotas",
     "sandbox": "Sandbox",
     "ortho": "Visualização Ortomosaico",
     "recon": "Reconstrução 3D"
@@ -15,9 +19,13 @@
     "logout": "Sair"
   },
   "home": {
-    "welcome": "BEM-VINDO,",
-    "admin": "ADMIN",
-    "serverStatus": "SERVIDOR ONLINE"
+    "welcome": "O estacionamento,",
+    "admin": "em perspectiva.",
+    "description": "Acompanhe a ocupação, explore a reconstrução do campus e calibre os pontos que conectam as vagas ao mapa 3D.",
+    "serverStatus": "FERRAMENTAS DO CAMPUS",
+    "action3d": "Explorar modelo 3D",
+    "actionPoints": "Calibrar pontos",
+    "actionAnalytics": "Abrir análises"
   },
   "mobile": {
     "title": "Acesso Restrito",

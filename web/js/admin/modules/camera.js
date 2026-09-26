@@ -10,10 +10,10 @@ class CameraModule {
         this.pins = [];
         this.activeRouteId = null;
         
-        bus.on(`app:launch:${this.id}`, () => this.launch());
+        bus.on(`app:launch:${this.id}`, (data) => this.launch(data));
     }
 
-    async launch() {
+    async launch(data = {}) {
         const content = `
             <style>
                 #win-${this.id} .fw-body { padding: 0 !important; overflow: hidden; font-family: 'Outfit', sans-serif; }
@@ -39,7 +39,7 @@ class CameraModule {
                 @keyframes cam-spin { to { transform: rotate(360deg); } }
             </style>
             <div style="display: flex; height: 100%; width: 100%;">
-                <div style="flex: 1; position: relative; background: #08090a;" id="cam-canvas-wrapper">
+                <div style="flex: 1; position: relative; background: #091831;" id="cam-canvas-wrapper">
                     <div class="cam-loading" id="cam-loading">
                         <div class="cam-loader"></div>
                         <div style="color: #fff; font-size: 14px; font-weight: 600;" id="cam-progress">0%</div>
@@ -47,13 +47,13 @@ class CameraModule {
                 </div>
                 <div class="cam-sidebar">
                     <div class="cam-header" style="border-bottom: none; padding-bottom: 8px;">
-                        <div class="cam-title">Camera & Pinpoints</div>
+                        <div class="cam-title">Câmera e marcadores</div>
                         <div class="cam-desc">Ajuste o modelo e clique para setar a câmera inicial do aplicativo.</div>
                     </div>
                     <div style="padding: 0 20px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);">
                         <div style="display: flex; gap: 6px;">
-                            <button class="cam-btn" style="flex: 1; padding: 10px; border-color: #1ca745; color: #1ca745; background: rgba(28, 167, 69, 0.1);" id="cam-set-global">📷 Set Câmera</button>
-                            <button class="cam-btn" style="flex: 1; padding: 10px;" id="cam-test-global">👁️ Testar</button>
+                            <button class="cam-btn" style="flex: 1; padding: 10px; border-color: #10b981; color: #34d399; background: rgba(16, 185, 129, 0.12);" id="cam-set-global">Definir câmera</button>
+                            <button class="cam-btn" style="flex: 1; padding: 10px;" id="cam-test-global">Testar visão</button>
                         </div>
                     </div>
                     <div class="cam-header">
@@ -69,7 +69,7 @@ class CameraModule {
             </div>
         `;
 
-        bus.emit('app:open', { id: this.id, title: 'Cameras', content });
+        bus.emit('app:open', { id: this.id, title: data.title || 'Câmera e marcadores', content });
         setTimeout(() => this.initLogic(), 100);
     }
 
@@ -77,7 +77,7 @@ class CameraModule {
         this.wrapper = document.getElementById('cam-canvas-wrapper');
         
         try {
-            const res = await fetch('/data/config.json');
+            const res = await fetch('./data/config.json');
             if (res.ok) {
                 const existing = await res.json();
                 this.pins = existing.map((lot, i) => ({
@@ -94,7 +94,7 @@ class CameraModule {
         } catch(e) {}
 
         try {
-            const resGlobal = await fetch('/data/global_camera.json');
+            const resGlobal = await fetch('./data/global_camera.json');
             if (resGlobal.ok) {
                 this.globalCamera = await resGlobal.json();
             }
@@ -106,17 +106,20 @@ class CameraModule {
 
     initThree() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x0a0b0e);
+        this.scene.background = new THREE.Color(0x091831);
         this.camera = new THREE.PerspectiveCamera(45, this.wrapper.clientWidth / this.wrapper.clientHeight, 0.1, 1000);
         
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.wrapper.clientWidth, this.wrapper.clientHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.08;
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.wrapper.appendChild(this.renderer.domElement);
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
+        this.controls.dampingFactor = 0.07;
 
         const amLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(amLight);
@@ -125,14 +128,25 @@ class CameraModule {
         this.scene.add(dirLight);
 
         const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('/lib/draco/');
+        dracoLoader.setDecoderPath('./lib/draco/');
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
 
         loader.load(
-            '/assets/reconstruction/melhorresultado_otimizado.glb',
+            './assets/reconstruction/melhorresultado_otimizado.glb',
             (gltf) => {
                 this.loadedModel = gltf.scene;
+                const maxAnisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+                this.loadedModel.traverse((child) => {
+                    if (!child.isMesh) return;
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    materials.forEach((material) => {
+                        if (material?.map) {
+                            material.map.anisotropy = maxAnisotropy;
+                            material.map.needsUpdate = true;
+                        }
+                    });
+                });
                 const box = new THREE.Box3().setFromObject(this.loadedModel);
                 const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
@@ -161,10 +175,18 @@ class CameraModule {
             }
         );
 
+        const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+        let lastFrame = performance.now();
         const animate = () => {
             if (!document.getElementById('cam-canvas-wrapper')) return;
             requestAnimationFrame(animate);
-            this.controls.update();
+            const now = performance.now();
+            const delta = Math.min((now - lastFrame) / 1000, .05);
+            lastFrame = now;
+            if (document.hidden) return;
+            this.controls.enableDamping = !motionPreference.matches;
+            this.controls.dampingFactor = 1 - Math.exp(-6.5 * delta);
+            this.controls.update(delta);
             this.renderer.render(this.scene, this.camera);
         };
         animate();
@@ -263,9 +285,9 @@ class CameraModule {
         
         const btnSet = document.getElementById('cam-set-global');
         if (this.globalCamera) {
-            btnSet.innerHTML = '✅ Câmera Setada';
+            btnSet.textContent = 'Câmera definida';
         } else {
-            btnSet.innerHTML = '📷 Set Câmera Inicial';
+            btnSet.textContent = 'Definir câmera inicial';
         }
 
         this.pins.forEach((pin, i) => {
@@ -286,10 +308,10 @@ class CameraModule {
                 ${posHtml}
                 <div style="font-size: 12px; color: #94a3b8; margin: 12px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">Câmera do Carrinho</div>
                 <div style="display: flex; gap: 6px;">
-                    <button class="cam-btn" style="flex: 1; padding: 8px; ${pin.camera ? 'background: rgba(28, 167, 69, 0.2); color: #1ca745; border-color: #1ca745;' : ''}" data-action="cam">
-                        ${pin.camera ? '✅ Câmera Setada' : '📷 Set Câmera'}
+                    <button class="cam-btn" style="flex: 1; padding: 8px; ${pin.camera ? 'background: rgba(16, 185, 129, 0.12); color: #34d399; border-color: #10b981;' : ''}" data-action="cam">
+                        ${pin.camera ? 'Câmera definida' : 'Definir câmera'}
                     </button>
-                    <button class="cam-btn" style="flex: 1; padding: 8px;" data-action="test">👁️ Ver Câmera</button>
+                    <button class="cam-btn" style="flex: 1; padding: 8px;" data-action="test">Ver câmera</button>
                 </div>
             `;
 

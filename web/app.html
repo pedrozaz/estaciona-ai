@@ -3,29 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - Estaciona AI</title>
+    <title>Mapa 3D — Estaciona AI</title>
     <meta name="description" content="Painel de controle 3D do Estaciona AI" />
     <link rel="icon" href="data:," />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media = 'all'"
-    />
-    <noscript
-      ><link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap"
-        rel="stylesheet"
-    /></noscript>
     <link rel="stylesheet" href="css/styles.css" />
-    <link
-      rel="preload"
-      href="assets/reconstruction/melhorresultado_web.glb"
-      as="fetch"
-      crossorigin
-    />
     <style>
       * {
         margin: 0;
@@ -538,11 +519,12 @@
         color: #f87171;
       }
     </style>
+    <link rel="stylesheet" href="css/experience.css?v=4" />
   </head>
 
-  <body>
+  <body class="app-page">
     <nav class="dashboard-nav">
-      <a href="/" class="logo">
+      <a href="index.html" class="logo">
         <span class="logo-text">Estaciona</span>
         <div class="logo-pin"><span>AI</span></div>
       </a>
@@ -603,7 +585,7 @@
             </div>
             <a
               id="adminPanelLink"
-              href="/dashboard"
+              href="dashboard.html"
               style="
                 display: none;
                 color: #10b981;
@@ -723,7 +705,7 @@
         sessionStorage.getItem("estaciona_logged_in") === "true" ||
         localStorage.getItem("estaciona_logged_in") === "true";
       if (!isLoggedIn) {
-        window.location.href = "/login";
+        window.location.href = "login.html";
       }
 
       const userEmail =
@@ -834,7 +816,6 @@
       let hasExtended = false;
 
       const host = window.location.hostname || "localhost";
-      const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
       const isLocal =
         host === "localhost" ||
         host === "127.0.0.1" ||
@@ -997,14 +978,14 @@
 
       const viewport = document.getElementById("viewport");
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0f1117);
+      scene.background = new THREE.Color(0x091831);
 
-      scene.fog = new THREE.FogExp2(0x0f1117, 0.002);
+      scene.fog = new THREE.FogExp2(0x091831, 0.002);
 
       const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
       const gridGeo = new THREE.BufferGeometry();
-      const gridSize = isMobile ? 60 : 100;
+      const gridSize = isMobile ? 48 : 72;
       const gridSpacing = 2.0;
       const posArray = new Float32Array(gridSize * gridSize * 3);
       let idx = 0;
@@ -1028,10 +1009,10 @@
       const circleTexture = new THREE.CanvasTexture(circleCanvas);
 
       const gridMat = new THREE.PointsMaterial({
-        size: 0.18,
-        color: 0x1ca745,
+        size: 0.17,
+        color: 0x82a9d5,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.38,
         map: circleTexture,
         depthWrite: false,
       });
@@ -1054,26 +1035,29 @@
       renderer.setPixelRatio(
         isMobile
           ? Math.min(window.devicePixelRatio, 1.5)
-          : Math.min(window.devicePixelRatio, 2),
+          : Math.min(window.devicePixelRatio, 1.75),
       );
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.2;
+      renderer.toneMappingExposure = 1.08;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       viewport.appendChild(renderer.domElement);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.67);
       scene.add(ambientLight);
 
-      const keyLight = new THREE.DirectionalLight(0xfff4e6, 1.2);
+      const skyLight = new THREE.HemisphereLight(0xd2e4ff, 0x162844, 0.52);
+      scene.add(skyLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfff4e9, 1.07);
       keyLight.position.set(10, 20, 10);
       keyLight.castShadow = false;
       scene.add(keyLight);
 
-      const fillLight = new THREE.DirectionalLight(0xc4d4f7, 0.5);
+      const fillLight = new THREE.DirectionalLight(0xb8d7ff, 0.57);
       fillLight.position.set(-10, 10, -10);
       scene.add(fillLight);
 
-      const rimLight = new THREE.DirectionalLight(0x1ca745, 0.3);
+      const rimLight = new THREE.DirectionalLight(0x10b981, 0.39);
       rimLight.position.set(0, 5, -15);
       scene.add(rimLight);
 
@@ -1170,6 +1154,18 @@
         (gltf) => {
           const model = gltf.scene;
           loadedModel = model;
+
+          const maxAnisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+          model.traverse((child) => {
+            if (!child.isMesh) return;
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            materials.forEach((material) => {
+              if (material?.map) {
+                material.map.anisotropy = maxAnisotropy;
+                material.map.needsUpdate = true;
+              }
+            });
+          });
 
           const box = new THREE.Box3().setFromObject(model);
           const center = box.getCenter(new THREE.Vector3());
@@ -1770,7 +1766,7 @@
 
         const ringGeo = new THREE.RingGeometry(0.15, 0.45, 16);
         const ringMat = new THREE.MeshBasicMaterial({
-          color: isBlocked ? 0xef4444 : 0x1ca745,
+          color: isBlocked ? 0xef4444 : 0x23aa7d,
           transparent: true,
           opacity: 0.5,
           side: THREE.DoubleSide,
@@ -1812,8 +1808,14 @@
         });
       }
 
+      const animationClock = new THREE.Clock();
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const projectedPin = new THREE.Vector3();
+
       function animate() {
         requestAnimationFrame(animate);
+        const frameSeconds = Math.min(animationClock.getDelta(), 0.05);
+        if (document.hidden) return;
 
         if (activeCarPath && activeCarPath.length > 1) {
           carFinishedRoute = false;
@@ -1830,7 +1832,7 @@
           );
 
           const dist = p1.distanceTo(p2);
-          const speed = 0.015;
+          const speed = 0.9 * frameSeconds;
 
           const currentDist = carGroup.position.distanceTo(p1);
           const nextDist = currentDist + speed;
@@ -1854,7 +1856,7 @@
             window.carGhost = window.carGhost || new THREE.Object3D();
             window.carGhost.position.copy(carGroup.position);
             window.carGhost.lookAt(p2);
-            carGroup.quaternion.slerp(window.carGhost.quaternion, 0.12);
+            carGroup.quaternion.slerp(window.carGhost.quaternion, 1 - Math.exp(-7.7 * frameSeconds));
           }
         }
 
@@ -1920,22 +1922,18 @@
 
         const isTrackingCar = activeCarPath && activeCarPath.length > 1;
         
-        const posSpeed = isTrackingCar ? 0.08 : 0.02; 
-        const lookSpeed = isTrackingCar ? 0.1 : 0.06;
-
-        camera.position.lerp(targetCameraPos, posSpeed);
-
-        window.camGhost = window.camGhost || new THREE.PerspectiveCamera();
-        window.camGhost.position.copy(camera.position);
-        window.camGhost.lookAt(targetCameraLookAt);
-        camera.quaternion.slerp(window.camGhost.quaternion, lookSpeed);
+        const positionBlend = reduceMotion.matches ? 1 : 1 - Math.exp(-(isTrackingCar ? 5 : 2.4) * frameSeconds);
+        const targetBlend = reduceMotion.matches ? 1 : 1 - Math.exp(-(isTrackingCar ? 6 : 3.6) * frameSeconds);
+        camera.position.lerp(targetCameraPos, positionBlend);
+        currentCameraTarget.lerp(targetCameraLookAt, targetBlend);
+        camera.lookAt(currentCameraTarget);
 
         renderer.render(scene, camera);
 
         camera.updateMatrixWorld();
         const hw = viewport.clientWidth / 2;
         const hh = viewport.clientHeight / 2;
-        const t = Date.now() * 0.0008;
+        const t = animationClock.elapsedTime * 0.64;
 
         pinpoints.forEach((pin, i) => {
           if (currentFocusCamData) {
@@ -1945,13 +1943,17 @@
           }
 
           pin.ring3D.visible = true;
-          const rippleCycle = (t + i * 0.5) % 1.0;
-          const scale = 1 + rippleCycle * 3.5;
-          pin.ring3D.scale.set(scale, scale, scale);
-          pin.ring3D.material.opacity = (1 - rippleCycle) * 0.6;
+          if (reduceMotion.matches) {
+            pin.ring3D.scale.setScalar(1);
+            pin.ring3D.material.opacity = 0.28;
+          } else {
+            const rippleCycle = (t + i * 0.5) % 1.0;
+            const scale = 1 + rippleCycle * 3.2;
+            pin.ring3D.scale.setScalar(scale);
+            pin.ring3D.material.opacity = (1 - rippleCycle) * 0.48;
+          }
 
-          const vec = pin.pos3D.clone();
-          vec.project(camera);
+          const vec = projectedPin.copy(pin.pos3D).project(camera);
 
           const x = vec.x * hw + hw;
           const y = -(vec.y * hh) + hh;
@@ -1968,7 +1970,6 @@
       function connectAppWebSocket() {
         try {
           const host = window.location.hostname || "localhost";
-          const isIP = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
           const isLocal =
             host === "localhost" ||
             host === "127.0.0.1" ||
@@ -2051,7 +2052,7 @@
 
         document.cookie = "estaciona_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-        window.location.href = "/";
+        window.location.href = "index.html";
       };
 
       window.toggleUserMenu = function () {

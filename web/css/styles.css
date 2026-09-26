@@ -1,16 +1,27 @@
 :root {
-  --primary-green: #1ca745;
-  --primary-dark: #158235;
-  --primary-light: #2ee566;
-  --bg-color: #f7ede2; /* Deep off-white to contrast */
-  --bg-light: #fdfbf8; /* Clean off-white */
-  --text-dark: #1e293b;
-  --text-light: #64748b;
-  --white: #ffffff;
-  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08); /* slight shadow for depth */
-  --border-radius: 16px;
-  --font-main: 'Outfit', sans-serif;
+  --apple-bg: #000000;
+  --apple-surface: #1c1c1e;
+  --apple-surface-2: #2c2c2e;
+  --apple-glass: rgba(28, 28, 30, 0.65);
+  --apple-border: rgba(255, 255, 255, 0.15);
+  --apple-text: #ffffff;
+  --apple-text-sec: rgba(235, 235, 245, 0.6);
+  --apple-blue: #0a84ff;
+  --apple-cyan: #64d2ff;
+  --apple-teal: #30b0c7;
+  --apple-mint: #63e6e2;
+  --apple-green: #32d74b;
+  
+  --brand: var(--apple-teal);
+  --brand-deep: var(--apple-blue);
+  --brand-soft: var(--apple-cyan);
+  --bg-color: var(--apple-bg);
+  --bg-light: var(--apple-surface);
+  --text-on-dark: var(--apple-text);
+  --muted-on-dark: var(--apple-text-sec);
+  --line-dark: var(--apple-border);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-main: var(--font-ui);
 }
 
 * {

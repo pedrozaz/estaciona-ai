@@ -28,7 +28,7 @@ export class WindowManager {
                 <div style="width: 60px;"></div>
                 <div class="fw-title">${title}</div>
                 <div class="fw-controls-mac" style="justify-content: flex-end;">
-                    <button class="mac-btn mac-close" data-id="${id}"></button>
+                    <button class="mac-btn mac-close" data-id="${id}" aria-label="Fechar ${title}"></button>
                 </div>
             </div>
             <div class="fw-body">${content}</div>
@@ -50,7 +50,7 @@ export class WindowManager {
         if (winEl.dataset.closing) return;
         winEl.dataset.closing = "true";
 
-        winEl.style.transform = 'scale(0.95)';
+        winEl.style.transform = 'translateY(6px) scale(0.99)';
         winEl.style.opacity = '0';
         
         setTimeout(() => {
@@ -60,7 +60,7 @@ export class WindowManager {
             if (this.activeWindows.size === 0) {
                 bus.emit('ui:all-closed');
             }
-        }, 200);
+        }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180);
     }
 
     updateTiling() {

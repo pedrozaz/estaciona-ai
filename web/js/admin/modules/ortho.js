@@ -25,7 +25,7 @@ class OrthoModule {
                     <button id="orthoReset" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: #fff; padding: 0 12px; height: 32px; border-radius: 6px; cursor: pointer; font-family: 'Space Grotesk'; font-size: 10px; text-transform: uppercase; transition: 0.2s; backdrop-filter: blur(8px);">Reset</button>
                 </div>
                 <div id="orthoViewport" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.1s ease-out; cursor: grab;">
-                    <img id="orthoImage" src="/assets/images/uniube_ortho_projection.png" style="display: block; pointer-events: none; opacity: 0.95;" alt="Orthomosaic">
+                    <img id="orthoImage" src="./assets/images/uniube_ortho_projection.png" style="display: block; pointer-events: none; opacity: 0.95;" alt="Orthomosaic">
                     <div id="orthoSvgContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
                 </div>
             </div>
@@ -164,9 +164,9 @@ class OrthoModule {
 
             if (data.activePolygon && data.activePolygon.length > 0) {
                 const pts = data.activePolygon.map(p => `${p.x},${p.y}`).join(' ');
-                svgHtml += `<polyline points="${pts}" fill="none" stroke="#f59e0b" stroke-width="3"/>`;
+                svgHtml += `<polyline points="${pts}" fill="none" stroke="#10b981" stroke-width="3"/>`;
                 data.activePolygon.forEach(pt => {
-                    svgHtml += `<circle cx="${pt.x}" cy="${pt.y}" r="6" fill="#f59e0b"/>`;
+                    svgHtml += `<circle cx="${pt.x}" cy="${pt.y}" r="6" fill="#10b981"/>`;
                 });
             }
             

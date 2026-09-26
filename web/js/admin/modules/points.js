@@ -103,7 +103,7 @@ class PointsModule {
 
     async loadExistingCalibration() {
         try {
-            const res = await fetch('/data/ortho_calibration.json');
+            const res = await fetch('./data/ortho_calibration.json');
             if (!res.ok) return;
             const data = await res.json();
             if (data && data.referencePoints && data.referencePoints.length > 0) {
