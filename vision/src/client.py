@@ -202,11 +202,31 @@ async def main():
 
     prev_time = time.time()
     last_retry_time = 0.0
+    last_sync_time = time.time()
 
     while True:
         if PENDING_UPDATES and time.monotonic() - last_retry_time >= 5:
             last_retry_time = time.monotonic()
             websocket = await safe_send(websocket, None, headers)
+
+        if time.time() - last_sync_time >= 30:
+            last_sync_time = time.time()
+            print("[VISION] Resyncing all spots state to gateway (30s heartbeat)")
+            for spot_id, state in debounce_map.items():
+                if state["confirmed"]:
+                    payload = {
+                        "type": "SPOT_UPDATE",
+                        "spot_id": spot_id,
+                        "status": state["confirmed"],
+                        "camera_id": "cam_01",
+                        "confidence": 1.0,
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "edge_sent_at": datetime.datetime.now(datetime.UTC)
+                        .isoformat(timespec="milliseconds")
+                        .replace("+00:00", "Z"),
+                    }
+                    websocket = await safe_send(websocket, json.dumps(payload), headers)
+
         ret, frame = cap.read()
         if not ret:
             cap.release()
