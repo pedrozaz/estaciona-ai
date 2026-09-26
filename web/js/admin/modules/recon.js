@@ -310,6 +310,8 @@ class ReconModule {
             }
         });
 
+        const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+        let lastFrame = performance.now();
         const animate = () => {
             if (!document.getElementById('reconContainer')) {
                 cancelAnimationFrame(this.animationFrameId);
@@ -317,8 +319,13 @@ class ReconModule {
                 return;
             }
             this.animationFrameId = requestAnimationFrame(animate);
+            const now = performance.now();
+            const delta = Math.min((now - lastFrame) / 1000, .05);
+            lastFrame = now;
             if (document.hidden) return;
-            this.controls.update();
+            this.controls.enableDamping = !motionPreference.matches;
+            this.controls.dampingFactor = 1 - Math.exp(-6.5 * delta);
+            this.controls.update(delta);
             renderer.render(scene, camera);
         };
         animate();

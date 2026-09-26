@@ -77,10 +77,16 @@ WebSocket messages received from the server follow the `ServerToAppMsg` schema d
 | [Three.js](https://threejs.org/) | WebGL 3D renderer for the parking lot digital twin |
 | GLTFLoader | Loads the photogrammetry `.glb` model |
 
-No bundler, transpiler, or package manager is involved. Three.js and its addons are vendored under `lib/`; the interface uses the system font stack and does not require a font CDN. The landing page uses CSS and a small local script for motion, while the 3D views reuse the existing models. Page links and static asset paths are relative to the HTML document so they work on the root custom domain and in a GitHub Pages project preview path. API and WebSocket endpoints remain separate.
+No bundler, transpiler, or package manager is involved. Three.js and its addons are vendored under `lib/`; the interface uses the system font stack and does not require a font CDN. The landing page uses a procedural Three.js campus illustration and a native-scroll reveal script. Landing, login, and dashboard reuse `js/campus-scene.js`, with a 1.5 device-pixel-ratio cap, frame-rate-independent motion, offscreen/hidden-tab suspension, reduced-motion support, and an HTML/SVG fallback. The hero illustration is explicitly conceptual; the lower section shows the real campus orthomosaic. The 3D views reuse the existing photogrammetric models. Page links and static asset paths are relative to the HTML document so they work on the root custom domain and in a GitHub Pages project preview path. API and WebSocket endpoints remain separate.
 
 ---
 
 ## License
 
 Copyright © 2026 Guilherme Pedroza. Licensed under the GNU Affero General Public License v3.0.
+
+## Visual and editorial conventions
+
+The interface uses a navy tonal scale (`#0c1c36`, `#142944`, `#203952`), warm off-white for text, and a restrained amber action color (`#e3b584`). Occupancy colors remain semantic. Typography uses local system fonts, with Georgia for the landing's editorial accent. No additional font or Three.js CDN is required.
+
+Landing copy is based on the project documentation and the [research paper](https://github.com/pedrozaz/estaciona-ai-paper): distinguish controlled prototype evaluation from field deployment, and synthetic forecast evaluation from real-world validation. Do not promote research metrics as production guarantees.

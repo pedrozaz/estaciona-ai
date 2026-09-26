@@ -19,10 +19,10 @@
     "logout": "Log Out"
   },
   "home": {
-    "welcome": "THE CAMPUS,",
-    "admin": "IN YOUR HANDS.",
-    "description": "Explore the campus in three dimensions, tune parking spot mapping, and follow activity across each area.",
-    "serverStatus": "READY TO EXPLORE",
+    "welcome": "The parking lot,",
+    "admin": "in perspective.",
+    "description": "Monitor occupancy, explore the campus reconstruction, and calibrate the points that connect parking spaces to the 3D map.",
+    "serverStatus": "CAMPUS TOOLS",
     "action3d": "Explore the 3D model",
     "actionPoints": "Calibrate points",
     "actionAnalytics": "Open analytics"

@@ -1,10 +1,10 @@
 import { I18nManager } from './i18n.js?v=3';
 import { bus } from './bus.js';
-import { WindowManager } from './window-manager.js';
+import { WindowManager } from './window-manager.js?v=2';
 import './modules/ortho.js?v=3';
-import './modules/recon.js?v=5';
+import './modules/recon.js?v=6';
 import './modules/points.js?v=3';
-import './modules/camera.js?v=5';
+import './modules/camera.js?v=6';
 import './modules/spots.js?v=3';
 import './modules/path.js?v=3';
 import './modules/analytics.js?v=10';

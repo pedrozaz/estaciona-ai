@@ -50,7 +50,7 @@ export class WindowManager {
         if (winEl.dataset.closing) return;
         winEl.dataset.closing = "true";
 
-        winEl.style.transform = 'scale(0.95)';
+        winEl.style.transform = 'translateY(6px) scale(0.99)';
         winEl.style.opacity = '0';
         
         setTimeout(() => {
@@ -60,7 +60,7 @@ export class WindowManager {
             if (this.activeWindows.size === 0) {
                 bus.emit('ui:all-closed');
             }
-        }, 200);
+        }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180);
     }
 
     updateTiling() {

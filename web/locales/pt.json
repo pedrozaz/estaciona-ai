@@ -19,10 +19,10 @@
     "logout": "Sair"
   },
   "home": {
-    "welcome": "O CAMPUS,",
-    "admin": "EM SUAS MÃOS.",
-    "description": "Explore o campus em três dimensões, ajuste a leitura das vagas e acompanhe o que acontece em cada área.",
-    "serverStatus": "PRONTO PARA EXPLORAR",
+    "welcome": "O estacionamento,",
+    "admin": "em perspectiva.",
+    "description": "Acompanhe a ocupação, explore a reconstrução do campus e calibre os pontos que conectam as vagas ao mapa 3D.",
+    "serverStatus": "FERRAMENTAS DO CAMPUS",
     "action3d": "Explorar modelo 3D",
     "actionPoints": "Calibrar pontos",
     "actionAnalytics": "Abrir análises"

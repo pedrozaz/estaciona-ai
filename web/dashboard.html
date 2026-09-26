@@ -475,7 +475,7 @@
 
         @media (max-width: 1024px) { #desktop-environment { display: none !important; } #mobile-blocker { display: flex !important; } }
     </style>
-    <link rel="stylesheet" href="css/experience.css?v=3">
+    <link rel="stylesheet" href="css/experience.css?v=4">
 </head>
 <body class="admin-page">
 
@@ -551,78 +551,14 @@
         
     </div>
 
-    <script type="module" src="./js/admin/main.js?v=5"></script>
+    <script type="module" src="./js/admin/main.js?v=6"></script>
     <script type="module">
-        import * as THREE from 'three';
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0b1b38, 0.038);
-        const workspace = document.getElementById('workspace');
-        const camera = new THREE.PerspectiveCamera(45, workspace.clientWidth / workspace.clientHeight, 0.1, 100);
-        camera.position.set(0, 2, 14);
-        camera.lookAt(0, -1, 0);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(workspace.clientWidth, workspace.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        document.getElementById('canvas-layer').appendChild(renderer.domElement);
-
-        const geometry = new THREE.PlaneGeometry(80, 80, 24, 24);
-        const material = new THREE.MeshBasicMaterial({ 
-            color: 0x71a5df,
-            wireframe: true, 
-            transparent: true, 
-            opacity: 0.17
-        });
-
-        const plane = new THREE.Mesh(geometry, material);
-        plane.rotation.x = -Math.PI / 2;
-        plane.position.y = -3.5;
-        scene.add(plane);
-
-        let time = 0;
-        let pointerX = 0;
-        let pointerY = 0;
-        const backgroundClock = new THREE.Clock();
-        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-        workspace.addEventListener('pointermove', (event) => {
-            const rect = workspace.getBoundingClientRect();
-            pointerX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-            pointerY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-        }, { passive: true });
-        workspace.addEventListener('pointerleave', () => { pointerX = 0; pointerY = 0; });
-        function animate() {
-            requestAnimationFrame(animate);
-            const delta = Math.min(backgroundClock.getDelta(), 0.05);
-            if (document.hidden) return;
-            if (reduceMotion.matches) {
-                renderer.render(scene, camera);
-                return;
-            }
-            time += delta * 0.26;
-            const blend = 1 - Math.exp(-2.2 * delta);
-            camera.position.x += (pointerX * 0.6 - camera.position.x) * blend;
-            camera.position.y += (2 - pointerY * 0.3 - camera.position.y) * blend;
-            camera.lookAt(0, -1, 0);
-            
-            const positions = plane.geometry.attributes.position.array;
-            for(let i = 0; i < positions.length; i += 3) {
-                const x = positions[i];
-                const y = positions[i+1];
-                positions[i+2] = Math.sin(x * 0.16 + time) * 1.2 + Math.cos(y * 0.18 + time * 0.72) * 1.2;
-            }
-            plane.geometry.attributes.position.needsUpdate = true;
-            
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        function resizeBackground() {
-            camera.aspect = workspace.clientWidth / workspace.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(workspace.clientWidth, workspace.clientHeight);
-        }
-        window.addEventListener('resize', resizeBackground);
-        new ResizeObserver(resizeBackground).observe(workspace);
+        import { createCampusScene } from './js/campus-scene.js?v=1';
+        const ambientCanvas = document.createElement('canvas');
+        ambientCanvas.style.cssText = 'width:100%;height:100%;display:block';
+        ambientCanvas.setAttribute('aria-hidden', 'true');
+        document.getElementById('canvas-layer').appendChild(ambientCanvas);
+        createCampusScene(ambientCanvas, { ambient: true });
 
         document.getElementById('adminProfileBtn').addEventListener('click', () => {
             document.getElementById('profileDropdown').classList.toggle('show');
