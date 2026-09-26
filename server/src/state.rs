@@ -65,31 +65,50 @@ pub async fn init_state(
         serde_json::from_str(&config_content).expect("Falha no parse do config.json");
 
     let mut node_map = std::collections::HashMap::new();
-    let mut config_nodes = Vec::new();
+    let mut config_nodes: Vec<(String, f64, f64)> = Vec::new();
 
     if let Some(parking) = parkings.first() {
         let mut prev_node_id: Option<String> = None;
-        for (i, p) in parking.path.iter().enumerate() {
-            let node_id = if i == 0 {
-                "cam-01".to_string()
+        let mut node_counter = 0;
+        
+        for p in parking.path.iter() {
+            let mut points_to_add = Vec::new();
+            
+            if let Some(prev_id) = &prev_node_id {
+                let prev_p = config_nodes.last().unwrap();
+                let dx = p.x - prev_p.1;
+                let dz = p.z - prev_p.2;
+                let dist = (dx*dx + dz*dz).sqrt();
+                let steps = (dist / 0.15).ceil() as usize;
+                
+                for step in 1..=steps {
+                    let f = step as f64 / steps as f64;
+                    points_to_add.push((prev_p.1 + dx * f, prev_p.2 + dz * f));
+                }
             } else {
-                format!("path_node_{}", i)
-            };
-
-            let graph_node = graph.add_node(&node_id, p.x as f32, p.z as f32);
-            node_map.insert(node_id.clone(), graph_node);
-            config_nodes.push((node_id.clone(), p.x, p.z));
-
-            if let Some(prev_id) = &prev_node_id
-                && let (Some(&from_node), Some(&to_node)) =
-                    (node_map.get(prev_id), node_map.get(&node_id))
-            {
-                let prev_p = &parking.path[i - 1];
-                let dist =
-                    (((p.x - prev_p.x).powi(2) + (p.z - prev_p.z).powi(2)).sqrt() * 1000.0) as u32;
-                graph.add_edge(from_node, to_node, dist.max(1), true);
+                points_to_add.push((p.x, p.z));
             }
-            prev_node_id = Some(node_id);
+            
+            for (px, pz) in points_to_add {
+                let node_id = if node_counter == 0 {
+                    "cam-01".to_string()
+                } else {
+                    format!("path_node_{}", node_counter)
+                };
+                
+                let graph_node = graph.add_node(&node_id, px as f32, pz as f32);
+                node_map.insert(node_id.clone(), graph_node);
+                
+                if let Some(prev_id) = &prev_node_id {
+                    let from_node = *node_map.get(prev_id).unwrap();
+                    let dist_mm = (((px - config_nodes.last().unwrap().1).powi(2) + (pz - config_nodes.last().unwrap().2).powi(2)).sqrt() * 1000.0) as u32;
+                    graph.add_edge(from_node, graph_node, dist_mm.max(1), true);
+                }
+                
+                config_nodes.push((node_id.clone(), px, pz));
+                prev_node_id = Some(node_id);
+                node_counter += 1;
+            }
         }
     }
 
