@@ -241,70 +241,32 @@
         <p>Consulte as vagas e planeje seu trajeto pelo estacionamento.</p>
       </div>
       
-      <div class="auth-tabs">
-        <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Entrar</div>
-        <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Criar Conta</div>
-      </div>
-      
-      <!-- FORM: LOGIN -->
-      <form id="loginForm" class="form-section active" onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <input type="email" id="email" class="form-control" placeholder=" " required autocomplete="email">
-          <label for="email" class="form-label">E-mail</label>
-        </div>
-        
-        <div class="form-group">
-          <input type="password" id="password" class="form-control" placeholder=" " required autocomplete="current-password">
-          <label for="password" class="form-label">Senha</label>
+      <!-- FORM: DEMO LOGIN -->
+      <form id="demoForm" class="form-section active" onsubmit="handleDemoLogin(event)">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <h3 style="color: var(--primary-green); margin-bottom: 0.5rem;">Acesso demonstrativo, sem senha</h3>
+          <p style="color: var(--text-light); font-size: 0.9rem;">Escolha o seu perfil para explorar as funcionalidades.</p>
         </div>
 
-        <div class="utilities-row" style="justify-content: flex-start;">
-          <label style="display: flex; align-items: center; cursor: pointer; color: var(--text-light);">
-            <input type="checkbox" id="rememberMe" style="margin-right: 0.5rem; accent-color: var(--primary-green);">
-            Lembrar de mim
+        <div class="form-group">
+          <input type="text" id="demoName" class="form-control" placeholder=" " value="Visitante" required>
+          <label for="demoName" class="form-label">Nome de exibição</label>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 2rem;">
+          <p style="color: var(--text-dark); margin-bottom: 0.8rem; font-weight: 500;">Escolha uma visão:</p>
+          <label style="display: flex; align-items: center; cursor: pointer; color: var(--text-dark); margin-bottom: 0.5rem;">
+            <input type="radio" name="demoRole" value="viewer" checked style="margin-right: 0.5rem; accent-color: var(--primary-green);">
+            Usuário · mapa do campus
+          </label>
+          <label style="display: flex; align-items: center; cursor: pointer; color: var(--text-dark);">
+            <input type="radio" name="demoRole" value="admin" style="margin-right: 0.5rem; accent-color: var(--primary-green);">
+            Administrador · centro de controle
           </label>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
-          <span>Entrar</span>
-          <div class="spinner"></div>
-        </button>
-      </form>
-
-      <!-- FORM: REGISTER -->
-      <form id="registerForm" class="form-section" onsubmit="handleRegister(event)">
-        <div class="form-group">
-          <input type="text" id="regName" class="form-control" placeholder=" " required autocomplete="name">
-          <label for="regName" class="form-label">Nome Completo</label>
-        </div>
-        
-        <div class="form-group">
-          <input type="email" id="regEmail" class="form-control" placeholder=" " required autocomplete="email">
-          <label for="regEmail" class="form-label">E-mail</label>
-        </div>
-
-        <div class="form-group">
-          <input type="text" id="regPlate" class="form-control" placeholder=" " style="text-transform: uppercase;" maxlength="8">
-          <label for="regPlate" class="form-label">Placa do Veículo (Opcional)</label>
-        </div>
-        
-        <div class="form-group">
-          <input type="password" id="regPassword" class="form-control" placeholder=" " required minlength="8" autocomplete="new-password">
-          <label for="regPassword" class="form-label">Senha (min. 8 caracteres)</label>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <input type="date" id="regDob" class="form-control" style="color: var(--text-dark);">
-          <label for="regDob" class="form-label" style="top: 0; font-size: 0.8rem; font-weight: 600; color: var(--primary-dark); background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,1) 100%); padding: 0 0.5rem; transform: translateY(-50%) translateX(-0.5rem);">Data de Nascimento (Opcional)</label>
-        </div>
-
-        <div class="checkbox-group">
-          <input type="checkbox" id="regPcd">
-          <label for="regPcd">Sou Pessoa com Deficiência (PCD)</label>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-login" id="registerBtn" style="margin-top: 0;">
-          <span>Criar Conta</span>
+        <button type="submit" class="btn btn-primary btn-login" id="demoBtn">
+          <span>Entrar na prévia ↗</span>
           <div class="spinner"></div>
         </button>
       </form>
@@ -314,63 +276,10 @@
   </main>
 
   <script>
-    function switchTab(tab) {
-      // Toggle styles
-      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-      
-      // Toggle forms
-      document.getElementById('loginForm').classList.toggle('active', tab === 'login');
-      document.getElementById('registerForm').classList.toggle('active', tab === 'register');
-      
-      // Clear forms and errors on switch
-      document.getElementById('loginForm').reset();
-      document.getElementById('registerForm').reset();
-      clearError();
-    }
-
-    function showError(formId, message) {
-      clearError();
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'auth-error';
-      errorDiv.textContent = message;
-      errorDiv.style.cssText = `
-        background: rgba(220, 38, 38, 0.08);
-        color: #dc2626;
-        border: 1px solid rgba(220, 38, 38, 0.2);
-        border-radius: 10px;
-        padding: 0.75rem 1rem;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-        font-weight: 500;
-        text-align: center;
-        animation: slideUp 0.3s ease;
-      `;
-      const form = document.getElementById(formId);
-      form.insertBefore(errorDiv, form.firstChild);
-    }
-
-    function clearError() {
-      const errs = document.querySelectorAll('.auth-error');
-      errs.forEach(e => e.remove());
-    }
-
-    const host = window.location.hostname || 'localhost';
-    const isLocal = host === 'localhost' || host === '127.0.0.1';
-    const apiUrl = isLocal ? 'http://localhost:8000' : host.includes('ngrok') ? window.location.origin : 'https://api.estaciona.tech';
-
     window.addEventListener('DOMContentLoaded', () => {
       const isLoggedIn = localStorage.getItem('estaciona_logged_in') || sessionStorage.getItem('estaciona_logged_in');
       if (isLoggedIn === 'true') {
-        const token = localStorage.getItem('estaciona_token') || sessionStorage.getItem('estaciona_token');
-        let role = 'viewer';
-        if (token) {
-          try {
-            const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-            const payload = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')));
-            role = payload.role;
-          } catch(e) {}
-        }
+        const role = localStorage.getItem('estaciona_role') || sessionStorage.getItem('estaciona_role') || 'viewer';
         if (role === 'admin') {
           window.location.href = 'dashboard.html';
         } else {
@@ -379,128 +288,32 @@
       }
     });
 
-    function handleLogin(event) {
+    function handleDemoLogin(event) {
       event.preventDefault();
-      const btn = document.getElementById('loginBtn');
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const rememberMe = document.getElementById('rememberMe').checked;
+      const btn = document.getElementById('demoBtn');
+      const name = document.getElementById('demoName').value.trim();
+      const role = document.querySelector('input[name="demoRole"]:checked').value;
 
-      clearError();
       btn.classList.add('loading');
-
-      fetch(`${apiUrl}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, password: password })
-      })
-      .then(async response => {
-        if (!response.ok) {
-          const errMsg = await response.text().catch(() => 'E-mail ou senha incorretos.');
-          throw new Error(errMsg || 'E-mail ou senha incorretos.');
-        }
-        return response.json();
-      })
-      .then(data => {
-        btn.classList.remove('loading');
+      
+      setTimeout(() => {
+        // Fake login
+        sessionStorage.setItem('estaciona_logged_in', 'true');
+        sessionStorage.setItem('estaciona_user', 'demo@estaciona.tech');
+        sessionStorage.setItem('estaciona_name', name || 'Visitante');
+        sessionStorage.setItem('estaciona_id', 'demo-12345');
+        sessionStorage.setItem('estaciona_token', 'demo-token');
+        sessionStorage.setItem('estaciona_role', role);
         
-        if (rememberMe) {
-          localStorage.setItem('estaciona_logged_in', 'true');
-          localStorage.setItem('estaciona_user', email);
-          localStorage.setItem('estaciona_name', data.name || email.split('@')[0]);
-          localStorage.setItem('estaciona_id', data.id);
-          localStorage.setItem('estaciona_token', data.token);
-          
-          sessionStorage.removeItem('estaciona_logged_in');
-          sessionStorage.removeItem('estaciona_user');
-          sessionStorage.removeItem('estaciona_name');
-          sessionStorage.removeItem('estaciona_id');
-          sessionStorage.removeItem('estaciona_token');
-        } else {
-          sessionStorage.setItem('estaciona_logged_in', 'true');
-          sessionStorage.setItem('estaciona_user', email);
-          sessionStorage.setItem('estaciona_name', data.name || email.split('@')[0]);
-          sessionStorage.setItem('estaciona_id', data.id);
-          sessionStorage.setItem('estaciona_token', data.token);
-          
-          localStorage.removeItem('estaciona_logged_in');
-          localStorage.removeItem('estaciona_user');
-          localStorage.removeItem('estaciona_name');
-          localStorage.removeItem('estaciona_id');
-          localStorage.removeItem('estaciona_token');
-        }
-        if (data.role === 'admin') {
+        // Mock token cookie for dashboard check
+        document.cookie = "estaciona_token=demo-token; path=/";
+
+        if (role === 'admin') {
           window.location.href = 'dashboard.html';
         } else {
           window.location.href = 'app.html';
         }
-      })
-      .catch(err => {
-        btn.classList.remove('loading');
-        showError('loginForm', err.message || 'Erro ao conectar ao servidor.');
-      });
-    }
-
-    function handleRegister(event) {
-      event.preventDefault();
-      const btn = document.getElementById('registerBtn');
-      const name = document.getElementById('regName').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const rawPlate = document.getElementById('regPlate').value.trim().toUpperCase();
-      const plate = rawPlate ? rawPlate : null;
-      const password = document.getElementById('regPassword').value;
-      const dob = document.getElementById('regDob').value;
-      const pcdStatus = document.getElementById('regPcd').checked;
-
-      clearError();
-      btn.classList.add('loading');
-
-      fetch(`${apiUrl}/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name,
-          email: email,
-          password: password,
-          plate: plate,
-          date_of_birth: dob ? dob : null,
-          pcd_status: pcdStatus
-        })
-      })
-      .then(async response => {
-        if (!response.ok) {
-          const errMsg = await response.text().catch(() => 'Erro ao criar conta.');
-          throw new Error(errMsg || 'Erro ao criar conta. E-mail ou Placa já podem estar em uso.');
-        }
-        return response.json();
-      })
-      .then(() => {
-        btn.classList.remove('loading');
-        document.getElementById('registerForm').reset();
-        switchTab('login');
-        
-        const successDiv = document.createElement('div');
-        successDiv.className = 'auth-error';
-        successDiv.textContent = 'Conta criada com sucesso! Faça seu login para continuar.';
-        successDiv.style.cssText = `
-          background: rgba(28, 167, 69, 0.08);
-          color: #1ca745;
-          border: 1px solid rgba(28, 167, 69, 0.2);
-          border-radius: 10px;
-          padding: 0.75rem 1rem;
-          margin-bottom: 1rem;
-          font-size: 0.9rem;
-          font-weight: 500;
-          text-align: center;
-          animation: slideUp 0.3s ease;
-        `;
-        const form = document.getElementById('loginForm');
-        form.insertBefore(successDiv, form.firstChild);
-      })
-      .catch(err => {
-        btn.classList.remove('loading');
-        showError('registerForm', err.message || 'Erro ao comunicar com servidor.');
-      });
+      }, 800); // add a slight delay for realistic feel
     }
   </script>
     <script type="module" src="js/login-webgl.js?v=2"></script>

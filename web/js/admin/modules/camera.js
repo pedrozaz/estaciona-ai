@@ -367,14 +367,15 @@ class CameraModule {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'config.json';
-        a.click();
+        // a.click();
+        alert('Modo demonstração: as alterações são apenas visuais e não serão salvas.');
 
         if (this.globalCamera) {
             const blobGlobal = new Blob([JSON.stringify(this.globalCamera, null, 2)], { type: 'application/json' });
             const aGlobal = document.createElement('a');
             aGlobal.href = URL.createObjectURL(blobGlobal);
             aGlobal.download = 'global_camera.json';
-            aGlobal.click();
+            // aGlobal.click();
         }
     }
 }
