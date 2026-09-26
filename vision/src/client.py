@@ -39,7 +39,7 @@ import torch
 WS_URL = os.environ.get("LOCAL_WS_URL", "ws://localhost:8001/ws/edge")
 EDGE_API_KEY = os.environ.get("EDGE_API_KEY")
 
-MODEL_PATH = os.environ.get("VISION_MODEL_PATH", "yolo26m-seg.pt")
+MODEL_PATH = os.environ.get("VISION_MODEL_PATH", "yolo27x.pt")
 VIDEO_PATH = os.environ.get("VISION_STREAM_URL", "data/test_metade.mp4")
 SPOTS_PATH = "data/spots.json"
 PENDING_UPDATES = deque()
