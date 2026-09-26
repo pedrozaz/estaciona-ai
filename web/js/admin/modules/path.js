@@ -392,7 +392,8 @@ class PathModule {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'config.json';
-        a.click();
+        // a.click();
+        alert('Modo demonstração: as alterações são apenas visuais e não serão salvas.');
     }
 }
 

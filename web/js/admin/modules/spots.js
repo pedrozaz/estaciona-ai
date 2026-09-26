@@ -373,7 +373,8 @@ class SpotsModule {
         const a = document.createElement('a');
         a.href = url;
         a.download = 'spots_3d.json';
-        a.click();
+        // a.click();
+        alert('Modo demonstração: as alterações são apenas visuais e não serão salvas.');
         URL.revokeObjectURL(url);
     }
 }
